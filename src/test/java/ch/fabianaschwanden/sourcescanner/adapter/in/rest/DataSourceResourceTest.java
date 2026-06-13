@@ -33,4 +33,32 @@ class DataSourceResourceTest {
                 .body("name", org.hamcrest.Matchers.equalTo("crm-op"))
                 .body("attributes[0].field", org.hamcrest.Matchers.equalTo("partnernummer"));
     }
+
+    @Test
+    @TestSecurity(user = "op-user", roles = "operator")
+    void operator_kann_key_value_liste_hochladen_und_erhaelt_nur_hash_anzahl() {
+        // 1) UPLOAD-Datenquelle anlegen.
+        String id = given().contentType("application/json")
+                .body("""
+                        {"name":"upload-%s","kind":"UPLOAD","authType":"NONE","recordsPath":"$[*]",
+                         "cacheTtlSeconds":600,"minValueLength":4,"enabled":true,"attributes":[]}"""
+                        .formatted(java.util.UUID.randomUUID()))
+                .when().post("/api/datasources").then().statusCode(200)
+                .extract().path("id");
+
+        // 2) CSV hochladen — Antwort enthält nur Anzahl Hashes je Attribut, nie Werte.
+        given().contentType("text/plain")
+                .body("key,value\npartnernummer,12345678\npartnernummer,87654321\nname,Mustermann")
+                .when().post("/api/datasources/" + id + "/upload").then().statusCode(200)
+                .body("partnernummer", org.hamcrest.Matchers.equalTo(2))
+                .body("name", org.hamcrest.Matchers.equalTo(1));
+    }
+
+    @Test
+    @TestSecurity(user = "viewer-user", roles = "viewer")
+    void viewer_darf_nicht_hochladen() {
+        given().contentType("text/plain").body("partnernummer,12345678")
+                .when().post("/api/datasources/" + java.util.UUID.randomUUID() + "/upload")
+                .then().statusCode(403);
+    }
 }

@@ -1,6 +1,7 @@
 package ch.fabianaschwanden.sourcescanner.adapter.out.persistence;
 
 import ch.fabianaschwanden.sourcescanner.domain.model.DataSourceAuthType;
+import ch.fabianaschwanden.sourcescanner.domain.model.DataSourceKind;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -23,6 +24,10 @@ public class DataSourceEntity {
 
     @Column(nullable = false, unique = true)
     public String name;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "kind", nullable = false)
+    public DataSourceKind kind;
 
     @Column(name = "base_url", nullable = false)
     public String baseUrl;

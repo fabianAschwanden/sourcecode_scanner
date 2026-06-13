@@ -2,7 +2,9 @@ package ch.fabianaschwanden.sourcescanner.adapter.in.rest;
 
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.DataSourceDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.DataSourceSchemaDto;
+import ch.fabianaschwanden.sourcescanner.domain.model.KeyValuePair;
 import ch.fabianaschwanden.sourcescanner.domain.port.in.ManageDataSourcesUseCase;
+import ch.fabianaschwanden.sourcescanner.domain.port.in.UploadKeyValuesUseCase;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -15,6 +17,7 @@ import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -28,11 +31,14 @@ import java.util.UUID;
 public class DataSourceResource {
 
     private final ManageDataSourcesUseCase dataSources;
+    private final UploadKeyValuesUseCase uploads;
     private final SecurityIdentity identity;
 
     @Inject
-    public DataSourceResource(ManageDataSourcesUseCase dataSources, SecurityIdentity identity) {
+    public DataSourceResource(ManageDataSourcesUseCase dataSources, UploadKeyValuesUseCase uploads,
+                              SecurityIdentity identity) {
         this.dataSources = dataSources;
+        this.uploads = uploads;
         this.identity = identity;
     }
 
@@ -61,6 +67,19 @@ public class DataSourceResource {
     @RolesAllowed({"operator", "admin"})
     public DataSourceSchemaDto probe(DataSourceDto request) {
         return DataSourceSchemaDto.from(dataSources.probe(request.toDomain(), actor()));
+    }
+
+    /**
+     * Upload einer Key-Value-Liste (CSV oder JSON, Autodetect) für eine UPLOAD-Datenquelle (IR-67).
+     * Body ist der rohe Datei-Inhalt. Antwort: Anzahl gespeicherter Hashes je Attribut — nie Werte.
+     */
+    @POST
+    @Path("/{id}/upload")
+    @RolesAllowed({"operator", "admin"})
+    @Consumes(MediaType.TEXT_PLAIN)
+    public Map<String, Integer> upload(@PathParam("id") UUID id, String body) {
+        List<KeyValuePair> pairs = KeyValueUploadParser.parse(body);
+        return uploads.upload(id, pairs, actor());
     }
 
     private String actor() {

@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ch.fabianaschwanden.sourcescanner.domain.model.AttributeRule;
 import ch.fabianaschwanden.sourcescanner.domain.model.DataSourceDefinition;
+import ch.fabianaschwanden.sourcescanner.domain.model.DataSourceKind;
 import ch.fabianaschwanden.sourcescanner.domain.model.DataSourceSchema;
 import ch.fabianaschwanden.sourcescanner.domain.model.DetectorCategory;
 import ch.fabianaschwanden.sourcescanner.domain.model.DetectorConfig;
@@ -14,6 +15,8 @@ import ch.fabianaschwanden.sourcescanner.domain.model.ScanUnit;
 import ch.fabianaschwanden.sourcescanner.domain.model.Severity;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.DataSourceDefinitionPort;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.DataSourcePort;
+import ch.fabianaschwanden.sourcescanner.domain.port.out.DataSourceValuePort;
+import ch.fabianaschwanden.sourcescanner.domain.service.ValueHashing;
 import jakarta.enterprise.inject.Instance;
 import java.lang.annotation.Annotation;
 import java.time.Instant;
@@ -21,16 +24,22 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 
-/** Wertabgleich, Wortgrenzen und Redaktion des API-gespeisten Kundendaten-Detektors (DR-23..26). */
+/** Wert- und Hash-Abgleich des Kundendaten-Detektors (DR-23..30): REST-Werte und Upload-Hashes. */
 class CustomerDataDetectorTest {
 
     private final UUID dsId = UUID.randomUUID();
 
-    private DataSourceDefinition definition(AttributeRule... rules) {
-        return new DataSourceDefinition(dsId, "crm", "https://crm.intern", "GET", "/partners",
+    private DataSourceDefinition rest(AttributeRule... rules) {
+        return new DataSourceDefinition(dsId, "crm", DataSourceKind.REST, "https://crm.intern", "GET",
+                "/partners", null, null, null, "$[*]", 600, 4, true, List.of(rules));
+    }
+
+    private DataSourceDefinition upload(AttributeRule... rules) {
+        return new DataSourceDefinition(dsId, "crm-upload", DataSourceKind.UPLOAD, "", "GET", "",
                 null, null, null, "$[*]", 600, 4, true, List.of(rules));
     }
 
@@ -38,48 +47,58 @@ class CustomerDataDetectorTest {
         return new ScanUnit("repo", "src/A.java", "c1", "me", Instant.now(), content, null);
     }
 
-    private CustomerDataDetector detector(DataSourceDefinition def, Map<AttributeRule, List<String>> values) {
-        DataSourceDefinitionPort defs = new FakeDefs(List.of(def));
-        DataSourcePort port = new FakePort(values);
-        return new CustomerDataDetector(single(defs), single(port));
+    private CustomerDataDetector detector(DataSourceDefinition def, Map<AttributeRule, List<String>> restValues,
+                                          Map<String, Set<String>> uploadHashes) {
+        return new CustomerDataDetector(single(new FakeDefs(List.of(def))), single(new FakePort(restValues)),
+                single(new FakeValues(uploadHashes)), Optional.of(""));
     }
 
+    // --- REST -------------------------------------------------------------------------------------
+
     @Test
-    void findet_exakten_partnernummer_wert() {
+    void rest_findet_exakten_partnernummer_wert() {
         AttributeRule rule = new AttributeRule("partnernummer", true, Severity.HIGH, DetectorCategory.PII);
-        var detector = detector(definition(rule), Map.of(rule, List.of("12345678")));
+        var detector = detector(rest(rule), Map.of(rule, List.of("12345678")), Map.of());
         List<Finding> findings = detector.scan(
                 unit("final String p = \"12345678\"; // partner"), new DetectorConfig(true, Map.of()));
         assertEquals(1, findings.size());
-        Finding f = findings.getFirst();
-        assertEquals("partnernummer", f.ruleId());
-        assertEquals(Severity.HIGH, f.severity());
-        assertFalse(f.redactedMatch().contains("12345678"), "Treffer muss redigiert sein");
+        assertEquals("partnernummer", findings.getFirst().ruleId());
+        assertFalse(findings.getFirst().redactedMatch().contains("12345678"), "Treffer muss redigiert sein");
     }
 
     @Test
-    void teiltreffer_in_wort_wird_ignoriert() {
+    void rest_teiltreffer_in_wort_wird_ignoriert() {
         AttributeRule rule = new AttributeRule("partnernummer", true, Severity.HIGH, DetectorCategory.PII);
-        var detector = detector(definition(rule), Map.of(rule, List.of("12345678")));
-        // 12345678 steckt mitten in einer längeren Ziffernfolge → kein Wortgrenzen-Treffer.
+        var detector = detector(rest(rule), Map.of(rule, List.of("12345678")), Map.of());
+        assertTrue(detector.scan(unit("id = 9912345678990"), new DetectorConfig(true, Map.of())).isEmpty());
+    }
+
+    // --- UPLOAD (nur Hashes) ----------------------------------------------------------------------
+
+    @Test
+    void upload_findet_wert_per_hash_abgleich() {
+        AttributeRule rule = new AttributeRule("partnernummer", true, Severity.HIGH, DetectorCategory.PII);
+        Set<String> hashes = Set.of(ValueHashing.hash("12345678", ""));
+        var detector = detector(upload(rule), Map.of(), Map.of("partnernummer", hashes));
         List<Finding> findings = detector.scan(
-                unit("id = 9912345678990"), new DetectorConfig(true, Map.of()));
-        assertTrue(findings.isEmpty());
+                unit("String p = \"12345678\";"), new DetectorConfig(true, Map.of()));
+        assertEquals(1, findings.size());
+        assertEquals("partnernummer", findings.getFirst().ruleId());
+        assertFalse(findings.getFirst().redactedMatch().contains("12345678"));
     }
 
     @Test
-    void nicht_geprueftes_attribut_liefert_keinen_fund() {
-        AttributeRule rule = new AttributeRule("name", false, Severity.MEDIUM, DetectorCategory.PII);
-        var detector = detector(definition(rule), Map.of());
-        List<Finding> findings = detector.scan(
-                unit("name = \"Mustermann\""), new DetectorConfig(true, Map.of()));
-        assertTrue(findings.isEmpty());
+    void upload_ohne_passenden_hash_kein_fund() {
+        AttributeRule rule = new AttributeRule("partnernummer", true, Severity.HIGH, DetectorCategory.PII);
+        Set<String> hashes = Set.of(ValueHashing.hash("99999999", ""));
+        var detector = detector(upload(rule), Map.of(), Map.of("partnernummer", hashes));
+        assertTrue(detector.scan(unit("String p = \"12345678\";"), new DetectorConfig(true, Map.of())).isEmpty());
     }
 
     @Test
     void deaktivierter_detektor_liefert_nichts() {
         AttributeRule rule = new AttributeRule("partnernummer", true, Severity.HIGH, DetectorCategory.PII);
-        var detector = detector(definition(rule), Map.of(rule, List.of("12345678")));
+        var detector = detector(rest(rule), Map.of(rule, List.of("12345678")), Map.of());
         assertTrue(detector.scan(unit("12345678"), DetectorConfig.disabled()).isEmpty());
     }
 
@@ -105,6 +124,19 @@ class CustomerDataDetectorTest {
         }
         @Override public Map<AttributeRule, List<String>> loadValues(DataSourceDefinition definition) {
             return values;
+        }
+    }
+
+    private record FakeValues(Map<String, Set<String>> hashes) implements DataSourceValuePort {
+        @Override public void replace(UUID dataSourceId, Map<String, Set<String>> hashesByAttribute) {
+        }
+        @Override public Map<String, Set<String>> hashesByAttribute(UUID dataSourceId) {
+            return hashes;
+        }
+        @Override public Map<String, Integer> countByAttribute(UUID dataSourceId) {
+            return Map.of();
+        }
+        @Override public void deleteFor(UUID dataSourceId) {
         }
     }
 

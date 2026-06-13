@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Upload-Datenquellen (IR-67): Typ der Datenquelle + Tabelle für gehashte Werte (NFR-23).
+         Nur Hashes, nie Klartext. Append-only zu 0007. -->
+    <changeSet id="0008-data-source-kind" author="scanner">
+        <addColumn tableName="data_source">
+            <column name="kind" type="VARCHAR(16)" defaultValue="REST">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+    <changeSet id="0008-create-data-source-value" author="scanner">
+        <createTable tableName="data_source_value">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="data_source_id" type="UUID">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attribute" type="VARCHAR(255)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="value_hash" type="VARCHAR(128)">
+                <constraints nullable="false"/>
+            </column>
+        </createTable>
+        <createIndex tableName="data_source_value" indexName="idx_dsvalue_source_attr">
+            <column name="data_source_id"/>
+            <column name="attribute"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

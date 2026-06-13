@@ -127,6 +127,13 @@ export class ScannerApi {
     return this.http.post<DataSourceSchema>('/api/datasources/probe', source);
   }
 
+  /** Lädt eine Key-Value-Liste (CSV/JSON) hoch; Antwort: Anzahl Hashes je Attribut (WR-56). */
+  uploadKeyValues(id: string, content: string): Observable<Record<string, number>> {
+    return this.http.post<Record<string, number>>(`/api/datasources/${id}/upload`, content, {
+      headers: { 'Content-Type': 'text/plain' },
+    });
+  }
+
   settings(): Observable<Settings> {
     return this.http.get<Settings>('/api/settings');
   }

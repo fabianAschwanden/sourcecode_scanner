@@ -90,6 +90,7 @@ export interface DetectorInfo {
 }
 
 export type DataSourceAuthType = 'NONE' | 'BEARER' | 'BASIC' | 'HEADER';
+export type DataSourceKind = 'REST' | 'UPLOAD';
 export type AttributeCategory = 'PII' | 'CUSTOM';
 
 export interface AttributeRule {
@@ -102,6 +103,7 @@ export interface AttributeRule {
 export interface DataSource {
   readonly id: string | null;
   readonly name: string;
+  readonly kind: DataSourceKind;
   readonly baseUrl: string;
   readonly method: string;
   readonly path: string;

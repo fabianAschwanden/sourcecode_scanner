@@ -35,6 +35,7 @@ public class DataSourceRepository
             entity.id = id;
         }
         entity.name = definition.name();
+        entity.kind = definition.kind();
         entity.baseUrl = definition.baseUrl();
         entity.method = definition.method();
         entity.path = definition.path();
@@ -87,8 +88,8 @@ public class DataSourceRepository
     }
 
     static DataSourceDefinition toDomain(DataSourceEntity e) {
-        return new DataSourceDefinition(e.id, e.name, e.baseUrl, e.method, e.path, e.authType, e.tokenRef,
-                e.authHeaderName, e.recordsPath, e.cacheTtlSeconds, e.minValueLength, e.enabled,
+        return new DataSourceDefinition(e.id, e.name, e.kind, e.baseUrl, e.method, e.path, e.authType,
+                e.tokenRef, e.authHeaderName, e.recordsPath, e.cacheTtlSeconds, e.minValueLength, e.enabled,
                 readAttributes(e.attributesJson));
     }
 

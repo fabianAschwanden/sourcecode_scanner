@@ -25,3 +25,5 @@
 | FR-21 | S | Das System SOLL vertrauliche Datenwerte (z. B. Partnernummern, Namen, Vornamen weiterer Kundendaten) aus einer **externen REST-API** beziehen und im Code als Treffer erkennen können. | Detection Layer / P6 |
 | FR-22 | S | Das System SOLL ein **Attribut-Mapping** unterstützen: aus der API-Antwort wird je Attribut (Response-Feld) konfiguriert, ob es geprüft wird, mit welcher Severity und Kategorie — definiert über die Web-UI (WR-50) oder Konfiguration. | Detection Layer / P6 |
 | FR-23 | M | Aus der externen API bezogene vertrauliche Werte MÜSSEN wie Secrets behandelt werden: nur redigiert ausgegeben (FR-18), nie geloggt, nicht persistiert außer als Hash/Fingerprint. | Detection Layer / P6 |
+| FR-24 | S | Das System SOLL alternativ zur API eine **Key-Value-Liste** (CSV oder JSON, Auto-Erkennung) als Datei aufnehmen, wobei der Key der Attributname und der Value der gesuchte Wert ist. | Detection Layer / P7 |
+| FR-25 | M | Hochgeladene Werte MÜSSEN ausschließlich als **Hash** persistiert werden (nie im Klartext); die Erkennung im Code erfolgt durch Hash-Abgleich der Code-Tokens (FR-23, NFR-23). | Detection Layer / P7 |

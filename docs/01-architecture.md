@@ -99,6 +99,13 @@ TTL-Cache im Speicher, werden nie geloggt/persistiert und nur redigiert in `Find
 ausgegeben (NFR-23) — der Fund trägt den Attributnamen, nie den Klartextwert. Das
 Mapping wird über die Web-UI gepflegt und serverseitig persistiert (WR-50..54).
 
+Alternativ zur API kann eine **Key-Value-Liste** (CSV/JSON) hochgeladen werden (IR-67):
+der Key ist der Attributname, der Value der gesuchte Wert. Für diese Quelle werden
+ausschliesslich **Hashes** der Werte persistiert (NFR-23, `ValueHashing`); der Detektor
+hasht jedes Code-Token an Wortgrenzen mit demselben Verfahren (inkl. konfigurierbarem
+Pepper) und vergleicht gegen die gespeicherten Hashes — exakte Erkennung ohne Kenntnis
+des Klartexts.
+
 ### 3.4 Aggregation Layer
 
 - **Deduplizierung:** gleicher Fund über mehrere Commits/Branches wird zu einem

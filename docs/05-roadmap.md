@@ -98,6 +98,9 @@ externen REST-API, statt nur statischer Muster (FR-21..23, IR-60..66, DR-23..28,
 
 - `DataSourcePort` + REST-Client-Adapter: konfigurierbare API (URL/Methode/Pfad/Auth),
   JSONPath-Extraktion der Datensätze; Auth nur als Secret-Referenz (NFR-08/25).
+- Alternativ **Key-Value-Upload** (CSV/JSON, IR-67): Key = Attributname, Value = gesuchter
+  Wert; nur Hashes persistiert (`ValueHashing` + Pepper, NFR-23/26), Hash-Abgleich der
+  Code-Tokens im Detektor.
 - API-gespeister Detektor `pii.customer-data-api`: lädt geprüfte Attribut-Werte (TTL-Cache,
   nie persistiert/geloggt), exakter Wortgrenzen-Abgleich gegen die `ScanUnit`.
 - Web-UI: Datenquelle anlegen/testen, **redigiertes** Attribut-Schema anzeigen, je Attribut

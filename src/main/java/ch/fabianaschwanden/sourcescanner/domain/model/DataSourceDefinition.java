@@ -4,15 +4,17 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Eine verwaltete externe REST-Datenquelle für vertrauliche Kundendaten (IR-60). Liefert konkrete
- * Werte (z. B. Partnernummern), die im Code gesucht werden. {@code tokenRef} ist ausschliesslich eine
- * Secret-Referenz ({@code env:}/{@code vault:}), nie Klartext (IR-61, NFR-08). {@code recordsPath}
- * ist ein JSONPath auf die Datensätze der Antwort (IR-62). {@code attributes} ist das UI-gepflegte
+ * Eine verwaltete Kundendaten-Quelle (IR-60/67): entweder eine externe REST-API ({@link
+ * DataSourceKind#REST}) oder eine hochgeladene Key-Value-Liste ({@link DataSourceKind#UPLOAD}). Liefert
+ * konkrete Werte (z. B. Partnernummern), die im Code gesucht werden. {@code tokenRef} ist ausschliesslich
+ * eine Secret-Referenz ({@code env:}/{@code vault:}), nie Klartext (IR-61, NFR-08). {@code recordsPath}
+ * ist ein JSONPath auf die Datensätze der REST-Antwort (IR-62). {@code attributes} ist das UI-gepflegte
  * Attribut-Mapping (WR-52). Reines Domänen-Modell — framework-frei.
  */
 public record DataSourceDefinition(
         UUID id,
         String name,
+        DataSourceKind kind,
         String baseUrl,
         String method,
         String path,
@@ -29,9 +31,11 @@ public record DataSourceDefinition(
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("data source name must not be blank");
         }
-        if (baseUrl == null || baseUrl.isBlank()) {
-            throw new IllegalArgumentException("data source baseUrl must not be blank");
+        kind = kind == null ? DataSourceKind.REST : kind;
+        if (kind == DataSourceKind.REST && (baseUrl == null || baseUrl.isBlank())) {
+            throw new IllegalArgumentException("REST data source baseUrl must not be blank");
         }
+        baseUrl = baseUrl == null ? "" : baseUrl;
         method = method == null || method.isBlank() ? "GET" : method.trim().toUpperCase(java.util.Locale.ROOT);
         path = path == null ? "" : path;
         authType = authType == null ? DataSourceAuthType.NONE : authType;

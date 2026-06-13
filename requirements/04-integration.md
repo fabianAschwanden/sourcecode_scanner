@@ -26,6 +26,8 @@ Code gesucht werden (FR-21..FR-23, DR-23..DR-28).
 | IR-64 | M | Antwortdaten DÜRFEN nicht roh persistiert oder geloggt werden; sie werden nur im Speicher gehalten (TTL-Cache, DR-27) und ausschliesslich redigiert nach aussen gegeben (FR-18, FR-23). |
 | IR-65 | C | Das System KANN mehrere Datenquellen verwalten und je Repository/Org-Unit zuordnen, welche Datenquelle(n) beim Scan herangezogen werden. |
 | IR-66 | S | Timeout, Wiederholversuche und Cache-TTL der Datenquelle SOLLEN konfigurierbar sein; Fehler MÜSSEN als Detektor-Degradation behandelt werden (DR-28), nicht als Scan-Abbruch. |
+| IR-67 | S | Das System SOLL eine **Key-Value-Liste** als Datei aufnehmen (CSV `key,value` oder JSON, Auto-Erkennung); der Key ist der Attributname, der Value der gesuchte Wert. Es werden nur **Hashes** der Werte persistiert (FR-25, NFR-23). |
+| IR-68 | S | Beim Upload SOLL je vorkommendem Key automatisch eine Attribut-Regel (geprüft, Default-Severity) angelegt werden, sofern noch nicht vorhanden; ein erneuter Upload ersetzt die Hashes idempotent. |
 
 ## CI/CD-Integration
 

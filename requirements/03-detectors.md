@@ -42,6 +42,8 @@ Attribute werden über ein Mapping festgelegt (WR-50).
 | DR-26 | M | Geladene Werte DÜRFEN nicht im Klartext geloggt oder in Funden ausgegeben werden; der Fund trägt nur den redigierten Treffer und den Attributnamen (z. B. `partnernummer`), nie den Klartextwert (FR-18, FR-23). |
 | DR-27 | S | Der Detektor SOLL die Wertliste mit konfigurierbarem TTL cachen und nie auf Platte persistieren; Werte werden ausschliesslich als Hash/Fingerprint für Dedup/Baseline gespeichert (DR-41). |
 | DR-28 | C | Der Detektor KANN bei nicht erreichbarer Datenquelle degradiert weiterlaufen (Lauf nicht abbrechen) und die Degradation als Detektor-Fehler melden (OR-05). |
+| DR-29 | S | Der Detektor SOLL neben der REST-Quelle eine **Upload-Quelle** (hochgeladene Key-Value-Liste, IR-67) unterstützen; bei dieser liegen nur Hashes vor (NFR-23). |
+| DR-30 | M | Bei einer Upload-Quelle MUSS der Detektor jedes Code-Token an Wortgrenzen mit demselben Verfahren hashen und gegen die gespeicherten Hashes je Attribut abgleichen — ein exakter Abgleich ohne Kenntnis des Klartexts. |
 
 ## License- / IaC-Detektoren
 

@@ -40,6 +40,7 @@ scan:
   # Secret-Referenz; Antwortdaten nie persistiert/geloggt (NFR-23).
   dataSources:
     - name: crm-partners
+      kind: rest                     # rest | upload (upload: Key-Value-Liste, nur Hashes, IR-67)
       baseUrl: https://crm.intern/api/v1
       method: GET
       path: /partners
@@ -153,7 +154,8 @@ scan:
 | `scan.history.mode` | enum | Scan-Tiefe (siehe Architektur §6) |
 | `scan.detectors.*.enabled` | bool | Detektor-Gruppe aktivieren |
 | `scan.detectors.secrets.verify` | bool | Aktive Validierung gefundener Secrets |
-| `scan.dataSources[].baseUrl` | string | Basis-URL der externen REST-Datenquelle (IR-60) |
+| `scan.dataSources[].kind` | enum | `rest` (API) \| `upload` (Key-Value-Liste, nur Hashes, IR-67) |
+| `scan.dataSources[].baseUrl` | string | Basis-URL der externen REST-Datenquelle (IR-60; nur `rest`) |
 | `scan.dataSources[].auth.tokenRef` | string | Secret-Referenz für die Datenquelle, nie Klartext (IR-61) |
 | `scan.dataSources[].recordsPath` | string | JSONPath auf die Datensätze in der Antwort (IR-62) |
 | `scan.detectors.customerData.dataSource` | string | Name der genutzten Datenquelle (`dataSources[].name`) |

@@ -31,6 +31,7 @@ welche Attribute im Code geprüft werden (FR-21/FR-22, IR-60..IR-66, DR-23..DR-2
 | WR-53 | S | Das Mapping SOLL serverseitig persistiert und ohne Neustart wirksam werden; eine Validierung (mind. ein geprüftes Attribut, gültige Severity) SOLL vor dem Speichern erfolgen (analog WR-06). |
 | WR-54 | M | Die UI DARF die geladenen Datenwerte nie anzeigen; im Mapping erscheinen ausschliesslich Attributnamen und maskierte Beispiele (WR-33, DR-26). |
 | WR-55 | C | Die UI KANN je Repository/Org-Unit zuordnen, welche Datenquelle(n) beim Scan herangezogen werden (IR-65). |
+| WR-56 | S | Die UI SOLL den Datenquellen-Typ (REST-API oder Upload) wählbar machen und für Upload-Quellen eine CSV/JSON-Datei hochladen können; angezeigt wird nur die Anzahl gespeicherter Hashes je Attribut, nie die Werte (IR-67, WR-54). |
 
 ### Einstellungen (Administration)
 

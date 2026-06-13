@@ -7,8 +7,10 @@ import ch.fabianaschwanden.sourcescanner.domain.port.in.ManageDataSourcesUseCase
 import ch.fabianaschwanden.sourcescanner.domain.port.out.AuditPort;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.DataSourceDefinitionPort;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.DataSourcePort;
+import ch.fabianaschwanden.sourcescanner.domain.port.out.DataSourceValuePort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.UUID;
 
@@ -22,12 +24,15 @@ public class ManageDataSourcesService implements ManageDataSourcesUseCase {
 
     private final DataSourceDefinitionPort definitions;
     private final DataSourcePort dataSource;
+    private final DataSourceValuePort values;
     private final AuditPort audit;
 
     @Inject
-    public ManageDataSourcesService(DataSourceDefinitionPort definitions, DataSourcePort dataSource, AuditPort audit) {
+    public ManageDataSourcesService(DataSourceDefinitionPort definitions, DataSourcePort dataSource,
+                                    DataSourceValuePort values, AuditPort audit) {
         this.definitions = definitions;
         this.dataSource = dataSource;
+        this.values = values;
         this.audit = audit;
     }
 
@@ -45,10 +50,12 @@ public class ManageDataSourcesService implements ManageDataSourcesUseCase {
     }
 
     @Override
+    @Transactional
     public void delete(UUID id, String actor) {
         String name = definitions.byId(id).map(DataSourceDefinition::name).orElse(id.toString());
+        values.deleteFor(id);
         definitions.delete(id);
-        audit.record(AuditEvent.of(actor, "datasource.delete", name, "Datenquelle gelöscht"));
+        audit.record(AuditEvent.of(actor, "datasource.delete", name, "Datenquelle + Hashes gelöscht"));
     }
 
     @Override

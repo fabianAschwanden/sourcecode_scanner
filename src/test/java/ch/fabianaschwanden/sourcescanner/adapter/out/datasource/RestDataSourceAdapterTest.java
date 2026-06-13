@@ -47,8 +47,9 @@ class RestDataSourceAdapterTest {
     }
 
     private DataSourceDefinition definition(AttributeRule... rules) {
-        return new DataSourceDefinition(UUID.randomUUID(), "crm", wireMock.baseUrl(), "GET", "/partners",
-                null, null, null, "$.data[*]", 600, 4, true, List.of(rules));
+        return new DataSourceDefinition(UUID.randomUUID(), "crm",
+                ch.fabianaschwanden.sourcescanner.domain.model.DataSourceKind.REST, wireMock.baseUrl(), "GET",
+                "/partners", null, null, null, "$.data[*]", 600, 4, true, List.of(rules));
     }
 
     private void stubPartners() {

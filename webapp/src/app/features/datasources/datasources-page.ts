@@ -6,6 +6,7 @@ import {
   AttributeRule,
   DataSource,
   DataSourceAuthType,
+  DataSourceKind,
   Severity,
 } from '../../core/models/scanner';
 
@@ -35,61 +36,81 @@ import {
           required
           class="rounded border border-default px-2 py-1"
         />
-        <input
-          [(ngModel)]="baseUrl"
-          name="baseUrl"
-          placeholder="Basis-URL"
-          title="Basis-URL der REST-API, z. B. https://crm.intern/api/v1"
-          required
-          class="w-64 rounded border border-default px-2 py-1"
-        />
-        <input
-          [(ngModel)]="path"
-          name="path"
-          placeholder="Pfad"
-          title="Relativer Pfad zur Datenliste, z. B. /partners"
-          class="rounded border border-default px-2 py-1"
-        />
-        <input
-          [(ngModel)]="recordsPath"
-          name="recordsPath"
-          placeholder="Datensatz-Pfad"
-          title="JSONPath auf die Datensätze, z. B. $.data[*] oder $[*]"
-          class="rounded border border-default px-2 py-1"
-        />
         <select
-          [(ngModel)]="authType"
-          name="authType"
-          title="Authentifizierung gegen die API"
+          [(ngModel)]="kind"
+          name="kind"
+          title="REST-API: Werte werden live geladen. Upload: Key-Value-Liste (CSV/JSON), nur Hashes gespeichert."
           class="rounded border border-default px-2 py-1"
         >
-          <option value="NONE">Keine Auth</option>
-          <option value="BEARER">Bearer</option>
-          <option value="BASIC">Basic</option>
-          <option value="HEADER">Header</option>
+          <option value="REST">REST-API</option>
+          <option value="UPLOAD">Upload (CSV/JSON)</option>
         </select>
-        <input
-          [(ngModel)]="tokenRef"
-          name="tokenRef"
-          placeholder="tokenRef (env:NAME)"
-          title="Secret-Referenz, kein Klartext — z. B. env:CRM_API_TOKEN"
-          class="rounded border border-default px-2 py-1"
-        />
+        @if (kind === 'REST') {
+          <input
+            [(ngModel)]="baseUrl"
+            name="baseUrl"
+            placeholder="Basis-URL"
+            title="Basis-URL der REST-API, z. B. https://crm.intern/api/v1"
+            class="w-64 rounded border border-default px-2 py-1"
+          />
+          <input
+            [(ngModel)]="path"
+            name="path"
+            placeholder="Pfad"
+            title="Relativer Pfad zur Datenliste, z. B. /partners"
+            class="rounded border border-default px-2 py-1"
+          />
+          <input
+            [(ngModel)]="recordsPath"
+            name="recordsPath"
+            placeholder="Datensatz-Pfad"
+            title="JSONPath auf die Datensätze, z. B. $.data[*] oder $[*]"
+            class="rounded border border-default px-2 py-1"
+          />
+          <select
+            [(ngModel)]="authType"
+            name="authType"
+            title="Authentifizierung gegen die API"
+            class="rounded border border-default px-2 py-1"
+          >
+            <option value="NONE">Keine Auth</option>
+            <option value="BEARER">Bearer</option>
+            <option value="BASIC">Basic</option>
+            <option value="HEADER">Header</option>
+          </select>
+          <input
+            [(ngModel)]="tokenRef"
+            name="tokenRef"
+            placeholder="tokenRef (env:NAME)"
+            title="Secret-Referenz, kein Klartext — z. B. env:CRM_API_TOKEN"
+            class="rounded border border-default px-2 py-1"
+          />
+        }
         <button
           type="submit"
           class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
         >
           Anlegen
         </button>
-        <button
-          type="button"
-          (click)="probeDraft()"
-          title="Ruft die Datenquelle testweise ab und zeigt die verfügbaren Attribute (redigiert)."
-          class="rounded border border-default px-3 py-1 hover:underline"
-        >
-          Attribute abrufen
-        </button>
+        @if (kind === 'REST') {
+          <button
+            type="button"
+            (click)="probeDraft()"
+            title="Ruft die Datenquelle testweise ab und zeigt die verfügbaren Attribute (redigiert)."
+            class="rounded border border-default px-3 py-1 hover:underline"
+          >
+            Attribute abrufen
+          </button>
+        }
       </form>
+
+      @if (kind === 'UPLOAD') {
+        <p class="mb-4 text-sm text-muted">
+          Upload-Datenquelle anlegen, dann in der Liste unten eine CSV/JSON-Datei hochladen (Format
+          <code>key,value</code> bzw. <code>{{ '{' }}"key":..,"value":..{{ '}' }}</code
+          >). Es werden nur Hashes gespeichert — die Werte verlassen den Server nie im Klartext.
+        </p>
+      }
 
       @if (schema().length > 0) {
         <div class="mb-6 rounded border border-default p-3">
@@ -154,8 +175,8 @@ import {
         <thead>
           <tr class="border-b border-default text-left text-muted">
             <th class="py-2">Name</th>
-            <th>Basis-URL</th>
-            <th>Auth</th>
+            <th>Typ</th>
+            <th>Quelle</th>
             <th>Aktiv</th>
             <th>Geprüfte Attribute</th>
             <th>Aktionen</th>
@@ -165,11 +186,27 @@ import {
           @for (s of sources(); track s.id) {
             <tr class="border-b border-default">
               <td class="py-2">{{ s.name }}</td>
-              <td class="font-mono text-xs">{{ s.baseUrl }}{{ s.path }}</td>
-              <td>{{ s.authType }}</td>
+              <td>{{ s.kind }}</td>
+              <td class="font-mono text-xs">
+                {{ s.kind === 'UPLOAD' ? 'Upload (gehasht)' : s.baseUrl + s.path }}
+              </td>
               <td>{{ s.enabled ? 'ja' : 'nein' }}</td>
               <td class="text-xs">{{ checkedFields(s) || '—' }}</td>
               <td class="space-x-2">
+                @if (s.kind === 'UPLOAD') {
+                  <label
+                    class="cursor-pointer text-accent hover:underline"
+                    title="CSV oder JSON hochladen (key,value). Es werden nur Hashes gespeichert."
+                  >
+                    Upload
+                    <input
+                      type="file"
+                      class="hidden"
+                      accept=".csv,.json,.txt"
+                      (change)="onUpload(s, $event)"
+                    />
+                  </label>
+                }
                 <button (click)="remove(s)" class="text-sev-high hover:underline">Löschen</button>
               </td>
             </tr>
@@ -192,6 +229,7 @@ export class DataSourcesPage {
   protected readonly message = signal<string>('');
 
   protected name = '';
+  protected kind: DataSourceKind = 'REST';
   protected baseUrl = '';
   protected path = '';
   protected recordsPath = '$[*]';
@@ -244,13 +282,35 @@ export class DataSourcesPage {
   }
 
   protected create(): void {
-    if (!this.name || !this.baseUrl) {
+    if (!this.name || (this.kind === 'REST' && !this.baseUrl)) {
       return;
     }
     this.api.saveDataSource(this.draft([])).subscribe(() => {
       this.resetForm();
       this.reload();
     });
+  }
+
+  protected onUpload(source: DataSource, event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file || !source.id) {
+      return;
+    }
+    const id = source.id;
+    file.text().then((content) => {
+      this.message.set('Lade Key-Value-Liste hoch …');
+      this.api.uploadKeyValues(id, content).subscribe({
+        next: (counts) => {
+          const total = Object.values(counts).reduce((a, b) => a + b, 0);
+          const attrs = Object.keys(counts).join(', ');
+          this.message.set(`${total} Hash(es) gespeichert für: ${attrs || '—'}`);
+          this.reload();
+        },
+        error: (err) => this.message.set(`Upload fehlgeschlagen: ${err?.error?.error ?? 'Fehler'}`),
+      });
+    });
+    input.value = '';
   }
 
   protected remove(source: DataSource): void {
@@ -271,6 +331,7 @@ export class DataSourcesPage {
     return {
       id: null,
       name: this.name,
+      kind: this.kind,
       baseUrl: this.baseUrl,
       method: 'GET',
       path: this.path,
@@ -287,6 +348,7 @@ export class DataSourcesPage {
 
   private resetForm(): void {
     this.name = '';
+    this.kind = 'REST';
     this.baseUrl = '';
     this.path = '';
     this.recordsPath = '$[*]';
