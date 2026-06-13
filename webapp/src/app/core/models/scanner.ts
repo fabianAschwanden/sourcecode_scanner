@@ -89,6 +89,39 @@ export interface DetectorInfo {
   readonly category: string;
 }
 
+export type DataSourceAuthType = 'NONE' | 'BEARER' | 'BASIC' | 'HEADER';
+export type AttributeCategory = 'PII' | 'CUSTOM';
+
+export interface AttributeRule {
+  readonly field: string;
+  readonly check: boolean;
+  readonly severity: Severity;
+  readonly category: AttributeCategory;
+}
+
+export interface DataSource {
+  readonly id: string | null;
+  readonly name: string;
+  readonly baseUrl: string;
+  readonly method: string;
+  readonly path: string;
+  readonly authType: DataSourceAuthType;
+  readonly tokenRef: string | null;
+  readonly authHeaderName: string | null;
+  readonly recordsPath: string;
+  readonly cacheTtlSeconds: number;
+  readonly minValueLength: number;
+  readonly enabled: boolean;
+  readonly attributes: AttributeRule[];
+}
+
+export interface DataSourceSchema {
+  readonly reachable: boolean;
+  readonly sampleRecords: number;
+  readonly attributes: { readonly field: string; readonly maskedExample: string }[];
+  readonly message: string;
+}
+
 export interface Policy {
   readonly id: string | null;
   readonly orgUnit: string | null;

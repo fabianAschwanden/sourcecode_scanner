@@ -21,6 +21,11 @@ export const routes: Routes = [
     loadComponent: () => import('./features/findings/findings-page').then((m) => m.FindingsPage),
   },
   {
+    path: 'datasources',
+    loadComponent: () =>
+      import('./features/datasources/datasources-page').then((m) => m.DataSourcesPage),
+  },
+  {
     path: 'policies',
     loadComponent: () => import('./features/policies/policies-page').then((m) => m.PoliciesPage),
   },

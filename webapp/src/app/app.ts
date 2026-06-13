@@ -15,6 +15,7 @@ export class App {
     { path: '/repositories', label: 'Repositories' },
     { path: '/scans', label: 'Scans' },
     { path: '/findings', label: 'Findings' },
+    { path: '/datasources', label: 'Datenquellen' },
     { path: '/policies', label: 'Policies' },
     { path: '/settings', label: 'Einstellungen' },
   ];

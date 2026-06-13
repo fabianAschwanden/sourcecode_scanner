@@ -22,3 +22,6 @@
 | FR-18 | M | Das System MUSS gefundene Secret-Werte in allen Ausgaben und Logs redigieren (nie Klartext). | Reporting / P1 |
 | FR-19 | S | Das System SOLL bereits gescannte Commits cachen, um Re-Scans zu vermeiden. | Orchestration / P2 |
 | FR-20 | C | Das System KANN zentrale Policy-Vorgaben (Regeln/Gate) pro Organisationseinheit durchsetzen. | Governance / P5 |
+| FR-21 | S | Das System SOLL vertrauliche Datenwerte (z. B. Partnernummern, Namen, Vornamen weiterer Kundendaten) aus einer **externen REST-API** beziehen und im Code als Treffer erkennen können. | Detection Layer / P6 |
+| FR-22 | S | Das System SOLL ein **Attribut-Mapping** unterstützen: aus der API-Antwort wird je Attribut (Response-Feld) konfiguriert, ob es geprüft wird, mit welcher Severity und Kategorie — definiert über die Web-UI (WR-50) oder Konfiguration. | Detection Layer / P6 |
+| FR-23 | M | Aus der externen API bezogene vertrauliche Werte MÜSSEN wie Secrets behandelt werden: nur redigiert ausgegeben (FR-18), nie geloggt, nicht persistiert außer als Hash/Fingerprint. | Detection Layer / P6 |

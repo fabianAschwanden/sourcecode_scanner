@@ -28,6 +28,9 @@
 | NFR-10 | S | Discovery-/Clone-Tokens SOLLEN Least-Privilege (read-only) sein. | Repository |
 | NFR-11 | S | Durchgeführte Scans und Zugriffe SOLLEN auditierbar protokolliert werden. | Server / P4 |
 | NFR-12 | C | Plugin-JARs KÖNNEN signiert und vor Laden verifiziert werden. | Plugin / P5 |
+| NFR-23 | M | Aus externen Datenquellen bezogene vertrauliche Werte (Kundendaten) MÜSSEN wie Geheimnisse behandelt werden: nur im Speicher gehalten (TTL-Cache), nie auf Platte persistiert, nie geloggt und nur redigiert ausgegeben (FR-23, DR-26/DR-27, IR-64). | Detection / Datenschutz |
+| NFR-24 | S | Der Zugriff auf externe Datenquellen und das Attribut-Mapping SOLL der RBAC unterliegen (Pflege nur Admin/Operator gemäß WR-31) und jede Änderung SOLL auditierbar sein (NFR-11). | Server |
+| NFR-25 | S | Datenquellen-Tokens SOLLEN Least-Privilege/read-only sein (analog NFR-10) und ausschliesslich als Secret-Referenz hinterlegt werden (NFR-08). | Integration |
 
 ## Erweiterbarkeit & Wartbarkeit
 

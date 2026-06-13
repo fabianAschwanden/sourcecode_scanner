@@ -18,6 +18,20 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | WR-07 | C | Die UI KANN geladene Plugins mit ID, Kategorie und Version anzeigen. |
 | WR-08 | S | Die UI SOLL beim Anlegen/Bearbeiten einer Repository-Quelle optional eine oder mehrere Report-E-Mail-Adressen erfassen, an die nach Scans dieses Repos ein Report versendet wird (IR-53). |
 
+### Externe Datenquellen & Attribut-Mapping
+
+Verwaltung der externen REST-Datenquelle für vertrauliche Kundendaten und das Mapping,
+welche Attribute im Code geprüft werden (FR-21/FR-22, IR-60..IR-66, DR-23..DR-28).
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-50 | S | Die UI SOLL externe REST-Datenquellen anlegen/bearbeiten/löschen: Basis-URL, Methode/Pfad, Auth (nur Secret-Referenz, WR-32), Datensatz-Pfad (JSONPath) und Cache-TTL. |
+| WR-51 | S | Die UI SOLL die Datenquelle testweise abrufen (IR-63) und die zurückgelieferten **Attribute** (Feldnamen) **redigiert** auflisten — mit maskierter Beispielausprägung, nie Klartextwerten (WR-33). |
+| WR-52 | S | Die UI SOLL je Attribut ein Mapping pflegen: `prüfen` (ja/nein), Severity (INFO..CRITICAL) und Kategorie (PII \| CUSTOM); z. B. `partnernummer → prüfen, HIGH, PII`, `name → prüfen, MEDIUM, PII`. |
+| WR-53 | S | Das Mapping SOLL serverseitig persistiert und ohne Neustart wirksam werden; eine Validierung (mind. ein geprüftes Attribut, gültige Severity) SOLL vor dem Speichern erfolgen (analog WR-06). |
+| WR-54 | M | Die UI DARF die geladenen Datenwerte nie anzeigen; im Mapping erscheinen ausschliesslich Attributnamen und maskierte Beispiele (WR-33, DR-26). |
+| WR-55 | C | Die UI KANN je Repository/Org-Unit zuordnen, welche Datenquelle(n) beim Scan herangezogen werden (IR-65). |
+
 ### Einstellungen (Administration)
 
 | ID | Prio | Anforderung |
@@ -42,7 +56,7 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | ID | Prio | Anforderung |
 |----|------|-------------|
 | WR-40 | S | Die UI SOLL durchgängig in einem dunklen Erscheinungsbild im Stil von GitHub (Dark Mode) gestaltet sein (Hintergründe, Flächen, Text, Akzent- und Severity-Farben), konsistent über alle Ansichten. |
-| WR-41 | S | Eingabe-Bedienelemente (Felder, Auswahllisten) SOLLEN eine Hover-Hilfe (Tooltip) mit einem konkreten Eingabe-Beispiel anzeigen (z. B. Pfad `/Users/me/git/projekt`, Clone-URL `https://github.com/org/repo.git`, Token-Referenz `env:GITHUB_TOKEN`, Org-Unit `team-a/payments`). |
+| WR-41 | S | Eingabe-Bedienelemente (Felder, Auswahllisten) SOLLEN eine Hover-Hilfe (Tooltip) mit einem konkreten Eingabe-Beispiel anzeigen (z. B. Pfad `/Users/me/git/projekt`, Clone-URL `https://github.com/org/repo.git`, Token-Referenz `env:GITHUB_TOKEN`, Org-Unit `team-a/payments`, Datenquellen-URL `https://crm.intern/api/v1/partners`, Datensatz-Pfad `$.data[*]`). |
 
 ### Schnittstelle
 

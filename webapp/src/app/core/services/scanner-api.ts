@@ -2,6 +2,8 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  DataSource,
+  DataSourceSchema,
   DetectorInfo,
   Finding,
   Policy,
@@ -104,6 +106,25 @@ export class ScannerApi {
       forcePushApproved,
       rotationConfirmed,
     });
+  }
+
+  // --- Externe Datenquellen (Phase 7, FR-21/22) ---
+
+  dataSources(): Observable<DataSource[]> {
+    return this.http.get<DataSource[]>('/api/datasources');
+  }
+
+  saveDataSource(source: DataSource): Observable<DataSource> {
+    return this.http.post<DataSource>('/api/datasources', source);
+  }
+
+  deleteDataSource(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/datasources/${id}`);
+  }
+
+  /** Probe-Abruf: redigiertes Attribut-Schema für das Mapping (IR-63, WR-51). */
+  probeDataSource(source: DataSource): Observable<DataSourceSchema> {
+    return this.http.post<DataSourceSchema>('/api/datasources/probe', source);
   }
 
   settings(): Observable<Settings> {

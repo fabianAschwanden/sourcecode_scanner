@@ -12,6 +12,21 @@
 | IR-06 | C | Das System KANN Repos per Namens-Regex filtern und archivierte Repos optional ausschließen. |
 | IR-07 | C | Das System KANN auf Webhooks (Push/PR) reagieren und gezielt scannen. |
 
+## Externe Datenquellen (vertrauliche Kundendaten)
+
+Anbindung einer externen REST-API, deren Antwort vertrauliche Datenwerte liefert, die im
+Code gesucht werden (FR-21..FR-23, DR-23..DR-28).
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| IR-60 | S | Das System SOLL eine externe REST-Datenquelle über einen `DataSourcePort` anbinden: konfigurierbare Basis-URL, HTTP-Methode, Pfad, optionale Query-/Header-Parameter und Paginierung. |
+| IR-61 | M | Die Authentifizierung gegen die Datenquelle MUSS pro Quelle konfigurierbar sein (z. B. Bearer-Token, Basic, API-Key-Header) und ausschliesslich auf eine Secret-Referenz (`env:`/`vault:`) zeigen, nie Klartext (NFR-08, IR-30). |
+| IR-62 | M | Aus der JSON-Antwort MÜSSEN über einen Pfad-Ausdruck (z. B. JSONPath) die Datensätze und je Attribut die Werte extrahiert werden können; die verfügbaren Attribute MÜSSEN für das UI-Mapping (WR-50) auslesbar sein. |
+| IR-63 | S | Das System SOLL einen Verbindungs-/Probe-Aufruf gegen die Datenquelle anbieten, der die Erreichbarkeit prüft und ein **redigiertes** Schema (Attributnamen + Beispiel-Maskierung, ohne Klartextwerte) für das Mapping zurückliefert. |
+| IR-64 | M | Antwortdaten DÜRFEN nicht roh persistiert oder geloggt werden; sie werden nur im Speicher gehalten (TTL-Cache, DR-27) und ausschliesslich redigiert nach aussen gegeben (FR-18, FR-23). |
+| IR-65 | C | Das System KANN mehrere Datenquellen verwalten und je Repository/Org-Unit zuordnen, welche Datenquelle(n) beim Scan herangezogen werden. |
+| IR-66 | S | Timeout, Wiederholversuche und Cache-TTL der Datenquelle SOLLEN konfigurierbar sein; Fehler MÜSSEN als Detektor-Degradation behandelt werden (DR-28), nicht als Scan-Abbruch. |
+
 ## CI/CD-Integration
 
 | ID | Prio | Anforderung |

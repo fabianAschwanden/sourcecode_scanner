@@ -89,7 +89,24 @@ auditierbar und mit korrekter Reihenfolge (Rotation vor Bereinigung).
 > vollständige History-Scrub-Governance (`ScrubWorkflow`-Gates, `HistoryScrubService`,
 > REST + RBAC) sind implementiert, opt-in pro Repo und standardmäßig aus. Der reale
 > `git-filter-repo`-Lauf bleibt hinter `HistoryRewritePort` (Dry-Run-only, kein realer Force-Push
-> ohne installiertes Werkzeug — siehe 07 §3.3). Damit sind alle Roadmap-Phasen abgeschlossen.
+> ohne installiertes Werkzeug — siehe 07 §3.3). Damit sind die Phasen 1–6 abgeschlossen.
+
+## Phase 7 — Externe Datenquellen für Kundendaten-Erkennung
+
+Erkennung **konkreter vertraulicher Werte** (Partnernummer, Name, Vorname …) aus einer
+externen REST-API, statt nur statischer Muster (FR-21..23, IR-60..66, DR-23..28, WR-50..55).
+
+- `DataSourcePort` + REST-Client-Adapter: konfigurierbare API (URL/Methode/Pfad/Auth),
+  JSONPath-Extraktion der Datensätze; Auth nur als Secret-Referenz (NFR-08/25).
+- API-gespeister Detektor `pii.customer-data-api`: lädt geprüfte Attribut-Werte (TTL-Cache,
+  nie persistiert/geloggt), exakter Wortgrenzen-Abgleich gegen die `ScanUnit`.
+- Web-UI: Datenquelle anlegen/testen, **redigiertes** Attribut-Schema anzeigen, je Attribut
+  Mapping pflegen (prüfen/Severity/Kategorie); serverseitig persistiert, RBAC + Audit.
+- Datenschutz-Garantien: nur redigierte Treffer (Attributname statt Klartextwert, NFR-23),
+  Degradation statt Scan-Abbruch bei nicht erreichbarer Quelle.
+
+**Ergebnis:** Fachanwender steuern per UI, welche Kundendaten-Attribute im Code aufgespürt
+werden — gespeist aus dem führenden System, ohne vertrauliche Werte preiszugeben.
 
 ## Risiken & Gegenmaßnahmen
 
@@ -106,6 +123,8 @@ auditierbar und mit korrekter Reihenfolge (Rotation vor Bereinigung).
 | History-Rewrite zerstört Historie / divergierende Klone | Mirror-Klon, Backup, Pflicht-Dry-Run, Vier-Augen-Force-Push, Re-Sync-Anleitung |
 | Trügerische Sicherheit nach Scrub (Forks/Caches) | Rotation-First-Prinzip + Rotation-Gate; Restrisiko-Hinweis in UI |
 | Fehlerhafter Auto-Fix führt Bug ein | Nur mechanisch sichere Transformationen, PR-Review-Pflicht, Confidence-Schwelle |
+| Vertrauliche Kundendaten leaken über den Scanner (externe API) | Werte nur im TTL-Speicher-Cache, nie persistiert/geloggt; Funde nur redigiert (Attributname statt Wert); Auth nur als Secret-Referenz; RBAC + Audit (NFR-23/24/25) |
+| Kurze/häufige Attributwerte (z. B. Vorname „Max") erzeugen Rauschen | Mindestlänge + Wortgrenzen-Abgleich, Severity/Kategorie je Attribut, Baseline/Suppression (DR-25) |
 | Missbrauch der Force-Push-Berechtigung | RBAC Admin/Break-Glass, getrennte Token-Scopes, vollständiges Audit |
 | Langsames Build-Gate wird umgangen/abgeschaltet | Diff-Modus, Commit-Cache, Detektor-Timeouts, harte Job-Timeout-Grenze |
 | Build-Gate bricht Brownfield-Repos sofort rot | `failOnNewOnly` + Baseline, `softFail` für Einführungsphase |

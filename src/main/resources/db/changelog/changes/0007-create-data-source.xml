@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Externe Datenquellen für Kundendaten-Erkennung (IR-60, WR-50). Nur die Definition +
+         Attribut-Mapping; nie die geladenen Werte (NFR-23). tokenRef ist nur eine Referenz. -->
+    <changeSet id="0007-create-data-source" author="scanner">
+        <createTable tableName="data_source">
+            <column name="id" type="UUID">
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <constraints nullable="false" unique="true"/>
+            </column>
+            <column name="base_url" type="VARCHAR(1024)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="method" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="path" type="VARCHAR(1024)"/>
+            <column name="auth_type" type="VARCHAR(16)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="token_ref" type="VARCHAR(512)"/>
+            <column name="auth_header_name" type="VARCHAR(128)"/>
+            <column name="records_path" type="VARCHAR(512)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="cache_ttl_seconds" type="INT" defaultValueNumeric="600">
+                <constraints nullable="false"/>
+            </column>
+            <column name="min_value_length" type="INT" defaultValueNumeric="4">
+                <constraints nullable="false"/>
+            </column>
+            <column name="enabled" type="BOOLEAN" defaultValueBoolean="false">
+                <constraints nullable="false"/>
+            </column>
+            <column name="attributes_json" type="VARCHAR(8192)"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

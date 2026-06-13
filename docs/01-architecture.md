@@ -87,6 +87,18 @@ Jeder Detektor erhält eine `ScanUnit` und seine Teilkonfiguration und liefert
 `Finding`-Objekte. Detektor-Kategorien: `SECRET`, `PII`, `LICENSE`, `IAC`,
 `CUSTOM`.
 
+**Externe Datenquellen (DataSourcePort).** Ein Detektor kann seine Suchbegriffe aus
+einer externen REST-API beziehen statt aus statischen Mustern. Der framework-freie
+`DataSourcePort` (domain/port/out) kapselt den Aufruf; ein REST-Client-Adapter
+(`adapter/out/datasource/*`, analog dem Connector-/PR-Adapter-Muster) ruft die API auf,
+extrahiert über einen JSONPath die Datensätze und liefert je Attribut die Werte. Der
+**API-gespeiste Kundendaten-Detektor** vergleicht die im Attribut-Mapping als geprüft
+markierten Werte (z. B. Partnernummer, Name, Vorname) exakt gegen den Inhalt der
+`ScanUnit` (FR-21/22, DR-23..28). Vertrauliche Werte bleiben ausschliesslich im
+TTL-Cache im Speicher, werden nie geloggt/persistiert und nur redigiert in `Finding`s
+ausgegeben (NFR-23) — der Fund trägt den Attributnamen, nie den Klartextwert. Das
+Mapping wird über die Web-UI gepflegt und serverseitig persistiert (WR-50..54).
+
 ### 3.4 Aggregation Layer
 
 - **Deduplizierung:** gleicher Fund über mehrere Commits/Branches wird zu einem
@@ -161,8 +173,10 @@ beschrieben.
 
 ## 8. Sicherheit des Scanners selbst
 
-- Credentials für Quellsysteme aus Secret-Store (Vault/Env), nie in Konfig im
-  Klartext.
+- Credentials für Quellsysteme **und externe Datenquellen** aus Secret-Store
+  (Vault/Env), nie in Konfig im Klartext.
 - Redaktion von Treffern in allen Ausgaben und Logs.
-- Least-Privilege-Tokens (read-only) für Discovery/Clone.
-- Audit-Log über durchgeführte Scans und Zugriffe.
+- Least-Privilege-Tokens (read-only) für Discovery/Clone **und Datenquellen-Abruf**.
+- Vertrauliche Werte aus externen Datenquellen nur im TTL-Speicher-Cache, nie
+  persistiert/geloggt; in Funden nur Attributname + redigierter Treffer (NFR-23, DR-26).
+- Audit-Log über durchgeführte Scans, Zugriffe und Datenquellen-/Mapping-Änderungen.
