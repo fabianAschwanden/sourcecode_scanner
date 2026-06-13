@@ -5,6 +5,7 @@ import ch.fabianaschwanden.sourcescanner.domain.model.DetectorConfig;
 import ch.fabianaschwanden.sourcescanner.domain.model.FileType;
 import ch.fabianaschwanden.sourcescanner.domain.model.Finding;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanUnit;
+import ch.fabianaschwanden.sourcescanner.domain.model.VerificationResult;
 import java.util.List;
 
 /**
@@ -27,4 +28,9 @@ public interface Detector {
     }
 
     List<Finding> scan(ScanUnit unit, DetectorConfig config);
+
+    /** Optionale aktive Verifikation (DR-05); Default: keine Prüfung. */
+    default VerificationResult verify(Finding finding) {
+        return VerificationResult.unverified();
+    }
 }

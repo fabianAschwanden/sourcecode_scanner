@@ -90,4 +90,62 @@ class ScanOrchestrationServiceTest {
         assertFalse(result.degradations().isEmpty(), "Timeout muss als Degradation erscheinen");
         assertTrue(result.degradations().getFirst().contains("timeout"));
     }
+
+    private ScanConfig configWithVerify(boolean verify) {
+        return new ScanConfig(List.of(repo), HistoryMode.FULL, 2, 5,
+                Map.of("secrets", new DetectorConfig(true, Map.of("verify", verify))),
+                new GateConfig(Severity.HIGH, false, false), OutputConfig.defaults());
+    }
+
+    private DetectorPort secretDetector(Finding finding) {
+        DetectorPort detector = Mockito.mock(DetectorPort.class);
+        when(detector.id()).thenReturn("secret.regex-ruleset");
+        when(detector.category()).thenReturn(DetectorCategory.SECRET);
+        when(detector.supports(any())).thenReturn(true);
+        when(detector.scan(any(), any())).thenReturn(List.of(finding));
+        return detector;
+    }
+
+    @Test
+    void verify_true_stuft_aktives_secret_auf_critical_hoch() {
+        Finding high = new Finding("secret.regex-ruleset", DetectorCategory.SECRET, Severity.HIGH,
+                "aws", "A.java", 1, "***", "c1", false);
+        DetectorPort detector = secretDetector(high);
+        when(detector.verify(any())).thenReturn(
+                ch.fabianaschwanden.sourcescanner.domain.model.VerificationResult.active("ok"));
+
+        var service = serviceWith(connectorReturning(unit), detector);
+        ScanResult result = service.scan(configWithVerify(true)).getFirst();
+
+        assertEquals(Severity.CRITICAL, result.findings().getFirst().severity());
+        assertTrue(result.findings().getFirst().verified());
+    }
+
+    @Test
+    void verify_false_ruft_verify_nicht_auf() {
+        Finding high = new Finding("secret.regex-ruleset", DetectorCategory.SECRET, Severity.HIGH,
+                "aws", "A.java", 1, "***", "c1", false);
+        DetectorPort detector = secretDetector(high);
+
+        var service = serviceWith(connectorReturning(unit), detector);
+        ScanResult result = service.scan(configWithVerify(false)).getFirst();
+
+        assertEquals(Severity.HIGH, result.findings().getFirst().severity());
+        Mockito.verify(detector, Mockito.never()).verify(any());
+    }
+
+    @Test
+    void verify_fehler_degradiert_statt_abzubrechen() {
+        Finding high = new Finding("secret.regex-ruleset", DetectorCategory.SECRET, Severity.HIGH,
+                "aws", "A.java", 1, "***", "c1", false);
+        DetectorPort detector = secretDetector(high);
+        when(detector.verify(any())).thenThrow(new RuntimeException("provider down"));
+
+        var service = serviceWith(connectorReturning(unit), detector);
+        ScanResult result = service.scan(configWithVerify(true)).getFirst();
+
+        assertEquals(1, result.findings().size(), "Fund bleibt trotz Verify-Fehler erhalten");
+        assertFalse(result.degradations().isEmpty());
+        assertTrue(result.degradations().getFirst().contains("verify error"));
+    }
 }

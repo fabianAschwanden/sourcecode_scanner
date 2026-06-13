@@ -1,0 +1,64 @@
+# Basisregelsatz für den iac.misconfig-Detektor (DR-31): unsichere Defaults in IaC-Dateien.
+# target steuert, gegen welche Dateiart die Regel läuft (terraform | kubernetes | dockerfile).
+# Erweiterbar ohne Core-Änderung; severity wie üblich (INFO|LOW|MEDIUM|HIGH|CRITICAL).
+
+title = "sourcecode-scanner IaC default ruleset"
+
+# ---- Terraform -----------------------------------------------------
+[[rules]]
+id = "tf-public-acl"
+description = "Terraform: öffentlich lesbarer Bucket/ACL"
+regex = '''(?i)acl\s*=\s*"public-read(-write)?"'''
+severity = "HIGH"
+target = "terraform"
+
+[[rules]]
+id = "tf-open-ingress"
+description = "Terraform: Ingress aus dem gesamten Internet (0.0.0.0/0)"
+regex = '''cidr_blocks\s*=\s*\[\s*"0\.0\.0\.0/0"'''
+severity = "HIGH"
+target = "terraform"
+
+[[rules]]
+id = "tf-unencrypted"
+description = "Terraform: Verschlüsselung explizit deaktiviert"
+regex = '''(?i)encrypted\s*=\s*false'''
+severity = "MEDIUM"
+target = "terraform"
+
+# ---- Kubernetes ----------------------------------------------------
+[[rules]]
+id = "k8s-privileged"
+description = "Kubernetes: privilegierter Container"
+regex = '''(?i)privileged:\s*true'''
+severity = "HIGH"
+target = "kubernetes"
+
+[[rules]]
+id = "k8s-run-as-root"
+description = "Kubernetes: runAsNonRoot ist false"
+regex = '''(?i)runAsNonRoot:\s*false'''
+severity = "MEDIUM"
+target = "kubernetes"
+
+[[rules]]
+id = "k8s-host-network"
+description = "Kubernetes: hostNetwork aktiviert"
+regex = '''(?i)hostNetwork:\s*true'''
+severity = "MEDIUM"
+target = "kubernetes"
+
+# ---- Dockerfile ----------------------------------------------------
+[[rules]]
+id = "docker-user-root"
+description = "Dockerfile: läuft explizit als root"
+regex = '''(?im)^\s*USER\s+root\s*$'''
+severity = "MEDIUM"
+target = "dockerfile"
+
+[[rules]]
+id = "docker-latest-tag"
+description = "Dockerfile: unpinned :latest Basis-Image"
+regex = '''(?im)^\s*FROM\s+\S+:latest\b'''
+severity = "LOW"
+target = "dockerfile"

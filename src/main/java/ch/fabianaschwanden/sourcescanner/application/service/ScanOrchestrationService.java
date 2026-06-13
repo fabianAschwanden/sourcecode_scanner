@@ -18,6 +18,7 @@ import ch.fabianaschwanden.sourcescanner.domain.port.out.DetectorRule;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.RepositoryConnectorPort;
 import ch.fabianaschwanden.sourcescanner.domain.service.BaselineEvaluation;
 import ch.fabianaschwanden.sourcescanner.domain.service.FindingAggregation;
+import ch.fabianaschwanden.sourcescanner.domain.service.SeverityScoring;
 import ch.fabianaschwanden.sourcescanner.domain.service.SuppressionEvaluation;
 import io.quarkus.arc.All;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -165,10 +166,13 @@ public class ScanOrchestrationService implements StartScanUseCase {
                          String[] lines, List<Finding> findings, List<String> degradations,
                          Map<String, Instant> seenAt) {
         try {
-            for (Finding f : future.get(config.detectorTimeoutSeconds(), TimeUnit.SECONDS)) {
-                if (isInlineSuppressed(f, lines, config.requireSuppressionReason())) {
+            DetectorConfig dc = config.detector(groupOf(detector));
+            boolean verify = asBool(dc.params().get("verify"));
+            for (Finding raw : future.get(config.detectorTimeoutSeconds(), TimeUnit.SECONDS)) {
+                if (isInlineSuppressed(raw, lines, config.requireSuppressionReason())) {
                     continue;
                 }
+                Finding f = verify ? verifyAndScore(detector, raw, degradations, unit) : raw;
                 findings.add(f);
                 seenAt.putIfAbsent(f.fingerprint(), unit.timestamp() == null ? Instant.now() : unit.timestamp());
             }
@@ -181,6 +185,24 @@ public class ScanOrchestrationService implements StartScanUseCase {
             Thread.currentThread().interrupt();
             degrade(degradations, detector, unit, "interrupted");
         }
+    }
+
+    /**
+     * Opt-in-Verifikation (DR-05): ruft {@code detector.verify()} und stuft ein aktiv bestätigtes
+     * Secret auf CRITICAL hoch (DR-14). Ein Fehler in der Verifikation degradiert nur, bricht nicht ab.
+     */
+    private Finding verifyAndScore(DetectorPort detector, Finding finding, List<String> degradations,
+                                   ScanUnit unit) {
+        try {
+            return SeverityScoring.escalateIfActive(finding, detector.verify(finding));
+        } catch (RuntimeException e) {
+            degrade(degradations, detector, unit, "verify error: " + e.getMessage());
+            return finding;
+        }
+    }
+
+    private boolean asBool(Object value) {
+        return value instanceof Boolean b && b;
     }
 
     /** Inline-Direktive an der Fundzeile bzw. auf der Vorzeile (ignore-next-line), docs/03 §4. */

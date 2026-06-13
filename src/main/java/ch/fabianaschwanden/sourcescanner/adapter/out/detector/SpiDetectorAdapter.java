@@ -6,6 +6,7 @@ import ch.fabianaschwanden.sourcescanner.domain.model.DetectorConfig;
 import ch.fabianaschwanden.sourcescanner.domain.model.FileType;
 import ch.fabianaschwanden.sourcescanner.domain.model.Finding;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanUnit;
+import ch.fabianaschwanden.sourcescanner.domain.model.VerificationResult;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.DetectorPort;
 import java.util.List;
 
@@ -36,5 +37,10 @@ final class SpiDetectorAdapter implements DetectorPort {
     @Override
     public List<Finding> scan(ScanUnit unit, DetectorConfig config) {
         return delegate.scan(unit, config);
+    }
+
+    @Override
+    public VerificationResult verify(Finding finding) {
+        return delegate.verify(finding);
     }
 }

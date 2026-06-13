@@ -31,11 +31,22 @@ scan:
     secrets:
       enabled: true
       ruleset: gitleaks-default
+      verify: false            # opt-in aktive Verifikation (DR-05); aktiv bestätigt -> CRITICAL (DR-14)
       entropy:                 # Entropie-Detektor (DR-12/13)
         enabled: true
         threshold: 4.5
         minLength: 20
         severity: MEDIUM
+    pii:                       # PII-Detektoren (Phase 3, DR-20/21/22)
+      enabled: false
+      patterns: [iban, creditcard, email, phone]   # Kreditkarte per Luhn validiert
+      customRegex:
+        - name: customer-id
+          pattern: 'CUST-\d{8}'
+          severity: HIGH
+    iac:                       # IaC-Misconfig (DR-31)
+      enabled: false
+      targets: [terraform, kubernetes, dockerfile]
 
   # Akzeptierte Altfunde (FR-09); mit --write-baseline erzeugen, dann einchecken.
   baseline: .scanner-baseline.json
