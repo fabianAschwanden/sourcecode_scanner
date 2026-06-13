@@ -1,0 +1,156 @@
+package ch.fabianaschwanden.sourcescanner.adapter.out.detector;
+
+import ch.fabianaschwanden.sourcescanner.domain.model.DetectorCategory;
+import ch.fabianaschwanden.sourcescanner.domain.model.DetectorConfig;
+import ch.fabianaschwanden.sourcescanner.domain.model.FileType;
+import ch.fabianaschwanden.sourcescanner.domain.model.Finding;
+import ch.fabianaschwanden.sourcescanner.domain.model.ScanUnit;
+import ch.fabianaschwanden.sourcescanner.domain.model.Severity;
+import ch.fabianaschwanden.sourcescanner.domain.port.out.DetectorPort;
+import ch.fabianaschwanden.sourcescanner.domain.port.out.DetectorRule;
+import jakarta.enterprise.context.ApplicationScoped;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+
+/**
+ * PII-Detektor (DR-20): erkennt Standardmuster IBAN, Kreditkarte, E-Mail, Telefon. Über
+ * {@code patterns: [...]} sind einzelne Muster aktivierbar (Default: alle). Kreditkarten werden per
+ * {@link Luhn} validiert (DR-22, FP-Reduktion); Treffer werden redigiert (FR-18). Framework-frei
+ * testbar (TR-24).
+ */
+@ApplicationScoped
+public class PiiPatternsDetector implements DetectorPort {
+
+    public static final String ID = "pii.patterns";
+
+    private enum Rule {
+        IBAN("iban", Pattern.compile("\\b[A-Z]{2}\\d{2}(?:[ ]?[A-Z0-9]{4}){3,7}(?:[ ]?[A-Z0-9]{1,3})?\\b"),
+                Severity.HIGH, PiiPatternsDetector::isValidIban),
+        CREDITCARD("creditcard", Pattern.compile("\\b(?:\\d[ -]?){13,19}\\b"),
+                Severity.HIGH, m -> Luhn.isValid(m)),
+        EMAIL("email", Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"),
+                Severity.MEDIUM, m -> true),
+        PHONE("phone", Pattern.compile("(?<![\\w.])\\+?\\d[\\d ()/-]{7,16}\\d(?![\\w.])"),
+                Severity.MEDIUM, m -> digitCount(m) >= 8 && digitCount(m) <= 15);
+
+        final String key;
+        final Pattern pattern;
+        final Severity severity;
+        final Predicate<String> validator;
+
+        Rule(String key, Pattern pattern, Severity severity, Predicate<String> validator) {
+            this.key = key;
+            this.pattern = pattern;
+            this.severity = severity;
+            this.validator = validator;
+        }
+    }
+
+    @Override
+    public String id() {
+        return ID;
+    }
+
+    @Override
+    public DetectorCategory category() {
+        return DetectorCategory.PII;
+    }
+
+    @Override
+    public boolean supports(FileType type) {
+        // PII selten in Binärdateien; alles andere prüfen (Doku/Config/Source enthalten oft Kundendaten).
+        return type != FileType.BINARY;
+    }
+
+    @Override
+    public List<Finding> scan(ScanUnit unit, DetectorConfig config) {
+        if (!config.enabled()) {
+            return List.of();
+        }
+        Set<String> enabled = enabledPatterns(config);
+        List<Finding> findings = new ArrayList<>();
+        String[] lines = unit.content().split("\n", -1);
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
+            if (SafeRegex.tooLong(line)) {
+                continue;
+            }
+            CharSequence safe = SafeRegex.interruptible(line);
+            for (Rule rule : Rule.values()) {
+                if (!enabled.contains(rule.key)) {
+                    continue;
+                }
+                Matcher m = rule.pattern.matcher(safe);
+                while (m.find()) {
+                    String match = m.group();
+                    if (!rule.validator.test(match)) {
+                        continue;
+                    }
+                    findings.add(new Finding(ID, DetectorCategory.PII, rule.severity, rule.key,
+                            unit.path(), i + 1, Redaction.redact(match), unit.commitId(), false));
+                }
+            }
+        }
+        return findings;
+    }
+
+    @Override
+    public List<DetectorRule> rules() {
+        List<DetectorRule> rules = new ArrayList<>();
+        for (Rule rule : Rule.values()) {
+            rules.add(new DetectorRule(rule.key, rule.key, "PII pattern: " + rule.key, rule.severity));
+        }
+        return rules;
+    }
+
+    private Set<String> enabledPatterns(DetectorConfig config) {
+        Object raw = config.params().get("patterns");
+        if (raw instanceof List<?> list && !list.isEmpty()) {
+            return list.stream().map(o -> String.valueOf(o).toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+        }
+        Set<String> all = new java.util.HashSet<>();
+        for (Rule r : Rule.values()) {
+            all.add(r.key);
+        }
+        return all;
+    }
+
+    private static int digitCount(String s) {
+        return (int) s.chars().filter(Character::isDigit).count();
+    }
+
+    /** IBAN-Validierung per ISO-7064 Mod-97 (Prüfziffer == 1). */
+    private static boolean isValidIban(String candidate) {
+        String iban = candidate.replaceAll("\\s", "").toUpperCase(Locale.ROOT);
+        if (iban.length() < 15 || iban.length() > 34) {
+            return false;
+        }
+        String rearranged = iban.substring(4) + iban.substring(0, 4);
+        StringBuilder numeric = new StringBuilder();
+        for (char c : rearranged.toCharArray()) {
+            if (Character.isLetter(c)) {
+                numeric.append(c - 'A' + 10);
+            } else if (Character.isDigit(c)) {
+                numeric.append(c);
+            } else {
+                return false;
+            }
+        }
+        return mod97(numeric.toString()) == 1;
+    }
+
+    /** Mod-97 über eine lange Ziffernfolge (stückweise, ohne BigInteger). */
+    private static int mod97(String number) {
+        int remainder = 0;
+        for (int i = 0; i < number.length(); i++) {
+            remainder = (remainder * 10 + (number.charAt(i) - '0')) % 97;
+        }
+        return remainder;
+    }
+}

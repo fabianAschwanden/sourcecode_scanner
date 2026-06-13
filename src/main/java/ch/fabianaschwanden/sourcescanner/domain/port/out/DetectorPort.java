@@ -5,6 +5,7 @@ import ch.fabianaschwanden.sourcescanner.domain.model.DetectorCategory;
 import ch.fabianaschwanden.sourcescanner.domain.model.FileType;
 import ch.fabianaschwanden.sourcescanner.domain.model.Finding;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanUnit;
+import ch.fabianaschwanden.sourcescanner.domain.model.VerificationResult;
 import java.util.List;
 
 /**
@@ -28,6 +29,15 @@ public interface DetectorPort {
 
     /** Prüft eine Einheit und liefert rohe Funde (mit bereits redigiertem Treffer, FR-18). */
     List<Finding> scan(ScanUnit unit, DetectorConfig config);
+
+    /**
+     * Optionale aktive Verifikation eines Fundes (DR-05). Default: keine Prüfung. Der Orchestrator
+     * ruft dies nur bei {@code detectors.<group>.verify = true} auf; ein als aktiv bestätigtes Secret
+     * wird auf CRITICAL hochgestuft (DR-14).
+     */
+    default VerificationResult verify(Finding finding) {
+        return VerificationResult.unverified();
+    }
 
     /** Regel-Metadaten für das Reporting (SARIF {@code tool.driver.rules}); leer = keine Deklaration. */
     default List<DetectorRule> rules() {
