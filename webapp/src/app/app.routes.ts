@@ -24,4 +24,8 @@ export const routes: Routes = [
     path: 'policies',
     loadComponent: () => import('./features/policies/policies-page').then((m) => m.PoliciesPage),
   },
+  {
+    path: 'settings',
+    loadComponent: () => import('./features/settings/settings-page').then((m) => m.SettingsPage),
+  },
 ];

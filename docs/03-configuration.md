@@ -21,6 +21,8 @@ scan:
       repo: payment-service
       branches: [main, develop]
       auth: { tokenRef: env:BITBUCKET_TOKEN }
+      notify:
+        email: [team-lead@company.com, secops@company.com]  # Report je Scan dieses Repos (IR-53)
 
     - type: github
       org: my-org
@@ -107,6 +109,7 @@ scan:
 |------|-----|--------------|
 | `scan.repositories[].type` | enum | `bitbucket` \| `github` \| `gitlab` \| `localGit` |
 | `scan.repositories[].auth.tokenRef` | string | Referenz auf Secret: `env:NAME`, `vault:path#key` |
+| `scan.repositories[].notify.email` | list | Report-Empfänger je Scan dieses Repos (IR-53; opt-in) |
 | `scan.history.mode` | enum | Scan-Tiefe (siehe Architektur §6) |
 | `scan.detectors.*.enabled` | bool | Detektor-Gruppe aktivieren |
 | `scan.detectors.secrets.verify` | bool | Aktive Validierung gefundener Secrets |
@@ -194,6 +197,18 @@ server:
     sessionTimeoutMinutes: 30
     embedGrafana: true
 
+  # ---- Benachrichtigungen (E-Mail/SMTP, IR-52/54) ----------------
+  notifications:
+    email:
+      enabled: true
+      from: scanner@company.com
+      generalRecipient: security-team@company.com   # systemweite Meldungen (IR-54)
+      smtp:
+        host: smtp.company.com
+        port: 587
+        usernameRef: env:SMTP_USER                  # nur Referenz, nie Klartext
+        passwordRef: vault:secret/scanner-smtp#password
+
   # ---- Observability --------------------------------------------
   observability:
     metrics:
@@ -219,6 +234,9 @@ server:
 | `server.auth.provider` | enum | `oidc` (Blueprint-Default, `quarkus-oidc`/BFF). `saml` nur, falls der Blueprint später SAML aufnimmt — bei Konflikt gewinnt der Blueprint (docs/09, TR-13). |
 | `server.auth.roleMapping` | map | IdP-Gruppen → Rollen (`admin`/`operator`/`viewer`) |
 | `server.ui.embedGrafana` | bool | Grafana-Panels im UI-Dashboard einbetten |
+| `server.notifications.email.enabled` | bool | E-Mail-Versand aktivieren (SMTP, IR-52) |
+| `server.notifications.email.generalRecipient` | string | Allgemeine Benachrichtigungs-Adresse für systemweite Meldungen (IR-54, WR-16) |
+| `server.notifications.email.smtp.passwordRef` | string | SMTP-Credential nur als Secret-Referenz (`env:`/`vault:`, NFR-08) |
 | `server.observability.metrics.endpoint` | path | Prometheus-Scrape-Endpoint |
 | `server.observability.grafana.embed.mode` | enum | `signed` (Token) \| `proxy` |
 | `server.observability.alerts.staleRepoDays` | int | Alarm, wenn Repo länger nicht gescannt |

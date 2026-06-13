@@ -32,4 +32,8 @@ public class RepositorySourceEntity {
 
     @Column(nullable = false)
     public boolean enabled;
+
+    /** Komma-getrennte Report-Empfänger (WR-08, IR-53); leer = keine E-Mail. */
+    @Column(name = "report_emails")
+    public String reportEmails;
 }

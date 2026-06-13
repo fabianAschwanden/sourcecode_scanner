@@ -47,6 +47,13 @@ import { RepositorySource } from '../../core/models/scanner';
           title="Secret-Referenz, kein Klartext-Token — z. B. env:GITHUB_TOKEN oder vault:secret/scanner#token"
           class="rounded border border-default px-2 py-1"
         />
+        <input
+          [(ngModel)]="reportEmails"
+          name="reportEmails"
+          placeholder="Report-E-Mails (komma-getrennt)"
+          title="Empfänger für den Report nach Scans dieses Repos, z. B. team@firma.ch, secops@firma.ch"
+          class="w-72 rounded border border-default px-2 py-1"
+        />
         <button
           type="submit"
           class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
@@ -62,6 +69,7 @@ import { RepositorySource } from '../../core/models/scanner';
             <th>Typ</th>
             <th>Ort</th>
             <th>Token</th>
+            <th>Report-E-Mails</th>
             <th>Aktionen</th>
           </tr>
         </thead>
@@ -72,6 +80,7 @@ import { RepositorySource } from '../../core/models/scanner';
               <td>{{ s.type }}</td>
               <td class="font-mono text-xs">{{ s.location }}</td>
               <td>{{ s.tokenRef ?? '—' }}</td>
+              <td class="text-xs">{{ s.reportEmails.length ? s.reportEmails.join(', ') : '—' }}</td>
               <td class="space-x-2">
                 <button (click)="test(s)" class="text-accent hover:underline">Testen</button>
                 <button (click)="remove(s)" class="text-sev-high hover:underline">Löschen</button>
@@ -79,7 +88,7 @@ import { RepositorySource } from '../../core/models/scanner';
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="py-3 text-muted">Keine Quellen.</td>
+              <td colspan="6" class="py-3 text-muted">Keine Quellen.</td>
             </tr>
           }
         </tbody>
@@ -95,6 +104,7 @@ export class RepositoriesPage {
   protected type = 'localGit';
   protected location = '';
   protected tokenRef = '';
+  protected reportEmails = '';
 
   constructor() {
     this.reload();
@@ -112,11 +122,16 @@ export class RepositoriesPage {
       branches: [],
       tokenRef: this.tokenRef || null,
       enabled: true,
+      reportEmails: this.reportEmails
+        .split(',')
+        .map((e) => e.trim())
+        .filter((e) => e.length > 0),
     };
     this.api.createSource(source).subscribe(() => {
       this.name = '';
       this.location = '';
       this.tokenRef = '';
+      this.reportEmails = '';
       this.reload();
     });
   }

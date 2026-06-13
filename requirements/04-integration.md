@@ -35,6 +35,9 @@
 |----|------|-------------|
 | IR-50 | C | Das System KANN Funde als Jira-Tickets anlegen (konfigurierbarer Projekt-Key). |
 | IR-51 | C | Das System KANN Chat-Benachrichtigungen (Teams/Slack) ab konfigurierbarer Severity senden. |
+| IR-52 | S | Das System SOLL E-Mail-Benachrichtigungen über SMTP versenden können; Empfänger, Absender und SMTP-Verbindung sind konfigurierbar, Credentials nur als Secret-Referenz (NFR-08). |
+| IR-53 | S | Das System SOLL nach einem Scan einen Report (Zusammenfassung + redigierte Funde, FR-18) per E-Mail an die für das jeweilige Repository hinterlegten Empfänger senden können (opt-in je Repo). |
+| IR-54 | C | Das System KANN systemweite Sammel-/Betriebsmeldungen an eine allgemeine Benachrichtigungs-E-Mail-Adresse senden. |
 
 ## Secret-Management & Betrieb
 

@@ -48,6 +48,20 @@ export interface RepositorySource {
   readonly branches: string[];
   readonly tokenRef: string | null;
   readonly enabled: boolean;
+  readonly reportEmails: string[];
+}
+
+export interface SecretRefStatus {
+  readonly ref: string;
+  readonly resolvable: boolean;
+}
+
+export interface Settings {
+  readonly generalNotificationEmail: string | null;
+  readonly defaultFailOn: Severity;
+  readonly defaultScanMode: string;
+  readonly retentionDays: number;
+  readonly secretRefs: SecretRefStatus[];
 }
 
 export interface DetectorInfo {

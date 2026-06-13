@@ -38,7 +38,8 @@ public class ManageSourcesService implements ManageSourcesUseCase {
     @Override
     public RepositorySource update(UUID id, RepositorySource source, String actor) {
         RepositorySource toSave = new RepositorySource(id, source.name(), source.type(),
-                source.location(), source.branches(), source.tokenRef(), source.enabled());
+                source.location(), source.branches(), source.tokenRef(), source.enabled(),
+                source.reportEmails());
         RepositorySource saved = sources.save(toSave);
         audit.record(AuditEvent.of(actor, "source.update", saved.name(), null));
         return saved;

@@ -9,5 +9,7 @@
          Schema läuft nur im %server-Profil an (Phase 4); der CLI-Pfad bleibt DB-frei. -->
     <include file="db/changelog/changes/0001-create-scanner-schema.xml"/>
     <include file="db/changelog/changes/0002-create-policy.xml"/>
+    <include file="db/changelog/changes/0003-source-report-emails.xml"/>
+    <include file="db/changelog/changes/0004-create-settings.xml"/>
 
 </databaseChangeLog>

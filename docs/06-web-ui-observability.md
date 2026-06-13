@@ -48,9 +48,11 @@ Die Web-UI und die Observability-Schicht setzen auf dem bestehenden Server-Betri
 je Repository. Eingebettete Grafana-Panels (siehe §6) für Zeitreihen.
 
 ### 3.2 Repository-Verwaltung
-Quellen (Bitbucket/GitHub/GitLab) anlegen, bearbeiten, Verbindung testen.
+Quellen (Bitbucket/GitHub/GitLab/localGit) anlegen, bearbeiten, Verbindung testen.
 Credentials werden ausschließlich als Referenz auf den Secret-Store gespeichert,
-nie im Klartext eingegeben/angezeigt.
+nie im Klartext eingegeben/angezeigt. Optional je Quelle: eine oder mehrere
+**Report-E-Mail-Adressen**, an die nach einem Scan dieses Repos ein Report
+(Zusammenfassung + redigierte Funde) gesendet wird (WR-08, IR-53; opt-in).
 
 ### 3.3 Scan-Steuerung
 Scan manuell starten (Repo, Branch, Modus), laufende Scans live verfolgen
@@ -83,6 +85,21 @@ konsistente Severity-Farben (WR-40). Eingabe-Bedienelemente zeigen eine Hover-Hi
 (Tooltip) mit einem konkreten Eingabe-Beispiel, das das erwartete Format illustriert
 (z. B. lokaler Pfad, Clone-URL, Token-Referenz `env:NAME`, Org-Unit) (WR-41). Umsetzung
 über die Tailwind-Konventionen des Templates; keine zusätzliche UI-Bibliothek nötig.
+
+### 3.9 Einstellungen
+Admin-Ansicht für systemweite Einstellungen, die ohne Neustart änderbar sind (WR-15):
+
+- **Allgemeine Benachrichtigungs-E-Mail** für systemweite Meldungen/Sammelreports
+  (WR-16, IR-52/54).
+- **Credential-/Secret-Referenzen** (z. B. `env:GITHUB_TOKEN`) verwalten — nur als
+  Referenz, nie im Klartext; angezeigt wird, welche Referenzen erwartet/auflösbar
+  sind (WR-17, WR-32). Hinweis: Environment-Variablen werden zum Prozessstart
+  gelesen; die UI pflegt die Referenzen, nicht die OS-Variablen selbst.
+- Nicht-geheime Betriebsparameter (Default-Gate-Severity, Aufbewahrungsfrist,
+  Standard-Scan-Modus) mit Validierung (WR-18).
+
+E-Mail-Versand erfolgt über einen SMTP-Adapter (IR-52); die SMTP-Verbindung und
+Absender werden konfiguriert, Credentials nur als Secret-Referenz (NFR-08).
 
 ## 4. API & Echtzeit
 
