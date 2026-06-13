@@ -1,8 +1,4 @@
 import { Routes } from '@angular/router';
 
-export const routes: Routes = [
-  {
-    path: '',
-    loadComponent: () => import('./features/notes/notes-page').then((m) => m.NotesPage),
-  },
-];
+// Phase 1 ist CLI-getrieben; Management-UI-Routen kommen in Roadmap-Phase 4 (docs/05).
+export const routes: Routes = [];

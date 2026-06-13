@@ -1,0 +1,54 @@
+# Gitleaks-kompatibler Basisregelsatz für den secret.regex-ruleset-Detektor (DR-10, DR-11).
+# Format kompatibel zu Gitleaks (https://github.com/gitleaks/gitleaks, MIT) — siehe docs/04.
+# Erweiterbar ohne Core-Änderung: zusätzliche [[rules]] hier oder via Plugin-Regeldatei (NFR-14).
+# severity ist eine projektspezifische Erweiterung (INFO|LOW|MEDIUM|HIGH|CRITICAL).
+
+title = "sourcecode-scanner default ruleset"
+
+[[rules]]
+id = "aws-access-key-id"
+description = "AWS Access Key ID"
+regex = '''(?:A3T[A-Z0-9]|AKIA|AGPA|AIDA|AROA|AIPA|ANPA|ANVA|ASIA)[A-Z0-9]{16}'''
+severity = "HIGH"
+
+[[rules]]
+id = "gcp-api-key"
+description = "Google Cloud API Key"
+regex = '''AIza[0-9A-Za-z\-_]{35}'''
+severity = "HIGH"
+
+[[rules]]
+id = "azure-storage-account-key"
+description = "Azure Storage Account Key"
+regex = '''(?i)AccountKey\s*=\s*[A-Za-z0-9+/]{86}=='''
+severity = "HIGH"
+
+[[rules]]
+id = "github-personal-access-token"
+description = "GitHub Personal Access Token"
+regex = '''ghp_[0-9A-Za-z]{36}'''
+severity = "HIGH"
+
+[[rules]]
+id = "github-fine-grained-pat"
+description = "GitHub Fine-Grained Personal Access Token"
+regex = '''github_pat_[0-9A-Za-z_]{82}'''
+severity = "HIGH"
+
+[[rules]]
+id = "slack-token"
+description = "Slack Token"
+regex = '''xox[baprs]-[0-9A-Za-z\-]{10,48}'''
+severity = "HIGH"
+
+[[rules]]
+id = "private-key"
+description = "Private Key Block"
+regex = '''-----BEGIN (?:RSA |EC |DSA |OPENSSH |PGP )?PRIVATE KEY-----'''
+severity = "CRITICAL"
+
+[[rules]]
+id = "generic-api-key"
+description = "Generic API Key assignment"
+regex = '''(?i)(?:api[_-]?key|secret|token|passwd|password)\s*[:=]\s*['"][0-9A-Za-z\-_]{16,64}['"]'''
+severity = "MEDIUM"

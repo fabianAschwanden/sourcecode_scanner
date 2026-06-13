@@ -1,4 +1,4 @@
-# app-template
+# sourcecode-scanner
 
 Template-Gerüst ohne Fachlichkeit. Verbindliche Konventionen: docs/blueprint.md — bei jeder
 Änderung dagegen prüfen. Kurzfassung:
