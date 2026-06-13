@@ -17,4 +17,10 @@ public interface MetricsPort {
 
     /** Gate-Status je Repository (Gauge {@code scanner_gate_status}: 0=pass, 1=fail). */
     void recordGateStatus(String repoId, boolean passed);
+
+    /**
+     * Laufzeit + Fehler/Degradation je Detektor (OR-05): Histogram
+     * {@code scanner_detector_duration_seconds} und Counter {@code scanner_detector_errors_total}.
+     */
+    void recordDetector(String detectorId, Duration duration, boolean error);
 }

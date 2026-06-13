@@ -45,4 +45,12 @@ public class MicrometerMetricsAdapter implements MetricsPort {
             return gauge;
         }).set(passed ? 0 : 1);
     }
+
+    @Override
+    public void recordDetector(String detectorId, Duration duration, boolean error) {
+        registry.timer("scanner_detector_duration_seconds", Tags.of("detector", detectorId)).record(duration);
+        if (error) {
+            registry.counter("scanner_detector_errors_total", Tags.of("detector", detectorId)).increment();
+        }
+    }
 }

@@ -27,14 +27,27 @@ public class SpiDetectorRegistry {
 
     private static final Logger LOG = Logger.getLogger(SpiDetectorRegistry.class);
 
-    /** Lädt alle Plugin-Detektoren aus {@code pluginDir}; ein leeres/fehlendes Verzeichnis liefert nichts. */
+    /** Lädt alle Plugin-Detektoren aus {@code pluginDir} ohne Signaturprüfung (Abwärtskompatibilität). */
     public List<DetectorPort> loadFrom(Path pluginDir) {
+        return loadFrom(pluginDir, PluginVerifier.disabled());
+    }
+
+    /**
+     * Lädt Plugin-Detektoren aus {@code pluginDir} und überspringt JARs, die der {@link PluginVerifier}
+     * nicht als vertrauenswürdig einstuft (NFR-12). Nicht-vertrauenswürdige JARs werden geloggt, brechen
+     * den Lauf aber nicht ab.
+     */
+    public List<DetectorPort> loadFrom(Path pluginDir, PluginVerifier verifier) {
         if (pluginDir == null || !Files.isDirectory(pluginDir)) {
             return List.of();
         }
         List<URL> jars = new ArrayList<>();
         try (Stream<Path> entries = Files.list(pluginDir)) {
             entries.filter(p -> p.toString().endsWith(".jar")).forEach(p -> {
+                if (!verifier.isTrusted(p)) {
+                    LOG.warnf("skipping untrusted plugin (signature/allowlist check failed): %s", p);
+                    return;
+                }
                 try {
                     jars.add(p.toUri().toURL());
                 } catch (MalformedURLException e) {

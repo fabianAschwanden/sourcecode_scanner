@@ -4,9 +4,9 @@ import ch.fabianaschwanden.sourcescanner.application.service.ScanProgressBroadca
 import ch.fabianaschwanden.sourcescanner.domain.model.AggregatedFinding;
 import ch.fabianaschwanden.sourcescanner.domain.model.AuditEvent;
 import ch.fabianaschwanden.sourcescanner.domain.model.DetectorConfig;
-import ch.fabianaschwanden.sourcescanner.domain.model.GateConfig;
 import ch.fabianaschwanden.sourcescanner.domain.model.HistoryMode;
 import ch.fabianaschwanden.sourcescanner.domain.model.OutputConfig;
+import ch.fabianaschwanden.sourcescanner.domain.model.Policy;
 import ch.fabianaschwanden.sourcescanner.domain.model.RepositorySource;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanConfig;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanRecord;
@@ -48,6 +48,7 @@ public class ServerScanService implements ManageScansUseCase {
     private final ManagedExecutor executor;
     private final ServerScanPersistence persistence;
     private final ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics;
+    private final ch.fabianaschwanden.sourcescanner.domain.port.in.ManagePoliciesUseCase policies;
 
     /** Laufende Scans für die Abbruch-Anforderung (best effort). */
     private final ConcurrentHashMap<UUID, Boolean> cancelRequested = new ConcurrentHashMap<>();
@@ -57,7 +58,8 @@ public class ServerScanService implements ManageScansUseCase {
                              ScanRecordPort scanRecords, FindingPort findings, AuditPort audit,
                              ScanProgressBroadcaster broadcaster, ManagedExecutor executor,
                              ServerScanPersistence persistence,
-                             ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics) {
+                             ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics,
+                             ch.fabianaschwanden.sourcescanner.domain.port.in.ManagePoliciesUseCase policies) {
         this.sources = sources;
         this.orchestrator = orchestrator;
         this.scanRecords = scanRecords;
@@ -67,6 +69,7 @@ public class ServerScanService implements ManageScansUseCase {
         this.executor = executor;
         this.persistence = persistence;
         this.metrics = metrics;
+        this.policies = policies;
     }
 
     @Override
@@ -128,16 +131,21 @@ public class ServerScanService implements ManageScansUseCase {
         audit.record(AuditEvent.of(actor, "scan.cancel", scanId.toString(), null));
     }
 
-    /** Baut eine Ein-Repo-Scan-Konfiguration für die Quelle (secrets-Detektor aktiv). */
+    /**
+     * Baut die Ein-Repo-Scan-Konfiguration aus der für die Org-Unit (Quellenname) aufgelösten Policy
+     * (FR-20): Gate-Schwelle und aktivierte Detektor-Gruppen kommen aus der Governance, nicht mehr
+     * hardkodiert. Ohne passende Policy gilt die Default-/Fallback-Policy.
+     */
     private ScanConfig configFor(RepositorySource source, HistoryMode mode) {
-        Map<String, DetectorConfig> detectors = Map.of(
-                "secrets", new DetectorConfig(true, Map.of()),
-                "pii", new DetectorConfig(true, Map.of()));
+        Policy policy = policies.resolveFor(source.name());
+        Map<String, DetectorConfig> detectors = new java.util.LinkedHashMap<>();
+        for (String group : policy.enabledDetectorGroups()) {
+            detectors.put(group, new DetectorConfig(true, Map.of()));
+        }
         return new ScanConfig(
                 List.of(source.toRef()), List.of(), mode,
                 Runtime.getRuntime().availableProcessors(), 30, detectors,
-                new GateConfig(ch.fabianaschwanden.sourcescanner.domain.model.Severity.HIGH, false, false),
-                OutputConfig.defaults(), null, List.of(), false, null);
+                policy.gate(), OutputConfig.defaults(), null, List.of(), false, null);
     }
 
     private HistoryMode parseMode(String mode) {

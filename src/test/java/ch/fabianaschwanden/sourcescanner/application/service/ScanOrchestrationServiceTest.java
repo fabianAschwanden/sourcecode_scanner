@@ -45,12 +45,23 @@ class ScanOrchestrationServiceTest {
         return connector;
     }
 
-    /** Service mit echten No-op-Adaptern für Baseline (leer) und Commit-Cache (kein Verzeichnis). */
+    /** Service mit echten No-op-Adaptern für Baseline/Commit-Cache und No-op-Metriken. */
     private ScanOrchestrationService serviceWith(RepositoryConnectorPort connector, DetectorPort detector) {
         return new ScanOrchestrationService(
                 List.of(connector), List.of(detector),
                 new ch.fabianaschwanden.sourcescanner.adapter.out.baseline.JsonBaselineStore(),
-                new ch.fabianaschwanden.sourcescanner.adapter.out.cache.FileCommitCache());
+                new ch.fabianaschwanden.sourcescanner.adapter.out.cache.FileCommitCache(),
+                noopMetrics());
+    }
+
+    private ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort noopMetrics() {
+        return new ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort() {
+            @Override public void recordScan(String repoId,
+                    ch.fabianaschwanden.sourcescanner.domain.model.ScanStatus status, java.time.Duration d) {}
+            @Override public void recordNewFindings(String severity, int count) {}
+            @Override public void recordGateStatus(String repoId, boolean passed) {}
+            @Override public void recordDetector(String detectorId, java.time.Duration d, boolean error) {}
+        };
     }
 
     @Test

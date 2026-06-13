@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Phase 5: zentrale Governance-Policies pro Org-Unit (FR-20). -->
+    <changeSet id="0002-policy" author="scanner">
+        <createTable tableName="policy">
+            <column name="id" type="UUID"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="org_unit" type="VARCHAR(256)"><constraints unique="true"/></column>
+            <column name="fail_on" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="fail_on_new_only" type="BOOLEAN"><constraints nullable="false"/></column>
+            <column name="soft_fail" type="BOOLEAN"><constraints nullable="false"/></column>
+            <column name="warn_threshold" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="enabled_detector_groups" type="VARCHAR(512)"/>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

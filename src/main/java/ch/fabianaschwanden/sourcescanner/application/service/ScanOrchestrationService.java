@@ -59,16 +59,19 @@ public class ScanOrchestrationService implements StartScanUseCase {
     private final List<DetectorPort> detectors;
     private final BaselinePort baselinePort;
     private final CommitCachePort commitCache;
+    private final ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics;
 
     @Inject
     public ScanOrchestrationService(@All List<RepositoryConnectorPort> connectors,
                                     @All List<DetectorPort> detectors,
                                     BaselinePort baselinePort,
-                                    CommitCachePort commitCache) {
+                                    CommitCachePort commitCache,
+                                    ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics) {
         this.connectors = connectors;
         this.detectors = detectors;
         this.baselinePort = baselinePort;
         this.commitCache = commitCache;
+        this.metrics = metrics;
     }
 
     @Override
@@ -165,6 +168,7 @@ public class ScanOrchestrationService implements StartScanUseCase {
     private void collect(DetectorPort detector, ScanUnit unit, Future<List<Finding>> future, ScanConfig config,
                          String[] lines, List<Finding> findings, List<String> degradations,
                          Map<String, Instant> seenAt) {
+        Instant detectorStart = Instant.now();
         try {
             DetectorConfig dc = config.detector(groupOf(detector));
             boolean verify = asBool(dc.params().get("verify"));
@@ -176,13 +180,17 @@ public class ScanOrchestrationService implements StartScanUseCase {
                 findings.add(f);
                 seenAt.putIfAbsent(f.fingerprint(), unit.timestamp() == null ? Instant.now() : unit.timestamp());
             }
+            metrics.recordDetector(detector.id(), java.time.Duration.between(detectorStart, Instant.now()), false);
         } catch (TimeoutException e) {
             future.cancel(true);
+            metrics.recordDetector(detector.id(), java.time.Duration.between(detectorStart, Instant.now()), true);
             degrade(degradations, detector, unit, "timeout after " + config.detectorTimeoutSeconds() + "s");
         } catch (ExecutionException e) {
+            metrics.recordDetector(detector.id(), java.time.Duration.between(detectorStart, Instant.now()), true);
             degrade(degradations, detector, unit, "error: " + e.getCause());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+            metrics.recordDetector(detector.id(), java.time.Duration.between(detectorStart, Instant.now()), true);
             degrade(degradations, detector, unit, "interrupted");
         }
     }

@@ -20,4 +20,8 @@ export const routes: Routes = [
     path: 'findings',
     loadComponent: () => import('./features/findings/findings-page').then((m) => m.FindingsPage),
   },
+  {
+    path: 'policies',
+    loadComponent: () => import('./features/policies/policies-page').then((m) => m.PoliciesPage),
+  },
 ];

@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import {
   DetectorInfo,
   Finding,
+  Policy,
   RepositorySource,
   Scan,
   Severity,
@@ -63,5 +64,17 @@ export class ScannerApi {
 
   detectors(): Observable<DetectorInfo[]> {
     return this.http.get<DetectorInfo[]>('/api/detectors');
+  }
+
+  policies(): Observable<Policy[]> {
+    return this.http.get<Policy[]>('/api/policies');
+  }
+
+  createPolicy(policy: Policy): Observable<Policy> {
+    return this.http.post<Policy>('/api/policies', policy);
+  }
+
+  deletePolicy(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/policies/${id}`);
   }
 }
