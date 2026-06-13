@@ -6,7 +6,8 @@ import java.util.UUID;
 
 /**
  * REST-Transport einer Repository-Quelle. {@code tokenRef} ist nur die Secret-Referenz; ein
- * Klartext-Token wird nie zurückgegeben (WR-32).
+ * Klartext-Token wird nie zurückgegeben (WR-32). {@code reportEmails} sind die optionalen
+ * Report-Empfänger je Repo (WR-08, IR-53).
  */
 public record RepositorySourceDto(
         UUID id,
@@ -15,14 +16,20 @@ public record RepositorySourceDto(
         String location,
         List<String> branches,
         String tokenRef,
-        boolean enabled) {
+        boolean enabled,
+        List<String> reportEmails) {
+
+    public RepositorySourceDto {
+        branches = branches == null ? List.of() : branches;
+        reportEmails = reportEmails == null ? List.of() : reportEmails;
+    }
 
     public static RepositorySourceDto from(RepositorySource s) {
         return new RepositorySourceDto(s.id(), s.name(), s.type(), s.location(), s.branches(),
-                s.tokenRef(), s.enabled());
+                s.tokenRef(), s.enabled(), s.reportEmails());
     }
 
     public RepositorySource toDomain() {
-        return new RepositorySource(id, name, type, location, branches, tokenRef, enabled);
+        return new RepositorySource(id, name, type, location, branches, tokenRef, enabled, reportEmails);
     }
 }

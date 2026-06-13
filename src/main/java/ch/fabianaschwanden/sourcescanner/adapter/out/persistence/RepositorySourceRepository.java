@@ -29,6 +29,7 @@ public class RepositorySourceRepository
         entity.branches = String.join(",", source.branches());
         entity.tokenRef = source.tokenRef();
         entity.enabled = source.enabled();
+        entity.reportEmails = String.join(",", source.reportEmails());
         persist(entity);
         return toDomain(entity);
     }
@@ -50,8 +51,11 @@ public class RepositorySourceRepository
     }
 
     static RepositorySource toDomain(RepositorySourceEntity e) {
-        List<String> branches = e.branches == null || e.branches.isBlank()
-                ? List.of() : List.of(e.branches.split(","));
-        return new RepositorySource(e.id, e.name, e.type, e.location, branches, e.tokenRef, e.enabled);
+        return new RepositorySource(e.id, e.name, e.type, e.location, csv(e.branches), e.tokenRef,
+                e.enabled, csv(e.reportEmails));
+    }
+
+    private static List<String> csv(String value) {
+        return value == null || value.isBlank() ? List.of() : List.of(value.split(","));
     }
 }

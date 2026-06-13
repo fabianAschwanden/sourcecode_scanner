@@ -13,17 +13,25 @@ import { RepositorySource, Scan } from '../../core/models/scanner';
       <h2 class="mb-4 text-xl font-semibold">Scans</h2>
 
       <div class="mb-4 flex items-end gap-2">
-        <label class="text-sm">
+        <label class="text-sm text-muted">
           Quelle
-          <select [(ngModel)]="selectedSource" class="ml-2 rounded border px-2 py-1">
+          <select
+            [(ngModel)]="selectedSource"
+            title="Zu scannende Repository-Quelle (zuvor unter Repositories anlegen)"
+            class="ml-2 rounded border border-default px-2 py-1"
+          >
             @for (s of sources(); track s.id) {
               <option [ngValue]="s.id">{{ s.name }}</option>
             }
           </select>
         </label>
-        <label class="text-sm">
+        <label class="text-sm text-muted">
           Modus
-          <select [(ngModel)]="mode" class="ml-2 rounded border px-2 py-1">
+          <select
+            [(ngModel)]="mode"
+            title="full = gesamte Historie aller Branches; incremental = nur neue, noch nicht gescannte Commits"
+            class="ml-2 rounded border border-default px-2 py-1"
+          >
             <option value="full">full</option>
             <option value="incremental">incremental</option>
           </select>
@@ -31,7 +39,7 @@ import { RepositorySource, Scan } from '../../core/models/scanner';
         <button
           (click)="start()"
           [disabled]="!selectedSource"
-          class="rounded bg-blue-600 px-3 py-1 text-white disabled:opacity-50"
+          class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis disabled:opacity-50"
         >
           Scan starten
         </button>
@@ -39,7 +47,7 @@ import { RepositorySource, Scan } from '../../core/models/scanner';
 
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b text-left text-gray-500">
+          <tr class="border-b border-default text-left text-muted">
             <th class="py-2">Repository</th>
             <th>Modus</th>
             <th>Status</th>
@@ -50,7 +58,7 @@ import { RepositorySource, Scan } from '../../core/models/scanner';
         </thead>
         <tbody>
           @for (s of scans(); track s.id) {
-            <tr class="border-b">
+            <tr class="border-b border-default">
               <td class="py-2">{{ s.repoId }}</td>
               <td>{{ s.mode }}</td>
               <td>{{ s.status }}</td>
@@ -58,7 +66,7 @@ import { RepositorySource, Scan } from '../../core/models/scanner';
               <td>{{ s.findingCount }}</td>
               <td>
                 @if (s.status === 'RUNNING') {
-                  <button (click)="cancel(s)" class="text-red-600 hover:underline">
+                  <button (click)="cancel(s)" class="text-sev-high hover:underline">
                     Abbrechen
                   </button>
                 }
@@ -66,7 +74,7 @@ import { RepositorySource, Scan } from '../../core/models/scanner';
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="py-3 text-gray-500">Noch keine Scans.</td>
+              <td colspan="6" class="py-3 text-muted">Noch keine Scans.</td>
             </tr>
           }
         </tbody>

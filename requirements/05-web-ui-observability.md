@@ -16,6 +16,16 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | WR-05 | C | Die UI KANN periodische/geplante Scans konfigurieren. |
 | WR-06 | S | Die UI SOLL Detektoren aktivieren/deaktivieren und deren Parameter pflegen, mit Validierung vor dem Speichern. |
 | WR-07 | C | Die UI KANN geladene Plugins mit ID, Kategorie und Version anzeigen. |
+| WR-08 | S | Die UI SOLL beim Anlegen/Bearbeiten einer Repository-Quelle optional eine oder mehrere Report-E-Mail-Adressen erfassen, an die nach Scans dieses Repos ein Report versendet wird (IR-53). |
+
+### Einstellungen (Administration)
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-15 | S | Die UI SOLL eine Einstellungs-Ansicht bereitstellen, in der allgemeine Systemeinstellungen ohne Neustart geändert werden können (nur Rolle Admin, WR-31). |
+| WR-16 | S | Die Einstellungen SOLLEN eine allgemeine Benachrichtigungs-E-Mail-Adresse umfassen, an die systemweite Meldungen (z. B. Betriebs-/Sammelreports) gesendet werden (IR-52). |
+| WR-17 | S | Die UI SOLL Credential-/Secret-Referenzen (z. B. Environment-Variablen wie `env:GITHUB_TOKEN`) als verwaltbare Einträge anzeigen und pflegen können — ausschliesslich als Referenz, nie als Klartext (WR-32). |
+| WR-18 | C | Die UI KANN nicht-geheime Betriebsparameter pflegen (z. B. Standard-Gate-Severity, Aufbewahrungsfrist, Standard-Scan-Modus), mit Validierung vor dem Speichern. |
 
 ### Finding-Workflow
 
@@ -26,6 +36,13 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | WR-12 | S | Die UI SOLL Funde triagieren: als Baseline akzeptieren, unterdrücken (mit Pflichtbegründung), als False Positive markieren. |
 | WR-13 | C | Die UI KANN aus einem Fund ein Ticket (Jira) erzeugen. |
 | WR-14 | C | Die UI KANN Baseline-Einträge einsehen und entfernen. |
+
+### Darstellung & Usability
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-40 | S | Die UI SOLL durchgängig in einem dunklen Erscheinungsbild im Stil von GitHub (Dark Mode) gestaltet sein (Hintergründe, Flächen, Text, Akzent- und Severity-Farben), konsistent über alle Ansichten. |
+| WR-41 | S | Eingabe-Bedienelemente (Felder, Auswahllisten) SOLLEN eine Hover-Hilfe (Tooltip) mit einem konkreten Eingabe-Beispiel anzeigen (z. B. Pfad `/Users/me/git/projekt`, Clone-URL `https://github.com/org/repo.git`, Token-Referenz `env:GITHUB_TOKEN`, Org-Unit `team-a/payments`). |
 
 ### Schnittstelle
 

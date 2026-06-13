@@ -49,6 +49,7 @@ public class ServerScanService implements ManageScansUseCase {
     private final ServerScanPersistence persistence;
     private final ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics;
     private final ch.fabianaschwanden.sourcescanner.domain.port.in.ManagePoliciesUseCase policies;
+    private final ch.fabianaschwanden.sourcescanner.domain.port.out.EmailNotificationPort email;
 
     /** Laufende Scans für die Abbruch-Anforderung (best effort). */
     private final ConcurrentHashMap<UUID, Boolean> cancelRequested = new ConcurrentHashMap<>();
@@ -59,7 +60,8 @@ public class ServerScanService implements ManageScansUseCase {
                              ScanProgressBroadcaster broadcaster, ManagedExecutor executor,
                              ServerScanPersistence persistence,
                              ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics,
-                             ch.fabianaschwanden.sourcescanner.domain.port.in.ManagePoliciesUseCase policies) {
+                             ch.fabianaschwanden.sourcescanner.domain.port.in.ManagePoliciesUseCase policies,
+                             ch.fabianaschwanden.sourcescanner.domain.port.out.EmailNotificationPort email) {
         this.sources = sources;
         this.orchestrator = orchestrator;
         this.scanRecords = scanRecords;
@@ -70,6 +72,7 @@ public class ServerScanService implements ManageScansUseCase {
         this.persistence = persistence;
         this.metrics = metrics;
         this.policies = policies;
+        this.email = email;
     }
 
     @Override
@@ -82,15 +85,17 @@ public class ServerScanService implements ManageScansUseCase {
         persistence.saveRecord(starting);
         audit.record(AuditEvent.of(actor, "scan.start", source.name(), "mode=" + historyMode));
 
-        executor.runAsync(() -> runScan(starting, source, historyMode));
+        // Policy im Request-Kontext auflösen (DB-Zugriff); der async Lauf macht keine Config-DB-Reads.
+        Policy policy = policies.resolveFor(source.name());
+        executor.runAsync(() -> runScan(starting, source, historyMode, policy));
         return starting;
     }
 
-    private void runScan(ScanRecord starting, RepositorySource source, HistoryMode mode) {
+    private void runScan(ScanRecord starting, RepositorySource source, HistoryMode mode, Policy policy) {
         UUID scanId = starting.id();
         broadcaster.publish(new ScanEvent(scanId, ScanStatus.RUNNING.name(), 10, 0));
         try {
-            ScanConfig config = configFor(source, mode);
+            ScanConfig config = configFor(source, mode, policy);
             List<ScanResult> results = orchestrator.scan(config);
             if (cancelRequested.remove(scanId) != null) {
                 finish(starting.cancelled(), List.of());
@@ -102,7 +107,9 @@ public class ServerScanService implements ManageScansUseCase {
             List<StoredFinding> stored = aggregated.stream()
                     .map(a -> StoredFinding.from(scanId, source.name(), a))
                     .toList();
-            finish(starting.completed(stored.size()), stored);
+            ScanRecord completed = starting.completed(stored.size());
+            finish(completed, stored);
+            sendReport(source, completed, stored);
         } catch (RuntimeException e) {
             LOG.errorf(e, "scan %s failed", scanId);
             persistence.saveRecord(starting.failed());
@@ -118,6 +125,41 @@ public class ServerScanService implements ManageScansUseCase {
                         record.finishedAt() == null ? java.time.Instant.now() : record.finishedAt()));
         broadcaster.publish(new ScanEvent(record.id(), record.status().name(), 100, stored.size()));
         broadcaster.complete(record.id());
+    }
+
+    /**
+     * Versendet nach einem Scan einen Report an die für das Repo hinterlegten Empfänger (IR-53).
+     * Opt-in über vorhandene Empfänger + aktivierten Mailer; nur redigierte Inhalte (FR-18).
+     */
+    private void sendReport(RepositorySource source, ScanRecord record, List<StoredFinding> stored) {
+        if (source.reportEmails().isEmpty() || !email.enabled()) {
+            return;
+        }
+        String body = buildReportBody(record, stored);
+        String subject = "[scanner] " + source.name() + ": " + stored.size() + " Fund(e)";
+        email.send(new ch.fabianaschwanden.sourcescanner.domain.model.EmailReport(
+                source.reportEmails(), subject, body));
+        audit.record(AuditEvent.of("system", "report.email", source.name(),
+                "recipients=" + source.reportEmails().size()));
+    }
+
+    /** Redigierte Report-Zusammenfassung: Severity-Verteilung + Top-Funde (kein Klartext). */
+    private String buildReportBody(ScanRecord record, List<StoredFinding> stored) {
+        var bySeverity = stored.stream().collect(java.util.stream.Collectors.groupingBy(
+                StoredFinding::severity, java.util.stream.Collectors.counting()));
+        StringBuilder b = new StringBuilder();
+        b.append("Scan-Report für ").append(record.repoId()).append('\n');
+        b.append("Status: ").append(record.status()).append(", Funde gesamt: ").append(stored.size()).append("\n\n");
+        b.append("Nach Severity:\n");
+        bySeverity.forEach((sev, count) -> b.append("  ").append(sev).append(": ").append(count).append('\n'));
+        b.append("\nFunde (redigiert):\n");
+        stored.stream().limit(50).forEach(f -> b.append("  ").append(f.severity()).append("  ")
+                .append(f.ruleId()).append("  ").append(f.file()).append(':').append(f.line())
+                .append("  ").append(f.redactedMatch()).append('\n'));
+        if (stored.size() > 50) {
+            b.append("  … und ").append(stored.size() - 50).append(" weitere.\n");
+        }
+        return b.toString();
     }
 
     @Override
@@ -136,8 +178,7 @@ public class ServerScanService implements ManageScansUseCase {
      * (FR-20): Gate-Schwelle und aktivierte Detektor-Gruppen kommen aus der Governance, nicht mehr
      * hardkodiert. Ohne passende Policy gilt die Default-/Fallback-Policy.
      */
-    private ScanConfig configFor(RepositorySource source, HistoryMode mode) {
-        Policy policy = policies.resolveFor(source.name());
+    private ScanConfig configFor(RepositorySource source, HistoryMode mode, Policy policy) {
         Map<String, DetectorConfig> detectors = new java.util.LinkedHashMap<>();
         for (String group : policy.enabledDetectorGroups()) {
             detectors.put(group, new DetectorConfig(true, Map.of()));

@@ -112,6 +112,12 @@
       <artifactId>quarkus-scheduler</artifactId>
     </dependency>
 
+    <!-- E-Mail-Benachrichtigung über SMTP (IR-52/53/54); opt-in, nur im Server-Profil aktiv -->
+    <dependency>
+      <groupId>io.quarkus</groupId>
+      <artifactId>quarkus-mailer</artifactId>
+    </dependency>
+
     <!-- Betrieb: API-Doku, Health -->
     <dependency>
       <groupId>io.quarkus</groupId>

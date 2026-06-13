@@ -16,5 +16,6 @@ export class App {
     { path: '/scans', label: 'Scans' },
     { path: '/findings', label: 'Findings' },
     { path: '/policies', label: 'Policies' },
+    { path: '/settings', label: 'Einstellungen' },
   ];
 }

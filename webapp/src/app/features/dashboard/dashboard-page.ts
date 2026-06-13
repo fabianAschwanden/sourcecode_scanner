@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/c
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { Finding, Scan, Severity } from '../../core/models/scanner';
+import { severityColor } from '../../core/severity-color';
 
 const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 
@@ -15,17 +16,19 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 
       <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
         @for (sev of severities; track sev) {
-          <div class="rounded border border-gray-200 bg-white p-4">
-            <div class="text-xs uppercase text-gray-500">{{ sev }}</div>
-            <div class="text-2xl font-semibold">{{ count(sev) }}</div>
+          <div class="rounded border border-default bg-surface p-4">
+            <div class="text-xs uppercase text-muted">{{ sev }}</div>
+            <div class="text-2xl font-semibold" [style.color]="severityColor(sev)">
+              {{ count(sev) }}
+            </div>
           </div>
         }
       </div>
 
-      <h3 class="mb-2 font-medium">Letzte Scans</h3>
+      <h3 class="mb-2 font-medium text-fg">Letzte Scans</h3>
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b text-left text-gray-500">
+          <tr class="border-b border-default text-left text-muted">
             <th class="py-2">Repository</th>
             <th>Status</th>
             <th>Funde</th>
@@ -34,7 +37,7 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
         </thead>
         <tbody>
           @for (s of scans(); track s.id) {
-            <tr class="border-b">
+            <tr class="border-b border-default">
               <td class="py-2">{{ s.repoId }}</td>
               <td>{{ s.status }}</td>
               <td>{{ s.findingCount }}</td>
@@ -42,7 +45,7 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
             </tr>
           } @empty {
             <tr>
-              <td colspan="4" class="py-3 text-gray-500">Noch keine Scans.</td>
+              <td colspan="4" class="py-3 text-muted">Noch keine Scans.</td>
             </tr>
           }
         </tbody>
@@ -71,5 +74,9 @@ export class DashboardPage {
 
   protected count(severity: Severity): number {
     return this.countBySeverity()[severity] ?? 0;
+  }
+
+  protected severityColor(severity: Severity): string {
+    return severityColor(severity);
   }
 }

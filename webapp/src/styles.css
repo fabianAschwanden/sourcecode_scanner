@@ -1,1 +1,46 @@
 @import 'tailwindcss';
+
+/*
+ * Durchgängig dunkles Erscheinungsbild im Stil von GitHub (WR-40). Farbwerte angelehnt an die
+ * GitHub-Dark-Palette (Primer). Semantische Tokens als Tailwind-Theme-Variablen, damit die
+ * Komponenten Utility-Klassen wie bg-canvas, bg-surface, text-fg, border-default, text-accent nutzen.
+ */
+@theme {
+  --color-canvas: #0d1117; /* App-Hintergrund (GitHub canvas.default) */
+  --color-surface: #161b22; /* Flächen/Karten/Header (canvas.subtle) */
+  --color-surface-muted: #21262d; /* gehobene Flächen, Hover */
+  --color-default: #30363d; /* Rahmen (border.default) */
+  --color-fg: #e6edf3; /* Haupttext (fg.default) */
+  --color-muted: #8b949e; /* Sekundärtext (fg.muted) */
+  --color-accent: #2f81f7; /* Akzent/Links (accent.fg) */
+  --color-accent-emphasis: #1f6feb;
+
+  /* Severity-Farben, konsistent über alle Ansichten (WR-40) */
+  --color-sev-critical: #ff7b72;
+  --color-sev-high: #f85149;
+  --color-sev-medium: #d29922;
+  --color-sev-low: #58a6ff;
+  --color-sev-info: #8b949e;
+}
+
+/* Globale Grundflächen + dunkles Form-Control-Schema. */
+html,
+body {
+  background-color: var(--color-canvas);
+  color: var(--color-fg);
+  color-scheme: dark;
+}
+
+/* Eingabe-Bedienelemente einheitlich dunkel (Felder, Selects, Checkboxen). */
+input,
+select,
+textarea {
+  background-color: var(--color-surface);
+  color: var(--color-fg);
+  border-color: var(--color-default);
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-muted);
+}

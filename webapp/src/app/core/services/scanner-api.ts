@@ -7,6 +7,7 @@ import {
   Policy,
   RepositorySource,
   Scan,
+  Settings,
   Severity,
   TriageStatus,
 } from '../models/scanner';
@@ -76,5 +77,13 @@ export class ScannerApi {
 
   deletePolicy(id: string): Observable<void> {
     return this.http.delete<void>(`/api/policies/${id}`);
+  }
+
+  settings(): Observable<Settings> {
+    return this.http.get<Settings>('/api/settings');
+  }
+
+  saveSettings(settings: Settings): Observable<Settings> {
+    return this.http.put<Settings>('/api/settings', settings);
   }
 }
