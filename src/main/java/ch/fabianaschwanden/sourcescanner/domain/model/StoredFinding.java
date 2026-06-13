@@ -23,6 +23,7 @@ public record StoredFinding(
         boolean verified,
         TriageStatus triageStatus,
         String triageReason,
+        RemediationStatus remediationStatus,
         Instant firstSeen,
         Instant lastSeen) {
 
@@ -37,6 +38,7 @@ public record StoredFinding(
             throw new IllegalArgumentException("redactedMatch must not be null");
         }
         triageStatus = triageStatus == null ? TriageStatus.OPEN : triageStatus;
+        remediationStatus = remediationStatus == null ? RemediationStatus.OPEN : remediationStatus;
     }
 
     /** Erzeugt einen persistierbaren Fund aus einem aggregierten Fund eines Laufs. */
@@ -46,11 +48,16 @@ public record StoredFinding(
                 UUID.randomUUID(), scanId, repoId, f.detectorId(), f.category(), f.severity(),
                 f.ruleId(), f.file(), f.line(), f.redactedMatch(), agg.fingerprint(), f.verified(),
                 agg.suppressed() ? TriageStatus.SUPPRESSED : (agg.baseline() ? TriageStatus.BASELINE : TriageStatus.OPEN),
-                null, agg.firstSeen(), agg.lastSeen());
+                null, RemediationStatus.OPEN, agg.firstSeen(), agg.lastSeen());
     }
 
     public StoredFinding withTriage(TriageStatus status, String reason) {
         return new StoredFinding(id, scanId, repoId, detectorId, category, severity, ruleId, file, line,
-                redactedMatch, fingerprint, verified, status, reason, firstSeen, lastSeen);
+                redactedMatch, fingerprint, verified, status, reason, remediationStatus, firstSeen, lastSeen);
+    }
+
+    public StoredFinding withRemediationStatus(RemediationStatus status) {
+        return new StoredFinding(id, scanId, repoId, detectorId, category, severity, ruleId, file, line,
+                redactedMatch, fingerprint, verified, triageStatus, triageReason, status, firstSeen, lastSeen);
     }
 }

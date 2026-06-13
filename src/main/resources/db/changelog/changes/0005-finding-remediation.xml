@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Remediation-Status je Fund (RMR-13/Triage-Erweiterung). Additive Spalte, append-only;
+         Default OPEN, damit bestehende Zeilen die NOT-NULL-Bedingung erfüllen. -->
+    <changeSet id="0005-finding-remediation" author="scanner">
+        <addColumn tableName="finding">
+            <column name="remediation_status" type="VARCHAR(32)" defaultValue="OPEN">
+                <constraints nullable="false"/>
+            </column>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

@@ -121,6 +121,15 @@ git-filter-repo weigert sich, auf Repos zu laufen, die keine frischen Klone sind
 Bis Schritt 8 ist nichts am Remote verändert. Schritt 7 ist ein **harter,
 menschlicher Freigabe-Gate** (Vier-Augen-Prinzip konfigurierbar).
 
+> **Umsetzungsstand (Phase 6).** Die gesamte Governance-Orchestrierung ist implementiert und
+> getestet (`ScrubWorkflow` erzwingt die Gate-Reihenfolge OPT-IN → ROTATION → DRY-RUN → FORCE-PUSH
+> → TOOL; `HistoryScrubService` treibt Dry-Run/Execute; REST `POST /api/repos/{id}/scrub/dry-run`
+> Operator+, `…/scrub/execute` Admin). Der eigentliche Rewrite liegt hinter `HistoryRewritePort`;
+> der Default-Adapter `GitFilterRepoAdapter` prüft die Werkzeug-Präsenz: ist `git-filter-repo`
+> nicht installiert, liefert der Dry-Run weiterhin einen redigierten Bericht, `execute` verweigert
+> aber mit klarer Meldung statt eines realen Force-Push. Der scharfe Lauf wird erst mit installiertem
+> Werkzeug aktiv (RMR-28); in dieser Phase findet kein realer Force-Push statt.
+
 ### 3.4 Replacement-Liste
 
 Statt Klartext-Secrets wird mit Mustern/Hashes gearbeitet; Treffer werden durch

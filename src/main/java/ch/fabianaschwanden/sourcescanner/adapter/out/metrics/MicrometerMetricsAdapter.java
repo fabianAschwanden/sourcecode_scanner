@@ -53,4 +53,9 @@ public class MicrometerMetricsAdapter implements MetricsPort {
             registry.counter("scanner_detector_errors_total", Tags.of("detector", detectorId)).increment();
         }
     }
+
+    @Override
+    public void recordRemediation(String type, String result) {
+        registry.counter("scanner_remediation_total", Tags.of("type", type, "result", result)).increment();
+    }
 }

@@ -5,8 +5,11 @@ import {
   DetectorInfo,
   Finding,
   Policy,
+  PrRef,
   RepositorySource,
   Scan,
+  ScrubDryRun,
+  ScrubResult,
   Settings,
   Severity,
   TriageStatus,
@@ -77,6 +80,30 @@ export class ScannerApi {
 
   deletePolicy(id: string): Observable<void> {
     return this.http.delete<void>(`/api/policies/${id}`);
+  }
+
+  // --- Remediation (Phase 6, RMR-*) ---
+
+  /** Auto-Fix per PR/MR für einen Fund (Operator+, RMR-10). */
+  remediate(findingId: string): Observable<PrRef> {
+    return this.http.post<PrRef>(`/api/findings/${findingId}/remediate`, {});
+  }
+
+  /** Pflicht-Vorschau der History-Bereinigung (Operator+, RMR-22). */
+  scrubDryRun(repoId: string): Observable<ScrubDryRun> {
+    return this.http.post<ScrubDryRun>(`/api/repos/${repoId}/scrub/dry-run`, {});
+  }
+
+  /** Realer Scrub-Lauf (Admin/Break-Glass, RMR-25/41); verlangt Freigaben. */
+  scrubExecute(
+    repoId: string,
+    forcePushApproved: boolean,
+    rotationConfirmed: boolean,
+  ): Observable<ScrubResult> {
+    return this.http.post<ScrubResult>(`/api/repos/${repoId}/scrub/execute`, {
+      forcePushApproved,
+      rotationConfirmed,
+    });
   }
 
   settings(): Observable<Settings> {

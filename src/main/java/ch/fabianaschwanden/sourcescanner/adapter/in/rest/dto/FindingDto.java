@@ -22,12 +22,14 @@ public record FindingDto(
         boolean verified,
         String triageStatus,
         String triageReason,
+        String remediationStatus,
         Instant firstSeen,
         Instant lastSeen) {
 
     public static FindingDto from(StoredFinding f) {
         return new FindingDto(f.id(), f.scanId(), f.repoId(), f.detectorId(), f.category().name(),
                 f.severity().name(), f.ruleId(), f.file(), f.line(), f.redactedMatch(), f.verified(),
-                f.triageStatus().name(), f.triageReason(), f.firstSeen(), f.lastSeen());
+                f.triageStatus().name(), f.triageReason(), f.remediationStatus().name(),
+                f.firstSeen(), f.lastSeen());
     }
 }

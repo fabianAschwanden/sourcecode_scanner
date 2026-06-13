@@ -28,7 +28,7 @@ class FindingResourceTest {
         UUID id = UUID.randomUUID();
         repository.saveAll(List.of(new StoredFinding(id, UUID.randomUUID(), "repo-x",
                 "secret.regex-ruleset", DetectorCategory.SECRET, Severity.HIGH, "aws", "src/A.java", 1,
-                "AKIA****MPLE", "fp-" + id, false, TriageStatus.OPEN, null, Instant.now(), Instant.now())));
+                "AKIA****MPLE", "fp-" + id, false, TriageStatus.OPEN, null, null, Instant.now(), Instant.now())));
         return id;
     }
 

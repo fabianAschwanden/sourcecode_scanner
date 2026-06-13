@@ -1,9 +1,11 @@
 package ch.fabianaschwanden.sourcescanner.adapter.in.rest;
 
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.FindingDto;
+import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.PrRefDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.TriageRequest;
 import ch.fabianaschwanden.sourcescanner.domain.model.Severity;
 import ch.fabianaschwanden.sourcescanner.domain.model.TriageStatus;
+import ch.fabianaschwanden.sourcescanner.domain.port.in.RemediateUseCase;
 import ch.fabianaschwanden.sourcescanner.domain.port.in.TriageFindingUseCase;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.FindingPort;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -26,11 +28,13 @@ import java.util.UUID;
 public class FindingResource {
 
     private final TriageFindingUseCase triage;
+    private final RemediateUseCase remediate;
     private final SecurityIdentity identity;
 
     @Inject
-    public FindingResource(TriageFindingUseCase triage, SecurityIdentity identity) {
+    public FindingResource(TriageFindingUseCase triage, RemediateUseCase remediate, SecurityIdentity identity) {
         this.triage = triage;
+        this.remediate = remediate;
         this.identity = identity;
     }
 
@@ -61,6 +65,14 @@ public class FindingResource {
     public FindingDto triage(@PathParam("id") UUID id, TriageRequest request) {
         TriageStatus status = TriageStatus.valueOf(request.status().trim().toUpperCase(Locale.ROOT));
         return FindingDto.from(triage.triage(id, status, request.reason(), actor()));
+    }
+
+    /** Auto-Fix per PR/MR für einen Fund (Operator+, RMR-10). Opt-in pro Repo (RMR-02). */
+    @POST
+    @Path("/{id}/remediate")
+    @RolesAllowed({"operator", "admin"})
+    public PrRefDto remediate(@PathParam("id") UUID id) {
+        return PrRefDto.from(remediate.remediate(id, actor()));
     }
 
     private String actor() {

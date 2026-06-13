@@ -23,4 +23,11 @@ public interface MetricsPort {
      * {@code scanner_detector_duration_seconds} und Counter {@code scanner_detector_errors_total}.
      */
     void recordDetector(String detectorId, Duration duration, boolean error);
+
+    /**
+     * Remediation-Aktionen (RMR-50): Counter {@code scanner_remediation_total} nach {@code type}
+     * (z. B. {@code auto-fix}, {@code scrub-dry-run}, {@code scrub-execute}) und {@code result}
+     * ({@code success}/{@code blocked}/{@code error}).
+     */
+    void recordRemediation(String type, String result);
 }

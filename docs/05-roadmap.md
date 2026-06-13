@@ -84,6 +84,13 @@ Sicherheitskritisch, daher bewusst als letzte Phase nach stabilem Betrieb.
 **Ergebnis:** Geschlossener Kreislauf von Erkennung bis Behebung — kontrolliert,
 auditierbar und mit korrekter Reihenfolge (Rotation vor Bereinigung).
 
+> **Status: umgesetzt.** Auto-Fix per PR/MR (`RemediableDetector`-SPI + `SecretRemediator`,
+> `PrCreationPort`/`GitHubPrAdapter` via JGit-Fix-Branch + REST, gegen WireMock getestet) und die
+> vollständige History-Scrub-Governance (`ScrubWorkflow`-Gates, `HistoryScrubService`,
+> REST + RBAC) sind implementiert, opt-in pro Repo und standardmäßig aus. Der reale
+> `git-filter-repo`-Lauf bleibt hinter `HistoryRewritePort` (Dry-Run-only, kein realer Force-Push
+> ohne installiertes Werkzeug — siehe 07 §3.3). Damit sind alle Roadmap-Phasen abgeschlossen.
+
 ## Risiken & Gegenmaßnahmen
 
 | Risiko | Gegenmaßnahme |

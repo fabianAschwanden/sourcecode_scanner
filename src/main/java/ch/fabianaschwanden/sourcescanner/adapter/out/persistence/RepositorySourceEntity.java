@@ -36,4 +36,8 @@ public class RepositorySourceEntity {
     /** Komma-getrennte Report-Empfänger (WR-08, IR-53); leer = keine E-Mail. */
     @Column(name = "report_emails")
     public String reportEmails;
+
+    /** Pro-Repo-Opt-in für Auto-Fix/Scrub; Default false (RMR-02). */
+    @Column(name = "remediation_enabled", nullable = false)
+    public boolean remediationEnabled;
 }

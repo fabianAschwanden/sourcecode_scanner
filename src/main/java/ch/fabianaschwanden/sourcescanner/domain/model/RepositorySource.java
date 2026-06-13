@@ -7,7 +7,8 @@ import java.util.UUID;
  * Eine im Server verwaltete Repository-Quelle (WR-02). Credentials werden ausschliesslich als
  * Secret-Store-Referenz gehalten ({@code tokenRef}, z. B. {@code env:NAME}), nie im Klartext (WR-32).
  * {@code reportEmails} sind optionale Empfänger, an die nach einem Scan dieses Repos ein Report geht
- * (WR-08, IR-53; opt-in über das Vorhandensein von Adressen).
+ * (WR-08, IR-53; opt-in über das Vorhandensein von Adressen). {@code remediationEnabled} ist das
+ * Pro-Repo-Opt-in für Auto-Fix/Scrub — standardmässig {@code false} (RMR-02).
  */
 public record RepositorySource(
         UUID id,
@@ -17,7 +18,8 @@ public record RepositorySource(
         List<String> branches,
         String tokenRef,
         boolean enabled,
-        List<String> reportEmails) {
+        List<String> reportEmails,
+        boolean remediationEnabled) {
 
     public RepositorySource {
         if (name == null || name.isBlank()) {
@@ -33,10 +35,17 @@ public record RepositorySource(
         reportEmails = reportEmails == null ? List.of() : List.copyOf(reportEmails);
     }
 
-    /** Bequemer Konstruktor ohne Report-E-Mails (Abwärtskompatibilität / Tests). */
+    /** Bequemer Konstruktor ohne Report-E-Mails / Remediation-Flag (Abwärtskompatibilität / Tests). */
     public RepositorySource(UUID id, String name, String type, String location,
                             List<String> branches, String tokenRef, boolean enabled) {
-        this(id, name, type, location, branches, tokenRef, enabled, List.of());
+        this(id, name, type, location, branches, tokenRef, enabled, List.of(), false);
+    }
+
+    /** Bequemer Konstruktor ohne Remediation-Flag (Abwärtskompatibilität / Tests). */
+    public RepositorySource(UUID id, String name, String type, String location,
+                            List<String> branches, String tokenRef, boolean enabled,
+                            List<String> reportEmails) {
+        this(id, name, type, location, branches, tokenRef, enabled, reportEmails, false);
     }
 
     /** Wandelt die Quelle in eine scanbare {@link RepositoryRef} (für den Orchestrator). */

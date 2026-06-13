@@ -17,7 +17,8 @@ public record RepositorySourceDto(
         List<String> branches,
         String tokenRef,
         boolean enabled,
-        List<String> reportEmails) {
+        List<String> reportEmails,
+        boolean remediationEnabled) {
 
     public RepositorySourceDto {
         branches = branches == null ? List.of() : branches;
@@ -26,10 +27,11 @@ public record RepositorySourceDto(
 
     public static RepositorySourceDto from(RepositorySource s) {
         return new RepositorySourceDto(s.id(), s.name(), s.type(), s.location(), s.branches(),
-                s.tokenRef(), s.enabled(), s.reportEmails());
+                s.tokenRef(), s.enabled(), s.reportEmails(), s.remediationEnabled());
     }
 
     public RepositorySource toDomain() {
-        return new RepositorySource(id, name, type, location, branches, tokenRef, enabled, reportEmails);
+        return new RepositorySource(id, name, type, location, branches, tokenRef, enabled,
+                reportEmails, remediationEnabled);
     }
 }
