@@ -1,0 +1,29 @@
+{
+  "__comment": "Vorkonfiguriertes Grafana-Dashboard (OR-06): Security Overview. Datenquelle: Prometheus, das /q/metrics des Scanners scraped. Mitgeliefert, nicht automatisch eingebunden (OR-09).",
+  "title": "Scanner — Security Overview",
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Scans gesamt (nach Status)",
+      "targets": [{ "expr": "sum by (status) (scanner_scans_total)" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Neue Funde (Delta) nach Severity",
+      "targets": [{ "expr": "sum by (severity) (rate(scanner_findings_new_total[1h]))" }]
+    },
+    {
+      "type": "stat",
+      "title": "Gate-Status je Repository (0=pass, 1=fail)",
+      "targets": [{ "expr": "scanner_gate_status" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Scan-Dauer p95",
+      "targets": [
+        { "expr": "histogram_quantile(0.95, sum by (le, repo) (rate(scanner_scan_duration_seconds_bucket[5m])))" }
+      ]
+    }
+  ]
+}

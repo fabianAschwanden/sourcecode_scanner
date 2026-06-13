@@ -16,7 +16,8 @@ import java.util.Map;
 public class IdpRoleMappingAugmentor implements SecurityIdentityAugmentor {
 
     private static final Map<String, String> IDP_TO_INTERNAL = Map.of(
-            "sourcecode-scanner-user", "user",
+            "sourcecode-scanner-viewer", "viewer",
+            "sourcecode-scanner-operator", "operator",
             "sourcecode-scanner-admin", "admin");
 
     @Override

@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Phase 4: Server-Persistenz (Scans, Findings, Quellen, Audit). Liquibase besitzt das Schema;
+         Hibernate validiert nur. Funde werden ausschliesslich redigiert gespeichert (FR-18). -->
+
+    <changeSet id="0001-scan-record" author="scanner">
+        <createTable tableName="scan_record">
+            <column name="id" type="UUID"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="repo_id" type="VARCHAR(512)"><constraints nullable="false"/></column>
+            <column name="mode" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="status" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="progress" type="INT"><constraints nullable="false"/></column>
+            <column name="finding_count" type="INT"><constraints nullable="false"/></column>
+            <column name="started_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="finished_at" type="TIMESTAMP WITH TIME ZONE"/>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="0001-finding" author="scanner">
+        <createTable tableName="finding">
+            <column name="id" type="UUID"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="scan_id" type="UUID"><constraints nullable="false"/></column>
+            <column name="repo_id" type="VARCHAR(512)"><constraints nullable="false"/></column>
+            <column name="detector_id" type="VARCHAR(128)"><constraints nullable="false"/></column>
+            <column name="category" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="severity" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="rule_id" type="VARCHAR(128)"><constraints nullable="false"/></column>
+            <column name="file_path" type="VARCHAR(2048)"><constraints nullable="false"/></column>
+            <column name="line_number" type="INT"><constraints nullable="false"/></column>
+            <column name="redacted_match" type="VARCHAR(1024)"><constraints nullable="false"/></column>
+            <column name="fingerprint" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="verified" type="BOOLEAN"><constraints nullable="false"/></column>
+            <column name="triage_status" type="VARCHAR(16)"><constraints nullable="false"/></column>
+            <column name="triage_reason" type="VARCHAR(1024)"/>
+            <column name="first_seen" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+            <column name="last_seen" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+        <createIndex tableName="finding" indexName="idx_finding_repo">
+            <column name="repo_id"/>
+        </createIndex>
+        <createIndex tableName="finding" indexName="idx_finding_status">
+            <column name="triage_status"/>
+        </createIndex>
+    </changeSet>
+
+    <changeSet id="0001-repository-source" author="scanner">
+        <createTable tableName="repository_source">
+            <column name="id" type="UUID"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="name" type="VARCHAR(256)"><constraints nullable="false" unique="true"/></column>
+            <column name="type" type="VARCHAR(32)"><constraints nullable="false"/></column>
+            <column name="location" type="VARCHAR(2048)"><constraints nullable="false"/></column>
+            <column name="branches" type="VARCHAR(1024)"/>
+            <column name="token_ref" type="VARCHAR(512)"/>
+            <column name="enabled" type="BOOLEAN"><constraints nullable="false"/></column>
+        </createTable>
+    </changeSet>
+
+    <changeSet id="0001-audit-event" author="scanner">
+        <createSequence sequenceName="audit_event_seq" startValue="1" incrementBy="50"/>
+        <createTable tableName="audit_event">
+            <column name="id" type="BIGINT"><constraints primaryKey="true" nullable="false"/></column>
+            <column name="actor" type="VARCHAR(256)"><constraints nullable="false"/></column>
+            <column name="action" type="VARCHAR(64)"><constraints nullable="false"/></column>
+            <column name="target" type="VARCHAR(512)"/>
+            <column name="detail" type="VARCHAR(2048)"/>
+            <column name="occurred_at" type="TIMESTAMP WITH TIME ZONE"><constraints nullable="false"/></column>
+        </createTable>
+    </changeSet>
+
+</databaseChangeLog>

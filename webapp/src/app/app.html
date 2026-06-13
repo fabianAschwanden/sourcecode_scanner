@@ -1,5 +1,15 @@
 <header class="border-b border-gray-200 bg-white px-6 py-4">
   <h1 class="text-lg font-semibold">{{ title() }}</h1>
+  <nav class="mt-2 flex gap-4 text-sm">
+    @for (link of links; track link.path) {
+      <a
+        [routerLink]="link.path"
+        routerLinkActive="font-semibold text-blue-600"
+        class="text-gray-600 hover:text-blue-600"
+        >{{ link.label }}</a
+      >
+    }
+  </nav>
 </header>
 <main class="min-h-screen bg-gray-50">
   <router-outlet />
