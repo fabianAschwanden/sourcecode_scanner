@@ -1,0 +1,58 @@
+# Beispiel-Konfiguration für den CLI-Scan (docs/03 §2).
+# Aufruf: java -jar target/quarkus-app/quarkus-run.jar --config scanner.yaml --output sarif,html
+# Baseline erzeugen: ... --config scanner.yaml --write-baseline
+version: 1
+
+scan:
+  repositories:
+    - type: localGit
+      id: self
+      path: .
+      branches: [main]
+
+    # Org-weite Discovery (Phase 2, FR-07) — Credentials nur als Secret-Referenz:
+    # - type: github
+    #   org: my-org
+    #   repoFilter: '^(svc|lib)-.*'
+    #   includeArchived: false
+    #   auth: { tokenRef: env:GITHUB_TOKEN }
+
+  history:
+    mode: full            # full | incremental (inkrementell überspringt gecachte Commits)
+
+  concurrency:
+    workers: 8
+    detectorTimeoutSeconds: 30
+
+  # Commit-Cache für inkrementelle Läufe (FR-19); leer = inaktiv.
+  cacheDirectory: .scanner-cache
+
+  detectors:
+    secrets:
+      enabled: true
+      ruleset: gitleaks-default
+      entropy:                 # Entropie-Detektor (DR-12/13)
+        enabled: true
+        threshold: 4.5
+        minLength: 20
+        severity: MEDIUM
+
+  # Akzeptierte Altfunde (FR-09); mit --write-baseline erzeugen, dann einchecken.
+  baseline: .scanner-baseline.json
+
+  # Pfad-Suppression (FR-10): Gruppe (secrets/pii) oder konkrete Detektor-ID.
+  suppress:
+    - path: 'test/**/fixtures/*'
+      detector: secrets
+      reason: 'Bekannte Test-Dummies'
+
+  gate:
+    failOn: HIGH
+    failOnNewOnly: true        # nur neue (nicht-Baseline) Funde brechen das Gate
+    softFail: false
+    requireSuppressionReason: false
+
+  output:
+    formats: [sarif, html]
+    directory: ./scan-reports
+    redact: true
