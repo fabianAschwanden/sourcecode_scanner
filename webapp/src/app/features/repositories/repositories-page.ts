@@ -1,0 +1,130 @@
+import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ScannerApi } from '../../core/services/scanner-api';
+import { RepositorySource } from '../../core/models/scanner';
+
+/** Repository-Quellen verwalten (WR-02): anlegen, löschen, Verbindung testen. Token nur als Referenz. */
+@Component({
+  selector: 'app-repositories-page',
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule],
+  template: `
+    <section class="p-6">
+      <h2 class="mb-4 text-xl font-semibold">Repositories</h2>
+
+      <form (ngSubmit)="create()" class="mb-6 flex flex-wrap items-end gap-2">
+        <input
+          [(ngModel)]="name"
+          name="name"
+          placeholder="Name"
+          required
+          class="rounded border px-2 py-1"
+        />
+        <select [(ngModel)]="type" name="type" class="rounded border px-2 py-1">
+          <option value="localGit">localGit</option>
+          <option value="github">github</option>
+          <option value="gitlab">gitlab</option>
+          <option value="bitbucket">bitbucket</option>
+        </select>
+        <input
+          [(ngModel)]="location"
+          name="location"
+          placeholder="Pfad / Clone-URL"
+          required
+          class="w-72 rounded border px-2 py-1"
+        />
+        <input
+          [(ngModel)]="tokenRef"
+          name="tokenRef"
+          placeholder="tokenRef (env:NAME)"
+          class="rounded border px-2 py-1"
+        />
+        <button type="submit" class="rounded bg-blue-600 px-3 py-1 text-white">Anlegen</button>
+      </form>
+
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b text-left text-gray-500">
+            <th class="py-2">Name</th>
+            <th>Typ</th>
+            <th>Ort</th>
+            <th>Token</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of sources(); track s.id) {
+            <tr class="border-b">
+              <td class="py-2">{{ s.name }}</td>
+              <td>{{ s.type }}</td>
+              <td class="font-mono text-xs">{{ s.location }}</td>
+              <td>{{ s.tokenRef ?? '—' }}</td>
+              <td class="space-x-2">
+                <button (click)="test(s)" class="text-blue-600 hover:underline">Testen</button>
+                <button (click)="remove(s)" class="text-red-600 hover:underline">Löschen</button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="5" class="py-3 text-gray-500">Keine Quellen.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </section>
+  `,
+})
+export class RepositoriesPage {
+  private readonly api = inject(ScannerApi);
+
+  protected readonly sources = signal<RepositorySource[]>([]);
+  protected name = '';
+  protected type = 'localGit';
+  protected location = '';
+  protected tokenRef = '';
+
+  constructor() {
+    this.reload();
+  }
+
+  protected create(): void {
+    if (!this.name || !this.location) {
+      return;
+    }
+    const source: RepositorySource = {
+      id: null,
+      name: this.name,
+      type: this.type,
+      location: this.location,
+      branches: [],
+      tokenRef: this.tokenRef || null,
+      enabled: true,
+    };
+    this.api.createSource(source).subscribe(() => {
+      this.name = '';
+      this.location = '';
+      this.tokenRef = '';
+      this.reload();
+    });
+  }
+
+  protected test(source: RepositorySource): void {
+    if (!source.id) {
+      return;
+    }
+    this.api
+      .testConnection(source.id)
+      .subscribe((r) => alert(r.reachable ? 'Erreichbar' : 'Nicht erreichbar'));
+  }
+
+  protected remove(source: RepositorySource): void {
+    if (!source.id) {
+      return;
+    }
+    this.api.deleteSource(source.id).subscribe(() => this.reload());
+  }
+
+  private reload(): void {
+    this.api.sources().subscribe((list) => this.sources.set(list));
+  }
+}

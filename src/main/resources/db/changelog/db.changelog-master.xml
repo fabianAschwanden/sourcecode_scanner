@@ -6,6 +6,7 @@
             http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
 
     <!-- Migrationen sind append-only und unveränderlich: jede Änderung = neue Datei + include.
-         Phase 1 (CLI) ist DB-frei; Finding-/Scan-Persistenz kommt in Roadmap-Phase 4 (docs/05). -->
+         Schema läuft nur im %server-Profil an (Phase 4); der CLI-Pfad bleibt DB-frei. -->
+    <include file="db/changelog/changes/0001-create-scanner-schema.xml"/>
 
 </databaseChangeLog>

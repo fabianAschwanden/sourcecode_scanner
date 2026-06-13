@@ -1,0 +1,158 @@
+package ch.fabianaschwanden.sourcescanner.application.service;
+
+import ch.fabianaschwanden.sourcescanner.application.service.ScanProgressBroadcaster.ScanEvent;
+import ch.fabianaschwanden.sourcescanner.domain.model.AggregatedFinding;
+import ch.fabianaschwanden.sourcescanner.domain.model.AuditEvent;
+import ch.fabianaschwanden.sourcescanner.domain.model.DetectorConfig;
+import ch.fabianaschwanden.sourcescanner.domain.model.GateConfig;
+import ch.fabianaschwanden.sourcescanner.domain.model.HistoryMode;
+import ch.fabianaschwanden.sourcescanner.domain.model.OutputConfig;
+import ch.fabianaschwanden.sourcescanner.domain.model.RepositorySource;
+import ch.fabianaschwanden.sourcescanner.domain.model.ScanConfig;
+import ch.fabianaschwanden.sourcescanner.domain.model.ScanRecord;
+import ch.fabianaschwanden.sourcescanner.domain.model.ScanResult;
+import ch.fabianaschwanden.sourcescanner.domain.model.ScanStatus;
+import ch.fabianaschwanden.sourcescanner.domain.model.StoredFinding;
+import ch.fabianaschwanden.sourcescanner.domain.port.in.ManageScansUseCase;
+import ch.fabianaschwanden.sourcescanner.domain.port.out.AuditPort;
+import ch.fabianaschwanden.sourcescanner.domain.port.out.FindingPort;
+import ch.fabianaschwanden.sourcescanner.domain.port.out.RepositorySourcePort;
+import ch.fabianaschwanden.sourcescanner.domain.port.out.ScanRecordPort;
+import ch.fabianaschwanden.sourcescanner.domain.port.in.StartScanUseCase;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+import org.eclipse.microprofile.context.ManagedExecutor;
+import org.jboss.logging.Logger;
+
+/**
+ * Server-getriebene Scan-Steuerung (WR-03): startet Scans asynchron über den bestehenden
+ * {@link StartScanUseCase}, persistiert Lauf + redigierte Funde und sendet Live-Events (WR-04).
+ * Keine Geschäftsregeln — Orchestrierung/Persistenz/Audit werden delegiert.
+ */
+@ApplicationScoped
+public class ServerScanService implements ManageScansUseCase {
+
+    private static final Logger LOG = Logger.getLogger(ServerScanService.class);
+
+    private final RepositorySourcePort sources;
+    private final StartScanUseCase orchestrator;
+    private final ScanRecordPort scanRecords;
+    private final FindingPort findings;
+    private final AuditPort audit;
+    private final ScanProgressBroadcaster broadcaster;
+    private final ManagedExecutor executor;
+    private final ServerScanPersistence persistence;
+    private final ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics;
+
+    /** Laufende Scans für die Abbruch-Anforderung (best effort). */
+    private final ConcurrentHashMap<UUID, Boolean> cancelRequested = new ConcurrentHashMap<>();
+
+    @Inject
+    public ServerScanService(RepositorySourcePort sources, StartScanUseCase orchestrator,
+                             ScanRecordPort scanRecords, FindingPort findings, AuditPort audit,
+                             ScanProgressBroadcaster broadcaster, ManagedExecutor executor,
+                             ServerScanPersistence persistence,
+                             ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics) {
+        this.sources = sources;
+        this.orchestrator = orchestrator;
+        this.scanRecords = scanRecords;
+        this.findings = findings;
+        this.audit = audit;
+        this.broadcaster = broadcaster;
+        this.executor = executor;
+        this.persistence = persistence;
+        this.metrics = metrics;
+    }
+
+    @Override
+    public ScanRecord startScan(UUID sourceId, String mode, String actor) {
+        RepositorySource source = sources.byId(sourceId)
+                .orElseThrow(() -> new IllegalArgumentException("unknown repository source: " + sourceId));
+        UUID scanId = UUID.randomUUID();
+        HistoryMode historyMode = parseMode(mode);
+        ScanRecord starting = ScanRecord.starting(scanId, source.name(), historyMode.name().toLowerCase(Locale.ROOT));
+        persistence.saveRecord(starting);
+        audit.record(AuditEvent.of(actor, "scan.start", source.name(), "mode=" + historyMode));
+
+        executor.runAsync(() -> runScan(starting, source, historyMode));
+        return starting;
+    }
+
+    private void runScan(ScanRecord starting, RepositorySource source, HistoryMode mode) {
+        UUID scanId = starting.id();
+        broadcaster.publish(new ScanEvent(scanId, ScanStatus.RUNNING.name(), 10, 0));
+        try {
+            ScanConfig config = configFor(source, mode);
+            List<ScanResult> results = orchestrator.scan(config);
+            if (cancelRequested.remove(scanId) != null) {
+                finish(starting.cancelled(), List.of());
+                return;
+            }
+            List<AggregatedFinding> aggregated = results.stream()
+                    .flatMap(r -> r.aggregated().stream())
+                    .toList();
+            List<StoredFinding> stored = aggregated.stream()
+                    .map(a -> StoredFinding.from(scanId, source.name(), a))
+                    .toList();
+            finish(starting.completed(stored.size()), stored);
+        } catch (RuntimeException e) {
+            LOG.errorf(e, "scan %s failed", scanId);
+            persistence.saveRecord(starting.failed());
+            broadcaster.publish(new ScanEvent(scanId, ScanStatus.FAILED.name(), 100, 0));
+            broadcaster.complete(scanId);
+        }
+    }
+
+    private void finish(ScanRecord record, List<StoredFinding> stored) {
+        persistence.persistResult(record, stored);
+        metrics.recordScan(record.repoId(), record.status(),
+                java.time.Duration.between(record.startedAt(),
+                        record.finishedAt() == null ? java.time.Instant.now() : record.finishedAt()));
+        broadcaster.publish(new ScanEvent(record.id(), record.status().name(), 100, stored.size()));
+        broadcaster.complete(record.id());
+    }
+
+    @Override
+    public List<ScanRecord> recentScans(int limit) {
+        return scanRecords.recent(limit);
+    }
+
+    @Override
+    public void cancelScan(UUID scanId, String actor) {
+        cancelRequested.put(scanId, Boolean.TRUE);
+        audit.record(AuditEvent.of(actor, "scan.cancel", scanId.toString(), null));
+    }
+
+    /** Baut eine Ein-Repo-Scan-Konfiguration für die Quelle (secrets-Detektor aktiv). */
+    private ScanConfig configFor(RepositorySource source, HistoryMode mode) {
+        Map<String, DetectorConfig> detectors = Map.of(
+                "secrets", new DetectorConfig(true, Map.of()),
+                "pii", new DetectorConfig(true, Map.of()));
+        return new ScanConfig(
+                List.of(source.toRef()), List.of(), mode,
+                Runtime.getRuntime().availableProcessors(), 30, detectors,
+                new GateConfig(ch.fabianaschwanden.sourcescanner.domain.model.Severity.HIGH, false, false),
+                OutputConfig.defaults(), null, List.of(), false, null);
+    }
+
+    private HistoryMode parseMode(String mode) {
+        if (mode == null || mode.isBlank()) {
+            return HistoryMode.FULL;
+        }
+        try {
+            return HistoryMode.valueOf(mode.trim().toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException e) {
+            return HistoryMode.FULL;
+        }
+    }
+
+    /** Findings-Zugriff für eine schnelle Dashboard-/Listen-Abfrage (Delegation an den Port). */
+    public List<StoredFinding> latestFindings(FindingPort.FindingQuery query) {
+        return findings.query(query);
+    }
+}
