@@ -1,6 +1,7 @@
 package ch.fabianaschwanden.sourcescanner.adapter.out.persistence;
 
 import ch.fabianaschwanden.sourcescanner.domain.model.DetectorCategory;
+import ch.fabianaschwanden.sourcescanner.domain.model.RemediationStatus;
 import ch.fabianaschwanden.sourcescanner.domain.model.Severity;
 import ch.fabianaschwanden.sourcescanner.domain.model.TriageStatus;
 import jakarta.persistence.Column;
@@ -66,6 +67,10 @@ public class FindingEntity {
 
     @Column(name = "triage_reason")
     public String triageReason;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "remediation_status", nullable = false)
+    public RemediationStatus remediationStatus;
 
     @Column(name = "first_seen", nullable = false)
     public Instant firstSeen;

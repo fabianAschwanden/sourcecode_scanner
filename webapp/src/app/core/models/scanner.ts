@@ -3,6 +3,7 @@
 export type Severity = 'INFO' | 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type ScanStatus = 'RUNNING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
 export type TriageStatus = 'OPEN' | 'BASELINE' | 'SUPPRESSED' | 'FALSE_POSITIVE';
+export type RemediationStatus = 'OPEN' | 'PR_OPEN' | 'FIXED' | 'ROTATED' | 'SCRUBBED';
 
 export interface Finding {
   readonly id: string;
@@ -18,6 +19,7 @@ export interface Finding {
   readonly verified: boolean;
   readonly triageStatus: TriageStatus;
   readonly triageReason: string | null;
+  readonly remediationStatus: RemediationStatus;
   readonly firstSeen: string;
   readonly lastSeen: string;
 }
@@ -49,6 +51,24 @@ export interface RepositorySource {
   readonly tokenRef: string | null;
   readonly enabled: boolean;
   readonly reportEmails: string[];
+  readonly remediationEnabled: boolean;
+}
+
+export interface PrRef {
+  readonly url: string;
+  readonly number: number;
+}
+
+export interface ScrubDryRun {
+  readonly toolAvailable: boolean;
+  readonly affectedSecrets: number;
+  readonly diffSummary: string;
+}
+
+export interface ScrubResult {
+  readonly success: boolean;
+  readonly remainingFindings: number;
+  readonly message: string;
 }
 
 export interface SecretRefStatus {

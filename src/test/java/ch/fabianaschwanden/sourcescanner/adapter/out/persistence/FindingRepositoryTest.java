@@ -25,7 +25,7 @@ class FindingRepositoryTest {
     private StoredFinding finding(String repo, Severity sev, TriageStatus status) {
         return new StoredFinding(UUID.randomUUID(), UUID.randomUUID(), repo, "secret.regex-ruleset",
                 DetectorCategory.SECRET, sev, "aws", "src/A.java", 1, "AKIA****MPLE",
-                "fp-" + UUID.randomUUID(), false, status, null, Instant.now(), Instant.now());
+                "fp-" + UUID.randomUUID(), false, status, null, null, Instant.now(), Instant.now());
     }
 
     @Test

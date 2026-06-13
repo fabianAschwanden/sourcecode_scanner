@@ -80,6 +80,7 @@ public class FindingRepository implements PanacheRepositoryBase<FindingEntity, U
         e.verified = f.verified();
         e.triageStatus = f.triageStatus();
         e.triageReason = f.triageReason();
+        e.remediationStatus = f.remediationStatus();
         e.firstSeen = f.firstSeen();
         e.lastSeen = f.lastSeen();
     }
@@ -93,6 +94,6 @@ public class FindingRepository implements PanacheRepositoryBase<FindingEntity, U
     static StoredFinding toDomain(FindingEntity e) {
         return new StoredFinding(e.id, e.scanId, e.repoId, e.detectorId, e.category, e.severity,
                 e.ruleId, e.file, e.line, e.redactedMatch, e.fingerprint, e.verified,
-                e.triageStatus, e.triageReason, e.firstSeen, e.lastSeen);
+                e.triageStatus, e.triageReason, e.remediationStatus, e.firstSeen, e.lastSeen);
     }
 }

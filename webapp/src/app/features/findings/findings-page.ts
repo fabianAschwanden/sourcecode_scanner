@@ -13,6 +13,12 @@ import { severityColor } from '../../core/severity-color';
     <section class="p-6">
       <h2 class="mb-4 text-xl font-semibold">Findings</h2>
 
+      @if (message()) {
+        <p class="mb-4 rounded border border-default px-3 py-2 text-sm text-muted">
+          {{ message() }}
+        </p>
+      }
+
       <div class="mb-4 flex gap-2">
         <select
           [(ngModel)]="severityFilter"
@@ -47,6 +53,7 @@ import { severityColor } from '../../core/severity-color';
             <th>Zeile</th>
             <th>Treffer (redigiert)</th>
             <th>Status</th>
+            <th>Remediation</th>
             <th>Aktionen</th>
           </tr>
         </thead>
@@ -61,6 +68,7 @@ import { severityColor } from '../../core/severity-color';
               <td>{{ f.line }}</td>
               <td class="font-mono text-xs">{{ f.redactedMatch }}</td>
               <td>{{ f.triageStatus }}</td>
+              <td class="text-muted">{{ f.remediationStatus }}</td>
               <td class="space-x-2">
                 <button (click)="triage(f, 'BASELINE')" class="text-accent hover:underline">
                   Baseline
@@ -71,11 +79,20 @@ import { severityColor } from '../../core/severity-color';
                 <button (click)="triage(f, 'SUPPRESSED')" class="text-accent hover:underline">
                   Unterdrücken
                 </button>
+                @if (f.category === 'SECRET' && f.remediationStatus === 'OPEN') {
+                  <button
+                    (click)="remediate(f)"
+                    title="Erzeugt einen Fix-Branch + Pull Request mit einer Suppression-Annotation. Repo-Opt-in nötig; nie Direct-Push."
+                    class="text-accent hover:underline"
+                  >
+                    Fix per PR
+                  </button>
+                }
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="py-3 text-muted">Keine Funde.</td>
+              <td colspan="8" class="py-3 text-muted">Keine Funde.</td>
             </tr>
           }
         </tbody>
@@ -97,9 +114,21 @@ export class FindingsPage {
   protected severityFilter: Severity | undefined;
   protected statusFilter: TriageStatus | undefined;
   protected readonly findings = signal<Finding[]>([]);
+  protected readonly message = signal<string>('');
 
   constructor() {
     this.reload();
+  }
+
+  protected remediate(finding: Finding): void {
+    this.message.set('Erzeuge Fix-PR …');
+    this.api.remediate(finding.id).subscribe({
+      next: (pr) => {
+        this.message.set(`Pull Request #${pr.number} erstellt: ${pr.url}`);
+        this.reload();
+      },
+      error: (err) => this.message.set(`Auto-Fix nicht möglich: ${err?.error?.error ?? 'Fehler'}`),
+    });
   }
 
   protected reload(): void {

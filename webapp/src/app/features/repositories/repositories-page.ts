@@ -54,6 +54,13 @@ import { RepositorySource } from '../../core/models/scanner';
           title="Empfänger für den Report nach Scans dieses Repos, z. B. team@firma.ch, secops@firma.ch"
           class="w-72 rounded border border-default px-2 py-1"
         />
+        <label
+          class="flex items-center gap-1 text-sm text-muted"
+          title="Aktiviert Auto-Fix per PR und History-Scrub für dieses Repo (opt-in, RMR-02). Standardmässig aus."
+        >
+          <input [(ngModel)]="remediationEnabled" name="remediationEnabled" type="checkbox" />
+          Remediation
+        </label>
         <button
           type="submit"
           class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
@@ -70,6 +77,7 @@ import { RepositorySource } from '../../core/models/scanner';
             <th>Ort</th>
             <th>Token</th>
             <th>Report-E-Mails</th>
+            <th>Remediation</th>
             <th>Aktionen</th>
           </tr>
         </thead>
@@ -81,18 +89,48 @@ import { RepositorySource } from '../../core/models/scanner';
               <td class="font-mono text-xs">{{ s.location }}</td>
               <td>{{ s.tokenRef ?? '—' }}</td>
               <td class="text-xs">{{ s.reportEmails.length ? s.reportEmails.join(', ') : '—' }}</td>
+              <td>
+                <button
+                  (click)="toggleRemediation(s)"
+                  [title]="
+                    s.remediationEnabled
+                      ? 'Remediation aktiv — klicken zum Deaktivieren'
+                      : 'Remediation deaktiviert — klicken zum Aktivieren (opt-in, RMR-02)'
+                  "
+                  class="hover:underline"
+                  [class.text-accent]="s.remediationEnabled"
+                  [class.text-muted]="!s.remediationEnabled"
+                >
+                  {{ s.remediationEnabled ? 'aktiv' : 'aus' }}
+                </button>
+              </td>
               <td class="space-x-2">
                 <button (click)="test(s)" class="text-accent hover:underline">Testen</button>
+                @if (s.remediationEnabled) {
+                  <button
+                    (click)="scrubDryRun(s)"
+                    title="Zeigt redigiert, welche Secrets aus der Git-Historie entfernt würden — ohne Änderung (RMR-22)."
+                    class="text-accent hover:underline"
+                  >
+                    Scrub-Vorschau
+                  </button>
+                }
                 <button (click)="remove(s)" class="text-sev-high hover:underline">Löschen</button>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="py-3 text-muted">Keine Quellen.</td>
+              <td colspan="7" class="py-3 text-muted">Keine Quellen.</td>
             </tr>
           }
         </tbody>
       </table>
+
+      @if (message()) {
+        <pre class="mt-4 rounded border border-default p-3 text-xs whitespace-pre-wrap">{{
+          message()
+        }}</pre>
+      }
     </section>
   `,
 })
@@ -105,9 +143,32 @@ export class RepositoriesPage {
   protected location = '';
   protected tokenRef = '';
   protected reportEmails = '';
+  protected remediationEnabled = false;
+  protected readonly message = signal<string>('');
 
   constructor() {
     this.reload();
+  }
+
+  protected toggleRemediation(source: RepositorySource): void {
+    this.api
+      .createSource({ ...source, remediationEnabled: !source.remediationEnabled })
+      .subscribe(() => this.reload());
+  }
+
+  protected scrubDryRun(source: RepositorySource): void {
+    if (!source.id) {
+      return;
+    }
+    this.message.set('Berechne Scrub-Vorschau …');
+    this.api.scrubDryRun(source.id).subscribe({
+      next: (r) =>
+        this.message.set(
+          `Werkzeug verfügbar: ${r.toolAvailable ? 'ja' : 'nein'} — ${r.affectedSecrets} Secret(s)\n\n${r.diffSummary}`,
+        ),
+      error: (err) =>
+        this.message.set(`Scrub-Vorschau nicht möglich: ${err?.error?.error ?? 'Fehler'}`),
+    });
   }
 
   protected create(): void {
@@ -126,12 +187,14 @@ export class RepositoriesPage {
         .split(',')
         .map((e) => e.trim())
         .filter((e) => e.length > 0),
+      remediationEnabled: this.remediationEnabled,
     };
     this.api.createSource(source).subscribe(() => {
       this.name = '';
       this.location = '';
       this.tokenRef = '';
       this.reportEmails = '';
+      this.remediationEnabled = false;
       this.reload();
     });
   }

@@ -30,6 +30,7 @@ public class RepositorySourceRepository
         entity.tokenRef = source.tokenRef();
         entity.enabled = source.enabled();
         entity.reportEmails = String.join(",", source.reportEmails());
+        entity.remediationEnabled = source.remediationEnabled();
         persist(entity);
         return toDomain(entity);
     }
@@ -52,7 +53,7 @@ public class RepositorySourceRepository
 
     static RepositorySource toDomain(RepositorySourceEntity e) {
         return new RepositorySource(e.id, e.name, e.type, e.location, csv(e.branches), e.tokenRef,
-                e.enabled, csv(e.reportEmails));
+                e.enabled, csv(e.reportEmails), e.remediationEnabled);
     }
 
     private static List<String> csv(String value) {

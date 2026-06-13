@@ -61,6 +61,7 @@ class ScanOrchestrationServiceTest {
             @Override public void recordNewFindings(String severity, int count) {}
             @Override public void recordGateStatus(String repoId, boolean passed) {}
             @Override public void recordDetector(String detectorId, java.time.Duration d, boolean error) {}
+            @Override public void recordRemediation(String type, String result) {}
         };
     }
 
