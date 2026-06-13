@@ -1,0 +1,22 @@
+{
+  "__comment": "Grafana-Dashboard Coverage & Compliance (OR-06): gescannte Repos, Gate-Status, offene Funde. Datenquelle Prometheus (/q/metrics).",
+  "title": "Scanner — Coverage & Compliance",
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Repositories mit Gate-Fail",
+      "targets": [{ "expr": "count(scanner_gate_status == 1)" }]
+    },
+    {
+      "type": "timeseries",
+      "title": "Scans je Repository (Rate)",
+      "targets": [{ "expr": "sum by (repo) (rate(scanner_scans_total[1h]))" }]
+    },
+    {
+      "type": "table",
+      "title": "Gate-Status je Repository",
+      "targets": [{ "expr": "scanner_gate_status" }]
+    }
+  ]
+}

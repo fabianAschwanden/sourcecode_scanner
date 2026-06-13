@@ -54,3 +54,13 @@ export interface DetectorInfo {
   readonly id: string;
   readonly category: string;
 }
+
+export interface Policy {
+  readonly id: string | null;
+  readonly orgUnit: string | null;
+  readonly failOn: Severity;
+  readonly failOnNewOnly: boolean;
+  readonly softFail: boolean;
+  readonly warnThreshold: Severity;
+  readonly enabledDetectorGroups: string[];
+}

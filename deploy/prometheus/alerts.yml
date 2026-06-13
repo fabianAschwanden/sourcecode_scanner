@@ -1,0 +1,36 @@
+# Prometheus-Alerting-Regeln für den Scanner (OR-08). Mitgeliefert; in die Prometheus-Konfig einbinden.
+# Quelle der Metriken: /q/metrics des Scanners (nur im Server-Profil aktiv, OR-09).
+groups:
+  - name: scanner
+    rules:
+      - alert: ScannerNewCriticalFinding
+        expr: increase(scanner_findings_new_total{severity="CRITICAL"}[15m]) > 0
+        for: 0m
+        labels: { severity: critical }
+        annotations:
+          summary: "Neuer CRITICAL-Fund erkannt"
+          description: "Mindestens ein neuer CRITICAL-Fund in den letzten 15 Minuten."
+
+      - alert: ScannerGateFail
+        expr: max by (repo) (scanner_gate_status) == 1
+        for: 5m
+        labels: { severity: warning }
+        annotations:
+          summary: "Quality-Gate verletzt: {{ $labels.repo }}"
+          description: "Das Gate von {{ $labels.repo }} ist seit 5 Minuten rot."
+
+      - alert: ScannerDetectorErrorRateHigh
+        expr: sum by (detector) (rate(scanner_detector_errors_total[15m])) > 0.1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Erhöhte Fehlerrate im Detektor {{ $labels.detector }}"
+          description: "Detektor {{ $labels.detector }} degradiert ungewöhnlich häufig."
+
+      - alert: ScannerStaleRepository
+        expr: time() - max by (repo) (scanner_scan_duration_seconds_count) == 0
+        for: 0m
+        labels: { severity: info }
+        annotations:
+          summary: "Repository seit langem nicht gescannt"
+          description: "Hinweis: veraltete Scans — projektspezifischen Schwellenwert kalibrieren."
