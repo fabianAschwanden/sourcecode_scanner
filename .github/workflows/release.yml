@@ -1,0 +1,36 @@
+name: Release
+
+# Release-Fluss (Blueprint §11): Tag -> Image-Build -> Push -> Deploy-Manifest-Bump im Infra-Repo.
+# Das Deployment selbst macht ArgoCD (GitOps) — die Pipeline deployt nie direkt.
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: webapp/package-lock.json
+
+      - name: Build & Push Container-Image
+        # TODO Unternehmenskontext: Registry, Credentials (Secrets) und Image-Gruppe setzen.
+        run: |
+          ./mvnw -B package \
+            -Dquarkus.container-image.build=true \
+            -Dquarkus.container-image.tag=${GITHUB_REF_NAME#v}
+          # -Dquarkus.container-image.push=true \
+          # -Dquarkus.container-image.registry=$REGISTRY \
+          # -Dquarkus.container-image.username=... -Dquarkus.container-image.password=...
+
+      # - name: Deploy-Manifest im Infra-Repo bumpen
+      #   TODO: Image-Tag im GitOps-/Infra-Repo aktualisieren (z.B. via PR), ArgoCD deployt.
