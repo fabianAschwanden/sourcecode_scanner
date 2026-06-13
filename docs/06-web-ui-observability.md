@@ -76,6 +76,14 @@ Organisationseinheit pflegen (knüpft an FR-20 an).
 Benutzer/Rollen (RBAC), Audit-Log-Ansicht, Integrationskonfiguration
 (Jira/Chat/Webhooks), Systemstatus.
 
+### 3.8 Darstellung & Usability
+Durchgängig dunkles Erscheinungsbild im Stil von GitHub (Dark Mode) über alle
+Ansichten — abgestimmte Hintergrund-/Flächen-/Text- und Akzentfarben sowie
+konsistente Severity-Farben (WR-40). Eingabe-Bedienelemente zeigen eine Hover-Hilfe
+(Tooltip) mit einem konkreten Eingabe-Beispiel, das das erwartete Format illustriert
+(z. B. lokaler Pfad, Clone-URL, Token-Referenz `env:NAME`, Org-Unit) (WR-41). Umsetzung
+über die Tailwind-Konventionen des Templates; keine zusätzliche UI-Bibliothek nötig.
+
 ## 4. API & Echtzeit
 
 - **REST-API** als alleinige Schnittstelle zwischen UI und Backend; dieselbe API

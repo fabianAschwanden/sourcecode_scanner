@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { Finding, Severity, TriageStatus } from '../../core/models/scanner';
+import { severityColor } from '../../core/severity-color';
 
 /** Finding-Liste mit Filter + Triage (WR-10/11/12). */
 @Component({
@@ -16,7 +17,8 @@ import { Finding, Severity, TriageStatus } from '../../core/models/scanner';
         <select
           [(ngModel)]="severityFilter"
           (ngModelChange)="reload()"
-          class="rounded border px-2 py-1"
+          title="Mindest-Severity, z. B. HIGH zeigt nur HIGH und CRITICAL"
+          class="rounded border border-default px-2 py-1"
         >
           <option [ngValue]="undefined">Alle Severities</option>
           @for (s of severities; track s) {
@@ -26,7 +28,8 @@ import { Finding, Severity, TriageStatus } from '../../core/models/scanner';
         <select
           [(ngModel)]="statusFilter"
           (ngModelChange)="reload()"
-          class="rounded border px-2 py-1"
+          title="Triage-Status, z. B. OPEN für offene, noch nicht bewertete Funde"
+          class="rounded border border-default px-2 py-1"
         >
           <option [ngValue]="undefined">Alle Status</option>
           @for (s of statuses; track s) {
@@ -37,7 +40,7 @@ import { Finding, Severity, TriageStatus } from '../../core/models/scanner';
 
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b text-left text-gray-500">
+          <tr class="border-b border-default text-left text-muted">
             <th class="py-2">Severity</th>
             <th>Detektor</th>
             <th>Datei</th>
@@ -49,28 +52,30 @@ import { Finding, Severity, TriageStatus } from '../../core/models/scanner';
         </thead>
         <tbody>
           @for (f of findings(); track f.id) {
-            <tr class="border-b">
-              <td class="py-2 font-medium">{{ f.severity }}</td>
+            <tr class="border-b border-default">
+              <td class="py-2 font-medium" [style.color]="severityColor(f.severity)">
+                {{ f.severity }}
+              </td>
               <td>{{ f.detectorId }}</td>
               <td class="font-mono text-xs">{{ f.file }}</td>
               <td>{{ f.line }}</td>
               <td class="font-mono text-xs">{{ f.redactedMatch }}</td>
               <td>{{ f.triageStatus }}</td>
               <td class="space-x-2">
-                <button (click)="triage(f, 'BASELINE')" class="text-blue-600 hover:underline">
+                <button (click)="triage(f, 'BASELINE')" class="text-accent hover:underline">
                   Baseline
                 </button>
-                <button (click)="triage(f, 'FALSE_POSITIVE')" class="text-blue-600 hover:underline">
+                <button (click)="triage(f, 'FALSE_POSITIVE')" class="text-accent hover:underline">
                   FP
                 </button>
-                <button (click)="triage(f, 'SUPPRESSED')" class="text-blue-600 hover:underline">
+                <button (click)="triage(f, 'SUPPRESSED')" class="text-accent hover:underline">
                   Unterdrücken
                 </button>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="py-3 text-gray-500">Keine Funde.</td>
+              <td colspan="7" class="py-3 text-muted">Keine Funde.</td>
             </tr>
           }
         </tbody>
@@ -110,5 +115,9 @@ export class FindingsPage {
       return;
     }
     this.api.triage(finding.id, status, reason).subscribe(() => this.reload());
+  }
+
+  protected severityColor(severity: Severity): string {
+    return severityColor(severity);
   }
 }

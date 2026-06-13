@@ -27,6 +27,13 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | WR-13 | C | Die UI KANN aus einem Fund ein Ticket (Jira) erzeugen. |
 | WR-14 | C | Die UI KANN Baseline-Einträge einsehen und entfernen. |
 
+### Darstellung & Usability
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-40 | S | Die UI SOLL durchgängig in einem dunklen Erscheinungsbild im Stil von GitHub (Dark Mode) gestaltet sein (Hintergründe, Flächen, Text, Akzent- und Severity-Farben), konsistent über alle Ansichten. |
+| WR-41 | S | Eingabe-Bedienelemente (Felder, Auswahllisten) SOLLEN eine Hover-Hilfe (Tooltip) mit einem konkreten Eingabe-Beispiel anzeigen (z. B. Pfad `/Users/me/git/projekt`, Clone-URL `https://github.com/org/repo.git`, Token-Referenz `env:GITHUB_TOKEN`, Org-Unit `team-a/payments`). |
+
 ### Schnittstelle
 
 | ID | Prio | Anforderung |

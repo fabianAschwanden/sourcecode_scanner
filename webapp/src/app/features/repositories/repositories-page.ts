@@ -17,10 +17,16 @@ import { RepositorySource } from '../../core/models/scanner';
           [(ngModel)]="name"
           name="name"
           placeholder="Name"
+          title="Eindeutiger Name der Quelle, z. B. wm-tippspiel oder team-a/payment-service"
           required
-          class="rounded border px-2 py-1"
+          class="rounded border border-default px-2 py-1"
         />
-        <select [(ngModel)]="type" name="type" class="rounded border px-2 py-1">
+        <select
+          [(ngModel)]="type"
+          name="type"
+          title="Quellentyp: localGit (lokaler Pfad) oder eine Plattform (github/gitlab/bitbucket)"
+          class="rounded border border-default px-2 py-1"
+        >
           <option value="localGit">localGit</option>
           <option value="github">github</option>
           <option value="gitlab">gitlab</option>
@@ -30,21 +36,28 @@ import { RepositorySource } from '../../core/models/scanner';
           [(ngModel)]="location"
           name="location"
           placeholder="Pfad / Clone-URL"
+          title="localGit: lokaler Pfad, z. B. /Users/me/git/projekt — Plattform: Clone-URL, z. B. https://github.com/org/repo.git"
           required
-          class="w-72 rounded border px-2 py-1"
+          class="w-72 rounded border border-default px-2 py-1"
         />
         <input
           [(ngModel)]="tokenRef"
           name="tokenRef"
           placeholder="tokenRef (env:NAME)"
-          class="rounded border px-2 py-1"
+          title="Secret-Referenz, kein Klartext-Token — z. B. env:GITHUB_TOKEN oder vault:secret/scanner#token"
+          class="rounded border border-default px-2 py-1"
         />
-        <button type="submit" class="rounded bg-blue-600 px-3 py-1 text-white">Anlegen</button>
+        <button
+          type="submit"
+          class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
+        >
+          Anlegen
+        </button>
       </form>
 
       <table class="w-full text-sm">
         <thead>
-          <tr class="border-b text-left text-gray-500">
+          <tr class="border-b border-default text-left text-muted">
             <th class="py-2">Name</th>
             <th>Typ</th>
             <th>Ort</th>
@@ -54,19 +67,19 @@ import { RepositorySource } from '../../core/models/scanner';
         </thead>
         <tbody>
           @for (s of sources(); track s.id) {
-            <tr class="border-b">
+            <tr class="border-b border-default">
               <td class="py-2">{{ s.name }}</td>
               <td>{{ s.type }}</td>
               <td class="font-mono text-xs">{{ s.location }}</td>
               <td>{{ s.tokenRef ?? '—' }}</td>
               <td class="space-x-2">
-                <button (click)="test(s)" class="text-blue-600 hover:underline">Testen</button>
-                <button (click)="remove(s)" class="text-red-600 hover:underline">Löschen</button>
+                <button (click)="test(s)" class="text-accent hover:underline">Testen</button>
+                <button (click)="remove(s)" class="text-sev-high hover:underline">Löschen</button>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="py-3 text-gray-500">Keine Quellen.</td>
+              <td colspan="5" class="py-3 text-muted">Keine Quellen.</td>
             </tr>
           }
         </tbody>

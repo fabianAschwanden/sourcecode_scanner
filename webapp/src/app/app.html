@@ -1,16 +1,16 @@
-<header class="border-b border-gray-200 bg-white px-6 py-4">
-  <h1 class="text-lg font-semibold">{{ title() }}</h1>
+<header class="border-b border-default bg-surface px-6 py-4">
+  <h1 class="text-lg font-semibold text-fg">{{ title() }}</h1>
   <nav class="mt-2 flex gap-4 text-sm">
     @for (link of links; track link.path) {
       <a
         [routerLink]="link.path"
-        routerLinkActive="font-semibold text-blue-600"
-        class="text-gray-600 hover:text-blue-600"
+        routerLinkActive="font-semibold text-accent"
+        class="text-muted hover:text-accent"
         >{{ link.label }}</a
       >
     }
   </nav>
 </header>
-<main class="min-h-screen bg-gray-50">
+<main class="min-h-screen bg-canvas text-fg">
   <router-outlet />
 </main>
