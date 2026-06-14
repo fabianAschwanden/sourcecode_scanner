@@ -73,6 +73,13 @@ scan:
     pii:
       enabled: true
       patterns: [iban, creditcard, email, phone]
+      # Test-/Dummy-/Platzhalter-E-Mails werden nie gemeldet (DR-57). Die eingebauten Listen
+      # (example.*, .test/.invalid/.localhost, .internal/.local, beispiel.*, googletest.com,
+      # resend.dev, …) sind hier additiv erweiterbar; testEmailFilter: false schaltet sie ab.
+      testEmailFilter: true
+      testDomains: [acme-test.io]   # zusätzliche, ganze Test-Domains
+      testTlds: [demo]              # zusätzliche Test-TLDs (letztes Label)
+      testSlds: [sandbox]           # zusätzliche Platzhalter-SLDs (z. B. sandbox.*)
       customRegex:
         - name: customer-id
           pattern: 'CUST-\d{8}'

@@ -76,6 +76,7 @@ public class PiiPatternsDetector implements DetectorPort {
         }
         Set<String> enabled = enabledPatterns(config);
         Map<String, Map<String, Object>> overrides = ruleOverrides(config);
+        TestEmailFilter testEmails = TestEmailFilter.from(config, overrides.get(Rule.EMAIL.key));
         List<Finding> findings = new ArrayList<>();
         String[] lines = unit.content().split("\n", -1);
         for (int i = 0; i < lines.length; i++) {
@@ -112,8 +113,9 @@ public class PiiPatternsDetector implements DetectorPort {
                     }
                     // Offensichtliche Test-/Dummy-/Platzhalter-E-Mails sind keine echten Nutzerdaten
                     // (reservierte Beispiel-/Test-Domains, bekannte Fixture-/Docs-Adressen) und werden
-                    // ausgefiltert — sie sind immer unbedenklich (DR-57).
-                    if (rule == Rule.EMAIL && isTestEmail(match)) {
+                    // ausgefiltert — sie sind immer unbedenklich (DR-57). Die Listen sind über die
+                    // params erweiterbar/abschaltbar (TestEmailFilter).
+                    if (rule == Rule.EMAIL && testEmails.matches(match)) {
                         continue;
                     }
                     findings.add(new Finding(ID, DetectorCategory.PII, severity, rule.key,
@@ -203,50 +205,94 @@ public class PiiPatternsDetector implements DetectorPort {
     }
 
     /**
-     * Reservierte Beispiel-/Test-Domains und -TLDs, die nie echte Personen adressieren (RFC 2606/6761
-     * {@code example.*}, {@code .test}, {@code .invalid}, {@code .localhost}; private/interne Namen
-     * {@code .internal}, {@code .local}; deutscher Platzhalter {@code beispiel.*}).
+     * Default-Listen reservierter Beispiel-/Test-Domains und -TLDs, die nie echte Personen adressieren
+     * (RFC 2606/6761 {@code example.*}, {@code .test}, {@code .invalid}, {@code .localhost}; private/
+     * interne Namen {@code .internal}, {@code .local}; deutscher Platzhalter {@code beispiel.*}) sowie
+     * bekannte Fixture-/Docs-Adressen.
      */
-    private static final Set<String> TEST_EMAIL_TLDS = Set.of("test", "invalid", "localhost",
+    private static final Set<String> DEFAULT_TEST_TLDS = Set.of("test", "invalid", "localhost",
             "example", "internal", "local");
-    private static final Set<String> TEST_EMAIL_SLDS = Set.of("example", "beispiel");
-
-    /**
-     * Bekannte Fixture-/Docs-/Platzhalter-Adressen, die in Beispielen und Test-Setups auftauchen und
-     * keine echten Nutzer sind (z. B. Test-Domains für OAuth, Docs-Fallback-Adressen).
-     */
-    private static final Set<String> TEST_EMAIL_DOMAINS = Set.of(
+    private static final Set<String> DEFAULT_TEST_SLDS = Set.of("example", "beispiel");
+    private static final Set<String> DEFAULT_TEST_DOMAINS = Set.of(
             "googletest.com", "resend.dev", "mailinator.com", "test.com");
 
     /**
-     * {@code true}, wenn die E-Mail offensichtlich eine Test-/Dummy-/Platzhalter-Adresse ist und
-     * damit keine echten Nutzerdaten (DR-57). Erfasst reservierte Beispiel-/Test-Domains und -TLDs
-     * (z. B. {@code fabian@example.com}, {@code bot@wm-tippspiel.internal}, {@code du@beispiel.com})
-     * sowie eine kurze Liste bekannter Fixture-/Docs-Adressen (z. B. {@code fabian@googletest.com},
-     * {@code onboarding@resend.dev}). Fall-insensitiv.
+     * Konfigurierbarer Test-/Dummy-/Platzhalter-E-Mail-Filter (DR-57). Erkennt Adressen, die nie echte
+     * Nutzerdaten sind (z. B. {@code fabian@example.com}, {@code bot@wm-tippspiel.internal},
+     * {@code onboarding@resend.dev}), und meldet dafür keinen Fund. Die Default-Listen werden additiv
+     * um die in den params konfigurierten Einträge ergänzt; mit {@code testEmailFilter: false} ist der
+     * Filter ganz aus. Params werden sowohl top-level (YAML/CLI-Scan-Konfig) als auch aus dem
+     * {@code email}-Ruleset-Override gelesen.
+     *
+     * <p>Beispiel-params:
+     * <pre>{@code testEmailFilter: true, testDomains: [acme-test.io], testTlds: [demo], testSlds: [sandbox]}</pre>
      */
-    private static boolean isTestEmail(String email) {
-        int at = email.lastIndexOf('@');
-        if (at < 0 || at == email.length() - 1) {
-            return false;
+    record TestEmailFilter(boolean enabled, Set<String> domains, Set<String> tlds, Set<String> slds) {
+
+        static TestEmailFilter from(DetectorConfig config, Map<String, Object> emailOverride) {
+            Map<String, Object> top = config.params();
+            if (Boolean.FALSE.equals(value(top, emailOverride, "testEmailFilter"))) {
+                return new TestEmailFilter(false, Set.of(), Set.of(), Set.of());
+            }
+            return new TestEmailFilter(true,
+                    merged(DEFAULT_TEST_DOMAINS, top, emailOverride, "testDomains"),
+                    merged(DEFAULT_TEST_TLDS, top, emailOverride, "testTlds"),
+                    merged(DEFAULT_TEST_SLDS, top, emailOverride, "testSlds"));
         }
-        String domain = email.substring(at + 1).toLowerCase(Locale.ROOT);
-        if (TEST_EMAIL_DOMAINS.contains(domain)) {
-            return true;
+
+        /** {@code true} für eine offensichtliche Test-/Platzhalter-Adresse (fall-insensitiv). */
+        boolean matches(String email) {
+            if (!enabled) {
+                return false;
+            }
+            int at = email.lastIndexOf('@');
+            if (at < 0 || at == email.length() - 1) {
+                return false;
+            }
+            String domain = email.substring(at + 1).toLowerCase(Locale.ROOT);
+            if (domains.contains(domain)) {
+                return true;
+            }
+            String[] labels = domain.split("\\.");
+            if (labels.length == 0) {
+                return false;
+            }
+            if (tlds.contains(labels[labels.length - 1])) {
+                return true;
+            }
+            // Second-Level-Domain (z. B. example.com / beispiel.de) als Platzhalter behandeln.
+            return labels.length >= 2 && slds.contains(labels[labels.length - 2]);
         }
-        String[] labels = domain.split("\\.");
-        if (labels.length == 0) {
-            return false;
+
+        /** params-Wert: erst top-level, dann email-Override (Override gewinnt, falls beides gesetzt). */
+        private static Object value(Map<String, Object> top, Map<String, Object> override, String key) {
+            if (override != null && override.get(key) != null) {
+                return override.get(key);
+            }
+            return top.get(key);
         }
-        String tld = labels[labels.length - 1];
-        if (TEST_EMAIL_TLDS.contains(tld)) {
-            return true;
+
+        /**
+         * Vereinigt die Default-Liste mit den (optional) konfigurierten, kleingeschriebenen Einträgen aus
+         * top-level params und email-Override (additiv, DR-57). Fehlen beide, gilt nur der Default.
+         */
+        private static Set<String> merged(Set<String> defaults, Map<String, Object> top,
+                Map<String, Object> override, String key) {
+            Set<String> result = null;
+            for (Object raw : new Object[] {top.get(key), override == null ? null : override.get(key)}) {
+                if (raw instanceof List<?> extra && !extra.isEmpty()) {
+                    if (result == null) {
+                        result = new java.util.HashSet<>(defaults);
+                    }
+                    for (Object o : extra) {
+                        if (o != null) {
+                            result.add(String.valueOf(o).trim().toLowerCase(Locale.ROOT));
+                        }
+                    }
+                }
+            }
+            return result == null ? defaults : result;
         }
-        // Second-Level-Domain (z. B. example.com / beispiel.de) als Platzhalter behandeln.
-        if (labels.length >= 2 && TEST_EMAIL_SLDS.contains(labels[labels.length - 2])) {
-            return true;
-        }
-        return false;
     }
 
     /** IBAN-Validierung per ISO-7064 Mod-97 (Prüfziffer == 1). */

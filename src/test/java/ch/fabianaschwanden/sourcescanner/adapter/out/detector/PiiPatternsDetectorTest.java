@@ -111,6 +111,24 @@ class PiiPatternsDetectorTest {
     }
 
     @Test
+    void test_email_filter_ist_per_params_erweiterbar() {
+        // Zusätzliche Projekt-Domain als Test-/Platzhalter-Domain markieren (additiv zu den Defaults).
+        DetectorConfig cfg = new DetectorConfig(true, Map.of("testDomains", List.of("acme-test.io")));
+        List<Finding> f = scan("a@acme-test.io\nb@firma.de", cfg);
+        List<Finding> emails = f.stream().filter(x -> x.ruleId().equals("email")).toList();
+        assertTrue(emails.size() == 1, "die konfigurierte Test-Domain wird gefiltert, die echte bleibt");
+        assertTrue(emails.get(0).redactedMatch().contains("firma") || !emails.get(0).redactedMatch().contains("acme"));
+    }
+
+    @Test
+    void test_email_filter_kann_per_params_abgeschaltet_werden() {
+        DetectorConfig cfg = new DetectorConfig(true, Map.of("testEmailFilter", false));
+        List<Finding> f = scan("fabian@example.com", cfg);
+        assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("email")),
+                "bei abgeschaltetem Filter wird auch eine example.com-Adresse gemeldet");
+    }
+
+    @Test
     void echte_telefonnummer_wird_weiterhin_erkannt() {
         List<Finding> f = scan("phone: +41 44 123 45 67", allPatterns());
         assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("phone")));
