@@ -1,9 +1,5 @@
 package ch.fabianaschwanden.sourcescanner.adapter.out.connector;
 
-import ch.fabianaschwanden.sourcescanner.domain.model.ManagedSecret;
-import ch.fabianaschwanden.sourcescanner.domain.model.SecretStorageMode;
-import ch.fabianaschwanden.sourcescanner.domain.port.out.ManagedSecretPort;
-import ch.fabianaschwanden.sourcescanner.domain.port.out.SecretEncryptionPort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Instance;
 import jakarta.inject.Inject;
@@ -19,13 +15,11 @@ import java.util.Optional;
 @ApplicationScoped
 public class CredentialResolver {
 
-    private final Instance<ManagedSecretPort> secrets;
-    private final Instance<SecretEncryptionPort> encryption;
+    private final Instance<ManagedSecretResolver> managed;
 
     @Inject
-    public CredentialResolver(Instance<ManagedSecretPort> secrets, Instance<SecretEncryptionPort> encryption) {
-        this.secrets = secrets;
-        this.encryption = encryption;
+    public CredentialResolver(Instance<ManagedSecretResolver> managed) {
+        this.managed = managed;
     }
 
     /**
@@ -33,7 +27,7 @@ public class CredentialResolver {
      * sind damit nicht auflösbar. Für direkte Instanziierung in Tests/CLI-Kontexten.
      */
     public CredentialResolver() {
-        this(null, null);
+        this((Instance<ManagedSecretResolver>) null);
     }
 
     /** Löst eine {@code tokenRef} auf; {@code empty} bei {@code null}/leer (anonymer Zugriff). */
@@ -60,21 +54,16 @@ public class CredentialResolver {
                 "unsupported tokenRef scheme (expected env:, secret: or vault:): " + tokenRef);
     }
 
-    /** Entschlüsselt transient ein DB-verschlüsseltes, UI-verwaltetes Secret (nie loggen/zurückgeben). */
+    /**
+     * Löst ein {@code secret:}-Referenz über den {@link ManagedSecretResolver} auf (DB-Zugriff mit
+     * eigenem Transaktions-/Request-Kontext, auch aus dem async Scan-Thread). Ohne Secret-Store
+     * (z. B. CLI/Tests mit dem No-Arg-Konstruktor) gibt es eine klare Meldung.
+     */
     private String resolveManaged(String name) {
-        if (secrets == null || encryption == null || secrets.isUnsatisfied() || encryption.isUnsatisfied()) {
+        if (managed == null || managed.isUnsatisfied()) {
             throw new IllegalStateException(
                     "secret: references require the managed secret store (server/dev profile): secret:" + name);
         }
-        ManagedSecret secret = secrets.get().byName(name)
-                .orElseThrow(() -> new IllegalStateException("no managed secret named: secret:" + name));
-        if (secret.mode() != SecretStorageMode.DB_ENCRYPTED) {
-            throw new IllegalStateException(
-                    "secret:" + name + " is not DB-encrypted (mode " + secret.mode() + "); reference it directly");
-        }
-        String ciphertext = secrets.get().encryptedValue(secret.id())
-                .orElseThrow(() -> new IllegalStateException("managed secret has no stored value: secret:" + name));
-        return encryption.get().decrypt(ciphertext)
-                .orElseThrow(() -> new IllegalStateException("could not decrypt managed secret: secret:" + name));
+        return managed.get().resolve(name);
     }
 }

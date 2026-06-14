@@ -19,8 +19,8 @@ import org.junit.jupiter.api.Test;
 
 class CredentialResolverTest {
 
-    /** Resolver ohne Secret-Store (Instances „unsatisfied") — für env:/vault:-Tests. */
-    private final CredentialResolver resolver = new CredentialResolver(empty(), empty());
+    /** Resolver ohne Secret-Store (Instance „unsatisfied") — für env:/vault:-Tests. */
+    private final CredentialResolver resolver = new CredentialResolver(empty());
 
     @Test
     void leere_ref_ist_anonym() {
@@ -58,21 +58,30 @@ class CredentialResolverTest {
     }
 
     @Test
-    void secret_ref_wird_aus_db_secret_entschluesselt() {
+    void secret_ref_wird_ueber_managed_resolver_aufgeloest() {
         UUID id = UUID.randomUUID();
         var port = new FakeSecretPort(
                 new ManagedSecret(id, "gh-token", SecretStorageMode.DB_ENCRYPTED, "", true, true),
                 "ENC(ghp_real_token)");
-        var enc = new FakeEncryption(); // entschlüsselt ENC(x) -> x
-        CredentialResolver r = new CredentialResolver(single(port), single(enc));
+        var mgr = new ManagedSecretResolver(port, new FakeEncryption());
+        CredentialResolver r = new CredentialResolver(single(mgr));
         assertEquals("ghp_real_token", r.resolve("secret:gh-token").orElseThrow());
     }
 
     @Test
-    void secret_ref_unbekannter_name_bricht() {
-        CredentialResolver r = new CredentialResolver(single(new FakeSecretPort(null, null)),
-                single(new FakeEncryption()));
-        assertThrows(IllegalStateException.class, () -> r.resolve("secret:missing"));
+    void managed_resolver_entschluesselt_db_secret() {
+        UUID id = UUID.randomUUID();
+        var port = new FakeSecretPort(
+                new ManagedSecret(id, "gh-token", SecretStorageMode.DB_ENCRYPTED, "", true, true),
+                "ENC(ghp_real_token)");
+        var mgr = new ManagedSecretResolver(port, new FakeEncryption());
+        assertEquals("ghp_real_token", mgr.resolve("gh-token"));
+    }
+
+    @Test
+    void managed_resolver_unbekannter_name_bricht() {
+        var mgr = new ManagedSecretResolver(new FakeSecretPort(null, null), new FakeEncryption());
+        assertThrows(IllegalStateException.class, () -> mgr.resolve("missing"));
     }
 
     // --- Test-Doubles -----------------------------------------------------------------------------
