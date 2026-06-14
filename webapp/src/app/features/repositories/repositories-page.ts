@@ -163,6 +163,24 @@ import { I18nService } from '../../core/i18n/i18n.service';
                 >
                   {{ scanning() === c.id ? t('repos.card.scanning') : t('repos.card.scan') }}
                 </button>
+                <button
+                  (click)="toggleRemediationById(c.id)"
+                  [title]="
+                    cardRemediation(c.id)
+                      ? t('repos.remediation.toggleOn')
+                      : t('repos.remediation.toggleOff')
+                  "
+                  class="rounded border border-default px-3 py-1.5 text-sm hover:text-accent"
+                  [class.text-accent]="cardRemediation(c.id)"
+                >
+                  {{ cardRemediation(c.id) ? t('bulk.remediationOff') : t('bulk.remediationOn') }}
+                </button>
+                <button
+                  (click)="removeCard(c)"
+                  class="rounded border border-default px-3 py-1.5 text-sm text-sev-high hover:underline"
+                >
+                  {{ t('common.delete') }}
+                </button>
               </div>
             </li>
           } @empty {
@@ -568,6 +586,29 @@ export class RepositoriesPage {
         this.reload();
         this.reloadCards();
       });
+  }
+
+  // --- Karten-Aktionen, gespiegelt zu den Sammelaktionen (WR-67) -------------------------------
+
+  /** Aktueller Remediation-Zustand der zur Karte gehörenden Quelle (für Label/Tooltip). */
+  protected cardRemediation(id: string): boolean {
+    return this.sources().find((s) => s.id === id)?.remediationEnabled ?? false;
+  }
+
+  /** Remediation-Opt-in einer Karte umschalten (löst die volle Quelle anhand der ID auf). */
+  protected toggleRemediationById(id: string): void {
+    const source = this.sources().find((s) => s.id === id);
+    if (source) {
+      this.toggleRemediation(source);
+    }
+  }
+
+  /** Repo direkt aus der Karten-Übersicht löschen. */
+  protected removeCard(card: RepositoryCard): void {
+    this.api.deleteSource(card.id).subscribe(() => {
+      this.reload();
+      this.reloadCards();
+    });
   }
 
   /** Lädt ein bestehendes Repo zum Bearbeiten ins Formular (Verwaltungsansicht). */

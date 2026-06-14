@@ -154,9 +154,11 @@ const SEVERITY_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
           <button (click)="bulkTriage('SUPPRESSED')" class="text-accent hover:underline">
             {{ t('findings.action.suppress') }}
           </button>
-          <button (click)="bulkRemediate()" class="text-accent hover:underline">
-            {{ t('findings.action.fixPr') }}
-          </button>
+          @if (selectionHasRemediable()) {
+            <button (click)="bulkRemediate()" class="text-accent hover:underline">
+              {{ t('findings.action.fixPr') }}
+            </button>
+          }
           <button (click)="clearSelection()" class="text-muted hover:underline">
             {{ t('bulk.clear') }}
           </button>
@@ -207,7 +209,7 @@ const SEVERITY_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
                 <button (click)="triage(f, 'SUPPRESSED')" class="text-accent hover:underline">
                   {{ t('findings.action.suppress') }}
                 </button>
-                @if (f.category === 'SECRET' && f.remediationStatus === 'OPEN') {
+                @if (canRemediate(f)) {
                   <button
                     (click)="remediate(f)"
                     [title]="t('findings.action.fixPr.tooltip')"
@@ -400,6 +402,19 @@ export class FindingsPage {
   }
 
   // --- Aktionen ---------------------------------------------------------------------------------
+
+  /**
+   * Fix-per-PR ist nur für noch offene Secret-Funde anwendbar (nur dafür gibt es einen Vorschlag).
+   * Einheitliche Bedingung für die Zeilen-Aktion und die Sammelaktion, damit beides konsistent ist.
+   */
+  protected canRemediate(finding: Finding): boolean {
+    return finding.category === 'SECRET' && finding.remediationStatus === 'OPEN';
+  }
+
+  /** {@code true}, wenn die aktuelle Auswahl mindestens einen remediierbaren Fund enthält. */
+  protected selectionHasRemediable(): boolean {
+    return this.findings().some((f) => this.selected().has(f.id) && this.canRemediate(f));
+  }
 
   protected remediate(finding: Finding): void {
     this.message.set(this.t('findings.msg.creatingPr'));
