@@ -151,6 +151,12 @@ import { I18nService } from '../../core/i18n/i18n.service';
                   {{ t('repos.card.insights') }}
                 </button>
                 <button
+                  (click)="editCard(c)"
+                  class="rounded border border-default px-3 py-1.5 text-sm hover:text-accent"
+                >
+                  {{ t('common.edit') }}
+                </button>
+                <button
                   (click)="scanCard(c)"
                   [disabled]="scanning() === c.id"
                   class="rounded bg-accent px-3 py-1.5 text-sm text-white hover:bg-accent-emphasis disabled:opacity-50"
@@ -582,6 +588,26 @@ export class RepositoriesPage {
   protected cancelEdit(): void {
     this.resetForm();
     this.setView('cards');
+  }
+
+  /**
+   * Bearbeiten direkt aus der Karten-Übersicht: löst die vollständige Quelle (mit Location, Token,
+   * Report-E-Mails …) anhand der Karten-ID auf und öffnet das Bearbeiten-Formular. Fehlt die Quelle
+   * lokal noch, wird sie kurz nachgeladen.
+   */
+  protected editCard(card: RepositoryCard): void {
+    const source = this.sources().find((s) => s.id === card.id);
+    if (source) {
+      this.edit(source);
+      return;
+    }
+    this.api.sources().subscribe((list) => {
+      this.sources.set(list);
+      const found = list.find((s) => s.id === card.id);
+      if (found) {
+        this.edit(found);
+      }
+    });
   }
 
   protected scrubDryRun(source: RepositorySource): void {
