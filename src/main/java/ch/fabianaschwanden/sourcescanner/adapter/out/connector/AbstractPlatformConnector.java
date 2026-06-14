@@ -63,7 +63,16 @@ abstract class AbstractPlatformConnector implements RepositoryConnectorPort {
             return clone.call();
         } catch (Exception e) {
             deleteRecursively(workDir);
-            throw new IllegalStateException("failed to clone " + ref.id() + ": " + e.getMessage(), e);
+            String msg = e.getMessage() == null ? "" : e.getMessage();
+            if (msg.toLowerCase(java.util.Locale.ROOT).contains("not authorized")
+                    || msg.contains("401") || msg.contains("403")) {
+                String hint = token.isPresent()
+                        ? "token rejected — check the token is valid, not expired, and has read access to "
+                                + ref.id() + " (private/org repos need an authorized token)"
+                        : "repository requires authentication — add an access token for " + ref.id();
+                throw new IllegalStateException("not authorized to clone " + ref.id() + ": " + hint, e);
+            }
+            throw new IllegalStateException("failed to clone " + ref.id() + ": " + msg, e);
         }
     }
 
