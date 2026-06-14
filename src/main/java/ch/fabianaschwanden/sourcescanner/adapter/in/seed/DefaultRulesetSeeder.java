@@ -19,7 +19,7 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
- * Macht die ab Start wirksame Default-Regelkonfiguration sichtbar (DR-53/54): Existiert noch kein
+ * Macht die ab Start wirksame Default-Regelkonfiguration sichtbar (DR-56, WR-97): Existiert noch kein
  * Ruleset, wird ein global aktives Ruleset mit Namen {@code default} angelegt — befüllt aus dem
  * Detektor-Regelkatalog (alle Regeln an, Default-Severity, Abgleichsmodus {@code ALWAYS}). So
  * entspricht das, was die UI zeigt, dem, was ohne Konfiguration tatsächlich gilt; es bleibt voll

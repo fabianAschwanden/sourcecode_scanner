@@ -50,6 +50,7 @@ Bypass/Scope, Regel-Liste mit Checkboxen).
 | WR-94 | S | Für wertbezogene Regeln (z. B. `email`) SOLL der Editor einen **Abgleichsmodus** anbieten: `immer` \| `gegen Liste` \| `gegen API`; bei `Liste`/`API` ist eine Datenquelle wählbar (WR-50/IR-67). |
 | WR-95 | S | Rulesets SOLLEN angelegt, bearbeitet und gelöscht werden können (nur Admin, WR-31); Änderungen wirken auf künftige Scans (DR-54) und werden auditiert (WR-34). |
 | WR-96 | C | Die UI KANN je Repository die zutreffenden/effektiven Rulesets anzeigen (welche Regel/Severity gilt) zur Nachvollziehbarkeit (DR-55). |
+| WR-97 | S | Die Rulesets-Übersicht SOLL das ab Start wirksame, automatisch angelegte Ruleset `default` (global, `active`) als regulären, editierbaren Eintrag zeigen (DR-56), damit sichtbar ist, welche Konfiguration ohne weiteres Zutun gilt. |
 
 ### Externe Datenquellen & Attribut-Mapping
 
