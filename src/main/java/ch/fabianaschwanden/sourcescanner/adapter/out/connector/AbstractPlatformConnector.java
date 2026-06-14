@@ -64,8 +64,16 @@ abstract class AbstractPlatformConnector implements RepositoryConnectorPort {
         } catch (Exception e) {
             deleteRecursively(workDir);
             String msg = e.getMessage() == null ? "" : e.getMessage();
-            if (msg.toLowerCase(java.util.Locale.ROOT).contains("not authorized")
-                    || msg.contains("401") || msg.contains("403")) {
+            String low = msg.toLowerCase(java.util.Locale.ROOT);
+            // Token akzeptiert, aber kein Lesezugriff auf genau dieses Repo (GitHub: "git-upload-pack
+            // not permitted") — andere Ursache als eine reine Auth-Ablehnung, daher eigener Hinweis.
+            if (low.contains("not permitted") || low.contains("upload-pack")) {
+                throw new IllegalStateException("not authorized to clone " + ref.id()
+                        + ": token authenticated but lacks read access to this repository — grant the token "
+                        + "access to " + ref.id() + " (fine-grained: add the repo + Contents:Read; classic: "
+                        + "repo scope + SSO authorisation), or verify the repository path exists", e);
+            }
+            if (low.contains("not authorized") || msg.contains("401") || msg.contains("403")) {
                 String hint = token.isPresent()
                         ? "token rejected — check the token is valid, not expired, and has read access to "
                                 + ref.id() + " (private/org repos need an authorized token)"
