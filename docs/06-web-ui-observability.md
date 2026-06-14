@@ -55,8 +55,17 @@ nie im Klartext eingegeben/angezeigt. Optional je Quelle: eine oder mehrere
 (Zusammenfassung + redigierte Funde) gesendet wird (WR-08, IR-53; opt-in).
 
 ### 3.3 Scan-Steuerung
-Scan manuell starten (Repo, Branch, Modus), laufende Scans live verfolgen
-(WebSocket-Fortschritt), Verlauf einsehen, Scan abbrechen, periodische Scans planen.
+Scan manuell starten (Repo, Branch, Modus), laufende Scans live verfolgen, Verlauf
+einsehen, Scan abbrechen, periodische Scans planen.
+
+**Fortschrittsanzeige (WR-04/04a/04b).** Jeder laufende Scan zeigt einen
+**Prozentwert (0–100 %) mit Fortschrittsleiste**. Der Wert kommt live über den
+SSE-Stream `GET /api/scans/{id}/events` (Mutiny `Multi<ScanEvent>`); die UI abonniert
+ihn per `EventSource`, solange der Scan läuft, und fällt auf Polling zurück, falls SSE
+nicht verfügbar ist. Backend-seitig schreibt der Orchestrator den Fortschritt **granular
+je abgeschlossenem Repository** fort (Start 10 % → anteilig je Repo → Persistenz/Finish
+100 %); `ScanProgressBroadcaster` verteilt die Events, der Stream wird bei Abschluss
+geschlossen. Abbruch/Fehler enden definiert bei 100 %.
 
 ### 3.4 Detektor- & Konfigurationsverwaltung
 Detektoren aktivieren/deaktivieren, Parameter (Entropie-Schwelle, Custom-Regex,
@@ -69,6 +78,38 @@ und Code-Kontext, Aktionen: als Baseline akzeptieren, unterdrücken (mit Begrün
 als False Positive markieren, Ticket erzeugen, **Fix per PR/MR vorschlagen** und
 **History bereinigen** (mit Dry-Run-Vorschau, Rotation-Checkliste und
 Freigabe-Dialog; Details in docs/07-remediation.md).
+
+**Code-Scanning-Ansicht (GitHub-Stil, WR-60..68).** Die Fundliste folgt im Aufbau dem
+GitHub-„Code scanning"-Tab: Titel, Tool-Status-Banner, Query-Filterleiste mit
+Offen/Geschlossen-Tabs und Facetten-Dropdowns, darunter die Ergebniszeilen.
+
+```
+Code scanning
+┌───────────────────────────────────────────────────────────────────────────┐
+│ ✓ Alle Detektoren laufen wie erwartet         🔧 Tools 6   + Detektor …    │  WR-60/61
+└───────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│ 🔍  is:open branch:main severity:high                                      │  WR-62
+└───────────────────────────────────────────────────────────────────────────┘
+ 🛡 12 Offen   ✓ 4 Geschlossen        Sprache▾  Detektor▾  Regel▾  Severity▾  Sortieren▾   WR-63/64
+─────────────────────────────────────────────────────────────────────────────
+ ⚠  AWS Access Key  (HIGH)                                            [ main ]   WR-65
+    #3 offen · vor 1 Minute · erkannt von secret.regex-ruleset in src/Config.java:21
+ ⚠  Partnernummer im Code  (MEDIUM)                                   [ main ]
+    #2 offen · vor 3 Minuten · erkannt von pii.customer-data-api in src/Kunde.java:14
+─────────────────────────────────────────────────────────────────────────────
+```
+
+- **Banner** spiegelt den Detektor-Zustand (degradierte Detektoren ⇒ Warnung statt
+  Haken, OR-05/NFR-07); „Tools N" = Anzahl aktiver Detektoren, „+ Detektor" verlinkt §3.4.
+- **Query-Leiste** und Dropdowns sind synchron: ein Dropdown schreibt seinen Token in die
+  Query (`severity:high`), eine getippte Query setzt die Dropdowns. Facetten-Optionen
+  zeigen nur vorkommende Werte. Sortierung: Severity, zuletzt/zuerst gesehen.
+- **Tabs** Offen/Geschlossen filtern nach Triage-Status (geschlossen = Baseline/Suppressed/FP).
+- **Zeile**: Severity-Icon + Badge (farbcodiert, WR-40), Regeltitel, Metazeile
+  `#N <status> <relative Zeit> · erkannt von <Detektor> in <Datei>:<Zeile>`, Branch-Badge;
+  Klick öffnet die Details. Optional Checkbox-Mehrfachauswahl für Sammel-Triage (WR-67).
+- Alles bleibt **redigiert** (WR-33/68) — kein Klartext in Treffer, Datei- oder Branch-Angabe.
 
 ### 3.6 Baseline- & Policy-Verwaltung
 Baseline-Einträge einsehen/entfernen, zentrale Gate-/Policy-Vorgaben pro
@@ -86,15 +127,35 @@ konsistente Severity-Farben (WR-40). Eingabe-Bedienelemente zeigen eine Hover-Hi
 (z. B. lokaler Pfad, Clone-URL, Token-Referenz `env:NAME`, Org-Unit) (WR-41). Umsetzung
 über die Tailwind-Konventionen des Templates; keine zusätzliche UI-Bibliothek nötig.
 
+**Mehrsprachigkeit (i18n, WR-70..73).** Alle sichtbaren Texte laufen über einen
+zentralen, Signal-basierten Übersetzungsdienst (`I18nService` mit Schlüssel→Text-
+Wörterbüchern für `en` und `de`); Komponenten geben Text über `t('key')` aus, kein
+hartkodierter Anzeigetext (NFR-27). Ein Sprachumschalter im Kopfbereich wechselt die
+Sprache zur Laufzeit ohne Neuladen und persistiert die Wahl in `localStorage` (NFR-28);
+Default ist Englisch, eine fehlende Übersetzung fällt auf den Schlüssel/die Default-
+Sprache zurück. Kein `@angular/localize`-Mehrfach-Build nötig — die Umschaltung ist
+reaktiv über Signals.
+
 ### 3.9 Einstellungen
 Admin-Ansicht für systemweite Einstellungen, die ohne Neustart änderbar sind (WR-15):
 
 - **Allgemeine Benachrichtigungs-E-Mail** für systemweite Meldungen/Sammelreports
   (WR-16, IR-52/54).
-- **Credential-/Secret-Referenzen** (z. B. `env:GITHUB_TOKEN`) verwalten — nur als
-  Referenz, nie im Klartext; angezeigt wird, welche Referenzen erwartet/auflösbar
-  sind (WR-17, WR-32). Hinweis: Environment-Variablen werden zum Prozessstart
-  gelesen; die UI pflegt die Referenzen, nicht die OS-Variablen selbst.
+- **Secret-Verwaltung** (CRUD, nur Admin, auditiert — WR-17/19/19a/19b). Beim Anlegen
+  wählt man je Eintrag einen **Modus**:
+  - **Referenz** (Default, WR-32-konform): nur `env:`/`vault:`-Verweis, kein Wert im
+    Backend; angezeigt wird die Auflösbarkeit.
+  - **Vault-Write** (IR-30): Klartext wird entgegengenommen, an den Secret-Store
+    geschrieben; behalten/zurückgegeben wird nur die entstehende Referenz, der Klartext
+    wird sofort verworfen.
+  - **DB-verschlüsselt** (NFR-29/30): Klartext wird **symmetrisch verschlüsselt** in der
+    zentralen DB abgelegt (Schlüssel aus Env/Secret-Store, nie in der DB); transient zum
+    Auflösen entschlüsselt, nie über die API zurückgegeben, nie geloggt. Bewusste,
+    dokumentierte Abweichung von WR-32.
+
+  In allen Modi werden Klartext-Eingaben maskiert und nie zurückgegeben (WR-19a). Hinweis:
+  Environment-Variablen werden zum Prozessstart gelesen; die UI pflegt die Referenzen,
+  nicht die OS-Variablen selbst.
 - Nicht-geheime Betriebsparameter (Default-Gate-Severity, Aufbewahrungsfrist,
   Standard-Scan-Modus) mit Validierung (WR-18).
 
@@ -113,7 +174,7 @@ Absender werden konfiguriert, Credentials nur als Secret-Referenz (NFR-08).
 | Aspekt | Umsetzung |
 |--------|-----------|
 | Authentifizierung | OIDC-Anbindung an Unternehmens-IdP (SSO, `quarkus-oidc`/BFF). SAML nur, falls der Blueprint es aufnimmt (docs/09, TR-13). |
-| Autorisierung | RBAC: Rollen `Viewer`, `Operator`, `Admin` |
+| Autorisierung | RBAC: Rollen `Viewer`, `Operator`, `Admin` + Service-Rolle `ci` (nur Ergebnis-Einlieferung über `POST /api/ingest`, IR-22/23) |
 | Transport | TLS erzwungen |
 | Credentials | nur Secret-Store-Referenzen, Eingabe maskiert, nie Rückgabe im Klartext |
 | Treffer-Anzeige | serverseitig redigiert (Klartext verlässt nie das Backend) |

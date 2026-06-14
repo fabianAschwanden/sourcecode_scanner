@@ -12,6 +12,9 @@ public interface ScanRecordPort {
 
     Optional<ScanRecord> byId(UUID id);
 
+    /** Lauf zu einer externen CI-Lauf-Referenz (für idempotente Einlieferung, IR-25). */
+    Optional<ScanRecord> byCiRunRef(String runRef);
+
     /** Läufe absteigend nach Startzeit (für die Scan-Liste der UI). */
     List<ScanRecord> recent(int limit);
 }

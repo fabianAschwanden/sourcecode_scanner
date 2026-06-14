@@ -24,6 +24,8 @@ export interface Finding {
   readonly lastSeen: string;
 }
 
+export type ScanTrigger = 'SERVER' | 'CI';
+
 export interface Scan {
   readonly id: string;
   readonly repoId: string;
@@ -33,6 +35,11 @@ export interface Scan {
   readonly findingCount: number;
   readonly startedAt: string;
   readonly finishedAt: string | null;
+  readonly trigger: ScanTrigger;
+  readonly ciPipelineUrl: string | null;
+  readonly ciCommit: string | null;
+  readonly ciBranch: string | null;
+  readonly ciActor: string | null;
 }
 
 export interface ScanEvent {
@@ -76,6 +83,20 @@ export interface SecretRefStatus {
   readonly resolvable: boolean;
 }
 
+export type SecretStorageMode = 'REFERENCE' | 'VAULT_WRITE' | 'DB_ENCRYPTED';
+
+export interface ManagedSecret {
+  readonly id: string | null;
+  readonly name: string;
+  readonly mode: SecretStorageMode;
+  readonly reference: string;
+  readonly hasStoredValue: boolean;
+  readonly resolvable: boolean;
+  // Nur Eingabe (transient); wird nie zurückgegeben:
+  readonly plaintext?: string | null;
+  readonly vaultPath?: string | null;
+}
+
 export interface Settings {
   readonly generalNotificationEmail: string | null;
   readonly defaultFailOn: Severity;
@@ -87,6 +108,41 @@ export interface Settings {
 export interface DetectorInfo {
   readonly id: string;
   readonly category: string;
+}
+
+export type DataSourceAuthType = 'NONE' | 'BEARER' | 'BASIC' | 'HEADER';
+export type DataSourceKind = 'REST' | 'UPLOAD';
+export type AttributeCategory = 'PII' | 'CUSTOM';
+
+export interface AttributeRule {
+  readonly field: string;
+  readonly check: boolean;
+  readonly severity: Severity;
+  readonly category: AttributeCategory;
+}
+
+export interface DataSource {
+  readonly id: string | null;
+  readonly name: string;
+  readonly kind: DataSourceKind;
+  readonly baseUrl: string;
+  readonly method: string;
+  readonly path: string;
+  readonly authType: DataSourceAuthType;
+  readonly tokenRef: string | null;
+  readonly authHeaderName: string | null;
+  readonly recordsPath: string;
+  readonly cacheTtlSeconds: number;
+  readonly minValueLength: number;
+  readonly enabled: boolean;
+  readonly attributes: AttributeRule[];
+}
+
+export interface DataSourceSchema {
+  readonly reachable: boolean;
+  readonly sampleRecords: number;
+  readonly attributes: { readonly field: string; readonly maskedExample: string }[];
+  readonly message: string;
 }
 
 export interface Policy {

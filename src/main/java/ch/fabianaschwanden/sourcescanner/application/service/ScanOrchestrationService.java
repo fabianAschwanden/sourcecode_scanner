@@ -10,6 +10,7 @@ import ch.fabianaschwanden.sourcescanner.domain.model.RepositoryRef;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanConfig;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanResult;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanUnit;
+import ch.fabianaschwanden.sourcescanner.domain.port.in.ScanProgressListener;
 import ch.fabianaschwanden.sourcescanner.domain.port.in.StartScanUseCase;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.BaselinePort;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.CommitCachePort;
@@ -75,12 +76,19 @@ public class ScanOrchestrationService implements StartScanUseCase {
     }
 
     @Override
-    public List<ScanResult> scan(ScanConfig config) {
+    public List<ScanResult> scan(ScanConfig config, ScanProgressListener onProgress) {
         configureCache(config);
         Baseline baseline = loadBaseline(config);
+        List<RepositoryRef> repos = resolveRepositories(config);
         List<ScanResult> results = new ArrayList<>();
-        for (RepositoryRef repo : resolveRepositories(config)) {
+        // Fortschritt anteilig je abgeschlossenem Repository im Bereich 10..95 % (WR-04b);
+        // Start (10 %) und Abschluss/Persistenz (100 %) verantwortet der aufrufende Server-Service.
+        int total = Math.max(1, repos.size());
+        int done = 0;
+        for (RepositoryRef repo : repos) {
             results.add(scanRepository(repo, config, baseline));
+            done++;
+            onProgress.onProgress(10 + (int) Math.round(85.0 * done / total));
         }
         return results;
     }

@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { RepositorySource } from '../../core/models/scanner';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 /** Repository-Quellen verwalten (WR-02): anlegen, löschen, Verbindung testen. Token nur als Referenz. */
 @Component({
@@ -10,7 +11,7 @@ import { RepositorySource } from '../../core/models/scanner';
   imports: [FormsModule],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">Repositories</h2>
+      <h2 class="mb-4 text-xl font-semibold">{{ t('repos.title') }}</h2>
 
       <form (ngSubmit)="create()" class="mb-6 flex flex-wrap items-end gap-2">
         <input
@@ -59,26 +60,26 @@ import { RepositorySource } from '../../core/models/scanner';
           title="Aktiviert Auto-Fix per PR und History-Scrub für dieses Repo (opt-in, RMR-02). Standardmässig aus."
         >
           <input [(ngModel)]="remediationEnabled" name="remediationEnabled" type="checkbox" />
-          Remediation
+          {{ t('repos.remediation') }}
         </label>
         <button
           type="submit"
           class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
         >
-          Anlegen
+          {{ t('common.create') }}
         </button>
       </form>
 
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-default text-left text-muted">
-            <th class="py-2">Name</th>
-            <th>Typ</th>
-            <th>Ort</th>
-            <th>Token</th>
-            <th>Report-E-Mails</th>
-            <th>Remediation</th>
-            <th>Aktionen</th>
+            <th class="py-2">{{ t('repos.name') }}</th>
+            <th>{{ t('repos.col.type') }}</th>
+            <th>{{ t('repos.col.location') }}</th>
+            <th>{{ t('repos.col.token') }}</th>
+            <th>{{ t('repos.col.reportEmails') }}</th>
+            <th>{{ t('repos.remediation') }}</th>
+            <th>{{ t('repos.col.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -101,26 +102,32 @@ import { RepositorySource } from '../../core/models/scanner';
                   [class.text-accent]="s.remediationEnabled"
                   [class.text-muted]="!s.remediationEnabled"
                 >
-                  {{ s.remediationEnabled ? 'aktiv' : 'aus' }}
+                  {{
+                    s.remediationEnabled ? t('repos.remediation.on') : t('repos.remediation.off')
+                  }}
                 </button>
               </td>
               <td class="space-x-2">
-                <button (click)="test(s)" class="text-accent hover:underline">Testen</button>
+                <button (click)="test(s)" class="text-accent hover:underline">
+                  {{ t('common.test') }}
+                </button>
                 @if (s.remediationEnabled) {
                   <button
                     (click)="scrubDryRun(s)"
                     title="Zeigt redigiert, welche Secrets aus der Git-Historie entfernt würden — ohne Änderung (RMR-22)."
                     class="text-accent hover:underline"
                   >
-                    Scrub-Vorschau
+                    {{ t('repos.scrubPreview') }}
                   </button>
                 }
-                <button (click)="remove(s)" class="text-sev-high hover:underline">Löschen</button>
+                <button (click)="remove(s)" class="text-sev-high hover:underline">
+                  {{ t('common.delete') }}
+                </button>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="py-3 text-muted">Keine Quellen.</td>
+              <td colspan="7" class="py-3 text-muted">{{ t('repos.empty') }}</td>
             </tr>
           }
         </tbody>
@@ -136,6 +143,11 @@ import { RepositorySource } from '../../core/models/scanner';
 })
 export class RepositoriesPage {
   private readonly api = inject(ScannerApi);
+  private readonly i18n = inject(I18nService);
+
+  protected t(key: string, params?: Record<string, string | number>): string {
+    return this.i18n.t(key, params);
+  }
 
   protected readonly sources = signal<RepositorySource[]>([]);
   protected name = '';

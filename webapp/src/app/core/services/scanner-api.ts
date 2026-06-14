@@ -2,8 +2,11 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  DataSource,
+  DataSourceSchema,
   DetectorInfo,
   Finding,
+  ManagedSecret,
   Policy,
   PrRef,
   RepositorySource,
@@ -104,6 +107,46 @@ export class ScannerApi {
       forcePushApproved,
       rotationConfirmed,
     });
+  }
+
+  // --- Externe Datenquellen (Phase 7, FR-21/22) ---
+
+  dataSources(): Observable<DataSource[]> {
+    return this.http.get<DataSource[]>('/api/datasources');
+  }
+
+  saveDataSource(source: DataSource): Observable<DataSource> {
+    return this.http.post<DataSource>('/api/datasources', source);
+  }
+
+  deleteDataSource(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/datasources/${id}`);
+  }
+
+  /** Probe-Abruf: redigiertes Attribut-Schema für das Mapping (IR-63, WR-51). */
+  probeDataSource(source: DataSource): Observable<DataSourceSchema> {
+    return this.http.post<DataSourceSchema>('/api/datasources/probe', source);
+  }
+
+  /** Lädt eine Key-Value-Liste (CSV/JSON) hoch; Antwort: Anzahl Hashes je Attribut (WR-56). */
+  uploadKeyValues(id: string, content: string): Observable<Record<string, number>> {
+    return this.http.post<Record<string, number>>(`/api/datasources/${id}/upload`, content, {
+      headers: { 'Content-Type': 'text/plain' },
+    });
+  }
+
+  // --- Verwaltete Secrets (WR-17/19) ---
+
+  secrets(): Observable<ManagedSecret[]> {
+    return this.http.get<ManagedSecret[]>('/api/secrets');
+  }
+
+  saveSecret(secret: ManagedSecret): Observable<ManagedSecret> {
+    return this.http.post<ManagedSecret>('/api/secrets', secret);
+  }
+
+  deleteSecret(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/secrets/${id}`);
   }
 
   settings(): Observable<Settings> {

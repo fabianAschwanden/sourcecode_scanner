@@ -167,11 +167,19 @@ scan:
 | `secret.high-entropy` | SECRET | Hochentropische Strings (Base64/Hex) |
 | `pii.patterns` | PII | IBAN, Kreditkarte, E-Mail, Telefonnummer |
 | `pii.custom-regex` | PII | Frei konfigurierbare Kundendaten-Muster |
+| `pii.customer-data-api` | PII | Konkrete Werte aus externer REST-API (Partnernummer, Name, …); Attribut-Mapping über UI |
 | `license.header` | LICENSE | Fehlende/abweichende Lizenz-Header |
 | `iac.misconfig` | IAC | Unsichere Defaults in Terraform/K8s/Dockerfiles |
 
 Verifikations-fähige Secret-Detektoren (aktiver Gültigkeits-Check) können optional
 ergänzt werden — analog zum TruffleHog-Ansatz.
+
+> **Datenquellen-gespeiste Detektoren.** Ein Detektor bleibt der `Detector`-SPI treu,
+> kann seine Suchbegriffe aber zur Laufzeit aus einer externen REST-API über den
+> `DataSourcePort` beziehen (siehe [01-architecture.md](01-architecture.md) §3.3). Der
+> `pii.customer-data-api`-Detektor lädt die im Attribut-Mapping (WR-50..54) als geprüft
+> markierten Werte, vergleicht sie exakt gegen die `ScanUnit` und gibt nur redigierte
+> Treffer aus (FR-21..23, DR-23..28). Werte verlassen den Speicher nie unredigiert.
 
 ## 9. Optionale Remediation-Fähigkeit
 

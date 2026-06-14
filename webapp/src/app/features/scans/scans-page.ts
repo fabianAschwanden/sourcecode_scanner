@@ -1,23 +1,27 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ScannerApi } from '../../core/services/scanner-api';
-import { RepositorySource, Scan } from '../../core/models/scanner';
+import { RepositorySource, Scan, ScanEvent } from '../../core/models/scanner';
+import { I18nService } from '../../core/i18n/i18n.service';
 
-/** Scan-Steuerung (WR-03): starten/abbrechen + Verlauf. Live-Status via Polling (SSE-Endpoint vorhanden). */
+/**
+ * Scan-Steuerung (WR-03): starten/abbrechen + Verlauf. Live-Fortschritt als Prozentbalken (WR-04a)
+ * über den SSE-Stream je laufendem Scan (WR-04), mit Polling-Fallback. Texte über i18n.
+ */
 @Component({
   selector: 'app-scans-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [FormsModule],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">Scans</h2>
+      <h2 class="mb-4 text-xl font-semibold">{{ t('scans.title') }}</h2>
 
       <div class="mb-4 flex items-end gap-2">
         <label class="text-sm text-muted">
-          Quelle
+          {{ t('scans.source') }}
           <select
             [(ngModel)]="selectedSource"
-            title="Zu scannende Repository-Quelle (zuvor unter Repositories anlegen)"
+            [title]="t('scans.source.tooltip')"
             class="ml-2 rounded border border-default px-2 py-1"
           >
             @for (s of sources(); track s.id) {
@@ -26,10 +30,10 @@ import { RepositorySource, Scan } from '../../core/models/scanner';
           </select>
         </label>
         <label class="text-sm text-muted">
-          Modus
+          {{ t('scans.mode') }}
           <select
             [(ngModel)]="mode"
-            title="full = gesamte Historie aller Branches; incremental = nur neue, noch nicht gescannte Commits"
+            [title]="t('scans.mode.tooltip')"
             class="ml-2 rounded border border-default px-2 py-1"
           >
             <option value="full">full</option>
@@ -41,19 +45,20 @@ import { RepositorySource, Scan } from '../../core/models/scanner';
           [disabled]="!selectedSource"
           class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis disabled:opacity-50"
         >
-          Scan starten
+          {{ t('scans.start') }}
         </button>
       </div>
 
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-default text-left text-muted">
-            <th class="py-2">Repository</th>
-            <th>Modus</th>
-            <th>Status</th>
-            <th>Fortschritt</th>
-            <th>Funde</th>
-            <th>Aktionen</th>
+            <th class="py-2">{{ t('scans.col.repository') }}</th>
+            <th>{{ t('scans.col.mode') }}</th>
+            <th>{{ t('scans.col.origin') }}</th>
+            <th>{{ t('scans.col.status') }}</th>
+            <th class="w-56">{{ t('scans.col.progress') }}</th>
+            <th>{{ t('scans.col.findings') }}</th>
+            <th>{{ t('scans.col.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -61,20 +66,38 @@ import { RepositorySource, Scan } from '../../core/models/scanner';
             <tr class="border-b border-default">
               <td class="py-2">{{ s.repoId }}</td>
               <td>{{ s.mode }}</td>
-              <td>{{ s.status }}</td>
-              <td>{{ s.progress }}%</td>
-              <td>{{ s.findingCount }}</td>
               <td>
-                @if (s.status === 'RUNNING') {
+                <span
+                  class="rounded-full border border-default px-2 text-xs"
+                  [title]="ciTooltip(s)"
+                >
+                  {{ s.trigger === 'CI' ? t('scans.origin.ci') : t('scans.origin.server') }}
+                </span>
+              </td>
+              <td>{{ liveStatus(s) }}</td>
+              <td>
+                <div class="flex items-center gap-2">
+                  <div class="h-2 w-32 overflow-hidden rounded bg-canvas">
+                    <div
+                      class="h-full rounded bg-accent transition-all"
+                      [style.width.%]="livePercent(s)"
+                    ></div>
+                  </div>
+                  <span class="tabular-nums">{{ livePercent(s) }}%</span>
+                </div>
+              </td>
+              <td>{{ liveFindings(s) }}</td>
+              <td>
+                @if (liveStatus(s) === 'RUNNING') {
                   <button (click)="cancel(s)" class="text-sev-high hover:underline">
-                    Abbrechen
+                    {{ t('scans.cancel') }}
                   </button>
                 }
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="py-3 text-muted">Noch keine Scans.</td>
+              <td colspan="7" class="py-3 text-muted">{{ t('scans.empty') }}</td>
             </tr>
           }
         </tbody>
@@ -84,11 +107,17 @@ import { RepositorySource, Scan } from '../../core/models/scanner';
 })
 export class ScansPage {
   private readonly api = inject(ScannerApi);
+  private readonly i18n = inject(I18nService);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly sources = signal<RepositorySource[]>([]);
   protected readonly scans = signal<Scan[]>([]);
   protected selectedSource: string | null = null;
   protected mode = 'full';
+
+  /** Live-Events je laufendem Scan (überschreiben die persistierten Werte, WR-04a). */
+  protected readonly live = signal<Record<string, ScanEvent>>({});
+  private readonly streams = new Map<string, EventSource>();
 
   constructor() {
     this.api.sources().subscribe((list) => {
@@ -96,20 +125,82 @@ export class ScansPage {
       this.selectedSource = list[0]?.id ?? null;
     });
     this.reload();
+    this.destroyRef.onDestroy(() => this.streams.forEach((es) => es.close()));
+  }
+
+  protected t(key: string): string {
+    return this.i18n.t(key);
   }
 
   protected start(): void {
     if (!this.selectedSource) {
       return;
     }
-    this.api.startScan(this.selectedSource, this.mode).subscribe(() => this.reload());
+    this.api.startScan(this.selectedSource, this.mode).subscribe((scan) => {
+      this.subscribeProgress(scan.id);
+      this.reload();
+    });
   }
 
   protected cancel(scan: Scan): void {
     this.api.cancelScan(scan.id).subscribe(() => this.reload());
   }
 
+  protected livePercent(scan: Scan): number {
+    return this.live()[scan.id]?.progress ?? scan.progress;
+  }
+
+  protected liveStatus(scan: Scan): string {
+    return this.live()[scan.id]?.status ?? scan.status;
+  }
+
+  protected liveFindings(scan: Scan): number {
+    return this.live()[scan.id]?.findingCount ?? scan.findingCount;
+  }
+
+  /** Zeigt die CI-Metadaten als Tooltip auf dem Herkunfts-Badge (WR-69). */
+  protected ciTooltip(scan: Scan): string {
+    if (scan.trigger !== 'CI') {
+      return this.t('scans.origin.server');
+    }
+    return [
+      scan.ciBranch ? `branch: ${scan.ciBranch}` : null,
+      scan.ciCommit ? `commit: ${scan.ciCommit}` : null,
+      scan.ciActor ? `actor: ${scan.ciActor}` : null,
+      scan.ciPipelineUrl ?? null,
+    ]
+      .filter((x): x is string => !!x)
+      .join(' · ');
+  }
+
   private reload(): void {
-    this.api.recentScans(50).subscribe((list) => this.scans.set(list));
+    this.api.recentScans(50).subscribe((list) => {
+      this.scans.set(list);
+      // Für jeden noch laufenden Scan einen SSE-Stream abonnieren (idempotent).
+      list.filter((s) => s.status === 'RUNNING').forEach((s) => this.subscribeProgress(s.id));
+    });
+  }
+
+  /** Abonniert den SSE-Fortschritt eines Scans; bei Abschluss wird neu geladen (WR-04). */
+  private subscribeProgress(scanId: string): void {
+    if (this.streams.has(scanId) || typeof EventSource === 'undefined') {
+      return;
+    }
+    const es = new EventSource(`/api/scans/${scanId}/events`);
+    this.streams.set(scanId, es);
+    es.onmessage = (msg: MessageEvent<string>) => {
+      const event = JSON.parse(msg.data) as ScanEvent;
+      this.live.update((m) => ({ ...m, [scanId]: event }));
+      if (event.status !== 'RUNNING') {
+        this.closeStream(scanId);
+        this.reload();
+      }
+    };
+    es.onerror = () => this.closeStream(scanId);
+  }
+
+  private closeStream(scanId: string): void {
+    this.streams.get(scanId)?.close();
+    this.streams.delete(scanId);
   }
 }

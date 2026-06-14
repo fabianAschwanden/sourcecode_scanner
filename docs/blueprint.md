@@ -137,6 +137,8 @@ webapp/src/app/
 
 Standalone Components (nie NgModules; `standalone: true` nicht setzen) · Signals (`signal()`, `computed()`, `effect()`) · `inject()` statt Konstruktor-Injection · `input()`/`output()` statt Decorators · `OnPush` überall · Native Control Flow `@if`/`@for`/`@switch` · `providedIn: 'root'` · strict TS, kein `any` · feature-basierte Ordner, `app-*`-Präfix.
 
+**i18n:** Alle sichtbaren Texte über den zentralen `I18nService` (`t('key')`, Signal-basiert) — kein hartkodierter Anzeigetext; Wörterbücher DE/EN unter `core/i18n/`, Sprachwahl persistiert in `localStorage`, Default Englisch (WR-70..73, NFR-27/28).
+
 ## 6. Persistenz-Prinzipien
 
 - **Liquibase besitzt das Schema** (`migrate-at-start=true`); Hibernate läuft im `validate`-Modus.

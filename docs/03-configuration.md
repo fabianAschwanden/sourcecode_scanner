@@ -35,6 +35,23 @@ scan:
       group: platform
       auth: { tokenRef: env:GITLAB_TOKEN }
 
+  # ---- Externe Datenquellen (vertrauliche Kundendaten) -----------
+  # REST-API, deren Werte im Code gesucht werden (FR-21, IR-60..66). Auth nur als
+  # Secret-Referenz; Antwortdaten nie persistiert/geloggt (NFR-23).
+  dataSources:
+    - name: crm-partners
+      kind: rest                     # rest | upload (upload: Key-Value-Liste, nur Hashes, IR-67)
+      baseUrl: https://crm.intern/api/v1
+      method: GET
+      path: /partners
+      query: { pageSize: 500 }
+      auth:
+        type: bearer                 # bearer | basic | header
+        tokenRef: env:CRM_API_TOKEN  # nur Referenz, nie Klartext (IR-61)
+      recordsPath: '$.data[*]'       # JSONPath auf die Datensätze (IR-62)
+      timeoutSeconds: 10
+      retries: 2
+
   # ---- Scan-Verhalten --------------------------------------------
   history:
     mode: full            # full | incremental | sinceCommit | diff  (pr = Alias für diff)
@@ -60,6 +77,30 @@ scan:
         - name: customer-id
           pattern: 'CUST-\d{8}'
           severity: HIGH
+    # Kundendaten-Detektor, gespeist aus einer externen REST-API (FR-21/22, DR-23..28).
+    # Sucht konkrete Werte (z. B. Partnernummern, Namen) im Code; Werte nur im Speicher,
+    # nie geloggt/persistiert (NFR-23). Auth nur als Secret-Referenz (NFR-08/IR-61).
+    customerData:
+      enabled: true
+      dataSource: crm-partners        # referenziert dataSources[].name
+      cacheTtlSeconds: 600
+      minValueLength: 4               # zu kurze Werte ignorieren (DR-25)
+      # Attribut-Mapping: i. d. R. über die UI gepflegt (WR-50..54); hier optional als Default.
+      attributes:
+        - field: partnernummer        # Attribut/Feld in der API-Antwort
+          check: true
+          severity: HIGH
+          category: PII
+        - field: name
+          check: true
+          severity: MEDIUM
+          category: PII
+        - field: vorname
+          check: true
+          severity: MEDIUM
+          category: PII
+        - field: interneNotiz
+          check: false                # nicht prüfen
     license:
       enabled: false
     iac:
@@ -113,6 +154,17 @@ scan:
 | `scan.history.mode` | enum | Scan-Tiefe (siehe Architektur §6) |
 | `scan.detectors.*.enabled` | bool | Detektor-Gruppe aktivieren |
 | `scan.detectors.secrets.verify` | bool | Aktive Validierung gefundener Secrets |
+| `scan.dataSources[].kind` | enum | `rest` (API) \| `upload` (Key-Value-Liste, nur Hashes, IR-67) |
+| `scan.dataSources[].baseUrl` | string | Basis-URL der externen REST-Datenquelle (IR-60; nur `rest`) |
+| `scan.dataSources[].auth.tokenRef` | string | Secret-Referenz für die Datenquelle, nie Klartext (IR-61) |
+| `scan.dataSources[].recordsPath` | string | JSONPath auf die Datensätze in der Antwort (IR-62) |
+| `scan.detectors.customerData.dataSource` | string | Name der genutzten Datenquelle (`dataSources[].name`) |
+| `scan.detectors.customerData.cacheTtlSeconds` | int | TTL des In-Memory-Wertcaches (DR-27); nie auf Platte |
+| `scan.detectors.customerData.minValueLength` | int | Mindestlänge geladener Werte; kürzere werden ignoriert (DR-25) |
+| `scan.detectors.customerData.attributes[].field` | string | Attribut/Feld in der API-Antwort (z. B. `partnernummer`) |
+| `scan.detectors.customerData.attributes[].check` | bool | Attribut prüfen (Mapping, WR-52) |
+| `scan.detectors.customerData.attributes[].severity` | enum | Severity der Treffer dieses Attributs |
+| `scan.detectors.customerData.attributes[].category` | enum | `PII` \| `CUSTOM` |
 | `scan.baseline` | path | Datei mit akzeptierten Altfunden |
 | `scan.gate.failOn` | enum | Mindest-Severity, die CI rot macht |
 | `scan.gate.failOnNewOnly` | bool | Nur Delta gegen Baseline bewerten |

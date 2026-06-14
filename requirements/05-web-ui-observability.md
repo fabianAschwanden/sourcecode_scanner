@@ -13,10 +13,27 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | WR-02 | S | Die UI SOLL Repository-Quellen anlegen, bearbeiten, löschen und die Verbindung testen können. |
 | WR-03 | S | Die UI SOLL Scans manuell starten (Repo, Branch, Modus) und abbrechen können. |
 | WR-04 | S | Die UI SOLL laufende Scans live mit Fortschritt anzeigen (WebSocket/SSE). |
+| WR-04a | S | Der Scan-Fortschritt MUSS als **Prozentwert (0–100 %)** dargestellt werden, ergänzt um eine visuelle **Fortschrittsleiste**; der Wert SOLL sich während des Laufs live aktualisieren (SSE-Stream je Scan-ID, WR-04), nicht erst am Ende. |
+| WR-04b | S | Das Backend SOLL den Fortschritt während des Scans **granular fortschreiben** (z. B. anteilig je abgeschlossenem Repository/Arbeitspaket), nicht nur Start/Ende; bei Abschluss/Abbruch/Fehler endet er definiert bei 100 %. |
 | WR-05 | C | Die UI KANN periodische/geplante Scans konfigurieren. |
 | WR-06 | S | Die UI SOLL Detektoren aktivieren/deaktivieren und deren Parameter pflegen, mit Validierung vor dem Speichern. |
 | WR-07 | C | Die UI KANN geladene Plugins mit ID, Kategorie und Version anzeigen. |
 | WR-08 | S | Die UI SOLL beim Anlegen/Bearbeiten einer Repository-Quelle optional eine oder mehrere Report-E-Mail-Adressen erfassen, an die nach Scans dieses Repos ein Report versendet wird (IR-53). |
+
+### Externe Datenquellen & Attribut-Mapping
+
+Verwaltung der externen REST-Datenquelle für vertrauliche Kundendaten und das Mapping,
+welche Attribute im Code geprüft werden (FR-21/FR-22, IR-60..IR-66, DR-23..DR-28).
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-50 | S | Die UI SOLL externe REST-Datenquellen anlegen/bearbeiten/löschen: Basis-URL, Methode/Pfad, Auth (nur Secret-Referenz, WR-32), Datensatz-Pfad (JSONPath) und Cache-TTL. |
+| WR-51 | S | Die UI SOLL die Datenquelle testweise abrufen (IR-63) und die zurückgelieferten **Attribute** (Feldnamen) **redigiert** auflisten — mit maskierter Beispielausprägung, nie Klartextwerten (WR-33). |
+| WR-52 | S | Die UI SOLL je Attribut ein Mapping pflegen: `prüfen` (ja/nein), Severity (INFO..CRITICAL) und Kategorie (PII \| CUSTOM); z. B. `partnernummer → prüfen, HIGH, PII`, `name → prüfen, MEDIUM, PII`. |
+| WR-53 | S | Das Mapping SOLL serverseitig persistiert und ohne Neustart wirksam werden; eine Validierung (mind. ein geprüftes Attribut, gültige Severity) SOLL vor dem Speichern erfolgen (analog WR-06). |
+| WR-54 | M | Die UI DARF die geladenen Datenwerte nie anzeigen; im Mapping erscheinen ausschliesslich Attributnamen und maskierte Beispiele (WR-33, DR-26). |
+| WR-55 | C | Die UI KANN je Repository/Org-Unit zuordnen, welche Datenquelle(n) beim Scan herangezogen werden (IR-65). |
+| WR-56 | S | Die UI SOLL den Datenquellen-Typ (REST-API oder Upload) wählbar machen und für Upload-Quellen eine CSV/JSON-Datei hochladen können; angezeigt wird nur die Anzahl gespeicherter Hashes je Attribut, nie die Werte (IR-67, WR-54). |
 
 ### Einstellungen (Administration)
 
@@ -24,25 +41,57 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 |----|------|-------------|
 | WR-15 | S | Die UI SOLL eine Einstellungs-Ansicht bereitstellen, in der allgemeine Systemeinstellungen ohne Neustart geändert werden können (nur Rolle Admin, WR-31). |
 | WR-16 | S | Die Einstellungen SOLLEN eine allgemeine Benachrichtigungs-E-Mail-Adresse umfassen, an die systemweite Meldungen (z. B. Betriebs-/Sammelreports) gesendet werden (IR-52). |
-| WR-17 | S | Die UI SOLL Credential-/Secret-Referenzen (z. B. Environment-Variablen wie `env:GITHUB_TOKEN`) als verwaltbare Einträge anzeigen und pflegen können — ausschliesslich als Referenz, nie als Klartext (WR-32). |
+| WR-17 | S | Die UI SOLL Credential-/Secret-Referenzen (z. B. Environment-Variablen wie `env:GITHUB_TOKEN`) als verwaltbare Einträge anlegen/bearbeiten/löschen und ihre Auflösbarkeit anzeigen — voller CRUD (WR-19). |
 | WR-18 | C | Die UI KANN nicht-geheime Betriebsparameter pflegen (z. B. Standard-Gate-Severity, Aufbewahrungsfrist, Standard-Scan-Modus), mit Validierung vor dem Speichern. |
+| WR-19 | S | Die UI SOLL beim Anlegen eines Secrets je Eintrag einen **Modus** wählbar machen: (a) **Referenz** (`env:`/`vault:`, kein Wert im Backend, Default — WR-32-konform); (b) **Vault-Write** (Klartext entgegennehmen, an den Secret-Store schreiben, nur die Referenz behalten, Klartext sofort verwerfen, IR-30); (c) **DB-verschlüsselt** (Klartext at-rest verschlüsselt in der zentralen DB, NFR-29). Der Modus bestimmt Speicherung und Anzeige. |
+| WR-19a | M | In allen Modi DARF ein Klartext-Wert nie zurückgegeben, nie geloggt und in der Liste nur als Status/Referenz (bzw. maskiert) dargestellt werden (WR-33, NFR-09); Eingabefelder für Klartext sind maskiert. |
+| WR-19b | M | Secret-Verwaltung (alle Modi) ist nur der Rolle **Admin** zugänglich (WR-31) und jede Änderung wird auditiert (WR-34). |
 
 ### Finding-Workflow
 
 | ID | Prio | Anforderung |
 |----|------|-------------|
-| WR-10 | S | Die UI SOLL Funde filter- und sortierbar darstellen (Repo, Severity, Detektor, Status). |
+| WR-10 | S | Die UI SOLL Funde filter- und sortierbar darstellen (Repo, Severity, Detektor, Status); die konkrete Darstellung folgt der Code-Scanning-Ansicht (WR-60..68). |
 | WR-11 | S | Die UI SOLL Funddetails mit redigiertem Treffer und Code-Kontext anzeigen. |
 | WR-12 | S | Die UI SOLL Funde triagieren: als Baseline akzeptieren, unterdrücken (mit Pflichtbegründung), als False Positive markieren. |
 | WR-13 | C | Die UI KANN aus einem Fund ein Ticket (Jira) erzeugen. |
 | WR-14 | C | Die UI KANN Baseline-Einträge einsehen und entfernen. |
+
+### Code-Scanning-Ansicht (GitHub-Stil)
+
+Die Finding-Liste SOLL im Aufbau der GitHub-„Code scanning"-Ansicht gestaltet sein
+(Referenz: GitHub Security-Tab). Sie konkretisiert WR-10/WR-40 für die Funddarstellung.
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-60 | S | Die Ansicht SOLL den Titel „Code scanning" und ein **Status-Banner** zum Tool-/Scan-Zustand zeigen (z. B. „Alle Detektoren laufen wie erwartet" mit grünem Haken, bzw. eine Warnung bei degradierten Detektoren, OR-05/NFR-07). |
+| WR-61 | C | Das Banner KANN rechts die Anzahl aktiver Detektoren/Tools (`Tools N`) sowie eine Aktion zum Aktivieren weiterer Detektoren (`Detektor hinzufügen`, verweist auf die Detektor-Verwaltung WR-06) anzeigen. |
+| WR-62 | S | Die Ansicht SOLL eine **Such-/Filterleiste** mit Query-Syntax bereitstellen (z. B. `is:open branch:main severity:high detector:secret.regex-ruleset`); die Query SOLL mit den Dropdown-Filtern synchron sein (Änderung am Dropdown aktualisiert die Query und umgekehrt). |
+| WR-63 | S | Die Ansicht SOLL **Status-Tabs mit Zähler** zeigen: `N Offen` und `N Geschlossen` (geschlossen = triagiert: Baseline/Suppressed/False-Positive), jeweils mit Icon; der aktive Tab filtert die Liste. |
+| WR-64 | S | Die Ansicht SOLL **Facetten-Filter** als Dropdowns bereitstellen — mindestens `Sprache/Dateityp`, `Detektor` (entspr. „Tool"), `Regel`, `Severity` — sowie ein **Sortier**-Dropdown (z. B. Severity, zuletzt gesehen, zuerst gesehen). Optionen SOLLEN nur tatsächlich vorkommende Werte enthalten (Facettierung). |
+| WR-65 | S | Jede **Ergebniszeile** SOLL enthalten: Status-/Severity-Icon, Regel-/Fundtitel, ein **Severity-Badge** (farbcodiert, WR-40), eine Metazeile `#<lfd-Nr.> <Status> <relative Zeit> • erkannt von <Detektor> in <Datei>:<Zeile>` und rechts ein **Branch-Badge**; Klick öffnet die Funddetails (WR-11). |
+| WR-66 | C | Funde KÖNNEN eine stabile, fortlaufende Anzeigenummer (`#N`) je Repository tragen und einen relativen Zeitstempel („vor 1 Minute") für Erst-/Letztsichtung zeigen. |
+| WR-69 | S | Die UI SOLL die **Herkunft** eines Laufs/Funds anzeigen (Server vs. CI/CD) und nach Herkunft filterbar machen; bei CI-Läufen SOLLEN die CI-Metadaten (Pipeline/Job-Link, Commit, Branch) einsehbar sein (IR-22/25). |
+| WR-67 | C | Die Ansicht KANN Mehrfachauswahl per Checkbox je Zeile und Kopfzeile bieten, um Funde gesammelt zu triagieren (Sammel-Baseline/-Suppress mit Pflichtbegründung, WR-12). |
+| WR-68 | S | Treffer-Anzeige bleibt redigiert (WR-33); Branch-, Datei- und Detektorangaben enthalten nie Klartext-Geheimnisse. |
 
 ### Darstellung & Usability
 
 | ID | Prio | Anforderung |
 |----|------|-------------|
 | WR-40 | S | Die UI SOLL durchgängig in einem dunklen Erscheinungsbild im Stil von GitHub (Dark Mode) gestaltet sein (Hintergründe, Flächen, Text, Akzent- und Severity-Farben), konsistent über alle Ansichten. |
-| WR-41 | S | Eingabe-Bedienelemente (Felder, Auswahllisten) SOLLEN eine Hover-Hilfe (Tooltip) mit einem konkreten Eingabe-Beispiel anzeigen (z. B. Pfad `/Users/me/git/projekt`, Clone-URL `https://github.com/org/repo.git`, Token-Referenz `env:GITHUB_TOKEN`, Org-Unit `team-a/payments`). |
+| WR-41 | S | Eingabe-Bedienelemente (Felder, Auswahllisten) SOLLEN eine Hover-Hilfe (Tooltip) mit einem konkreten Eingabe-Beispiel anzeigen (z. B. Pfad `/Users/me/git/projekt`, Clone-URL `https://github.com/org/repo.git`, Token-Referenz `env:GITHUB_TOKEN`, Org-Unit `team-a/payments`, Datenquellen-URL `https://crm.intern/api/v1/partners`, Datensatz-Pfad `$.data[*]`, Code-Scanning-Query `is:open branch:main severity:high`). |
+
+### Internationalisierung (i18n)
+
+Die Web-UI ist mehrsprachig (FR-26, NFR-27/28). Mitgeliefert: Englisch (Default) und Deutsch.
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-70 | S | Die UI SOLL alle sichtbaren Texte über einen zentralen Übersetzungsdienst (Schlüssel→Text) ausgeben; **Deutsch und Englisch** sind verfügbar (FR-26). |
+| WR-71 | S | Die UI SOLL einen **Sprachumschalter** (z. B. im Kopfbereich) bereitstellen, der die Sprache zur Laufzeit ohne Neuladen wechselt; die Auswahl SOLL clientseitig persistiert werden (NFR-28). |
+| WR-72 | S | Auch Tooltips/Hilfetexte (WR-41) und Statusmeldungen (z. B. Triage-/Upload-/Remediation-Rückmeldungen) SOLLEN lokalisiert sein. |
+| WR-73 | C | Fehlt eine Übersetzung, KANN die UI nachvollziehbar auf die Default-Sprache bzw. den Schlüssel zurückfallen, ohne zu brechen. |
 
 ### Schnittstelle
 
@@ -50,6 +99,7 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 |----|------|-------------|
 | WR-20 | M | Die UI MUSS ausschließlich über eine dokumentierte REST-API mit dem Backend kommunizieren. |
 | WR-21 | C | Die REST-API KANN per OpenAPI-Spezifikation versioniert und extern nutzbar sein. |
+| WR-22 | S | Die Finding-API SOLL die Code-Scanning-Ansicht (WR-60..68) bedienen: Filter nach Status offen/geschlossen inkl. Zähler, Facetten-Werte (vorkommende Detektoren/Regeln/Dateitypen) und eine Sortierung; die Such-Query (WR-62) wird serverseitig oder clientseitig auf diese Filter abgebildet. |
 
 ### Sicherheit
 

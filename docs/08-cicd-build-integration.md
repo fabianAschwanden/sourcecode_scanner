@@ -159,18 +159,29 @@ Build-Gates müssen schnell sein, sonst werden sie umgangen oder abgeschaltet:
 
 Der Build-Step ist derselbe Scan-Core wie im Server-/UI-Betrieb (docs/06) — nur
 über die CLI getrieben. Optional meldet der Build-Step seine Ergebnisse an den
-Server zurück (zentrale Sicht/Trend), ohne dass der Build vom Server abhängt:
+zentralen Server zurück (zentrale Sicht/Trend, IR-21..26), ohne dass der Build vom
+Server abhängt:
 
 ```yaml
 output:
   formats: [sarif, gitlab]
   reportBack:
-    enabled: false          # optional: Ergebnisse an zentralen Server pushen
-    serverUrlRef: env:SCANNER_SERVER_URL
-    tokenRef: env:SCANNER_REPORT_TOKEN
+    enabled: false                       # opt-in: Ergebnisse an zentralen Server pushen (IR-21)
+    serverUrlRef: env:SCANNER_SERVER_URL # Basis-URL des Servers (nur Referenz)
+    auth:                                # OIDC Client-Credentials, Service-Account-Rolle 'ci' (IR-23)
+      tokenUrlRef: env:SCANNER_OIDC_TOKEN_URL
+      clientId: scanner-ci
+      clientSecretRef: env:SCANNER_CI_CLIENT_SECRET
+    runRef: ${CI_PIPELINE_ID}            # externe Lauf-Referenz für Idempotenz (IR-25)
 ```
 
-Fällt der Server aus, bleibt das Build-Gate funktionsfähig (Entkopplung).
+**Ablauf:** Nach dem Scan sendet die CLI einen redigierten Ergebnis-Payload (Repo,
+Modus, Status, Funde **ohne Klartext**, CI-Metadaten: Pipeline/Job-URL, Commit, Branch,
+Aktor) per `POST /api/ingest` an den Server. Der Server legt daraus einen Scan-Record
+mit `trigger=CI` und die Funde in der zentralen DB ab; in der UI sind sie wie
+Server-Läufe sicht- und filterbar (Herkunft `CI`, WR-69). Die Einlieferung ist über
+`runRef` idempotent (IR-25). **Entkopplung:** schlägt der Push fehl (Server aus, Auth-
+Fehler), bleibt das Build-Gate über den Exit-Code unverändert funktionsfähig (IR-26).
 
 ## 7. Exit-Code-Vertrag (verbindlich)
 

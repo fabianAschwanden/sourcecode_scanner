@@ -1,7 +1,8 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ScannerApi } from '../../core/services/scanner-api';
-import { Settings, Severity } from '../../core/models/scanner';
+import { ManagedSecret, SecretStorageMode, Settings, Severity } from '../../core/models/scanner';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 /** Systemweite Einstellungen (WR-15..18): allgemeine E-Mail, Defaults, Secret-Referenz-Status. */
 @Component({
@@ -10,7 +11,7 @@ import { Settings, Severity } from '../../core/models/scanner';
   imports: [FormsModule],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">Einstellungen</h2>
+      <h2 class="mb-4 text-xl font-semibold">{{ t('settings.title') }}</h2>
 
       @if (settings(); as s) {
         <form (ngSubmit)="save()" class="mb-6 grid max-w-xl gap-3">
@@ -72,25 +73,98 @@ import { Settings, Severity } from '../../core/models/scanner';
           </div>
         </form>
 
-        <h3 class="mb-2 font-medium text-fg">Secret-Referenzen</h3>
-        <table class="w-full max-w-xl text-sm">
+        <h3 class="mb-1 font-medium text-fg">{{ t('settings.secrets.title') }}</h3>
+        <p class="mb-3 max-w-2xl text-sm text-muted">{{ t('settings.secrets.intro') }}</p>
+
+        <form (ngSubmit)="saveSecret()" class="mb-4 flex flex-wrap items-end gap-2">
+          <input
+            [(ngModel)]="secretName"
+            name="secretName"
+            [placeholder]="t('secrets.name')"
+            required
+            class="rounded border border-default px-2 py-1"
+          />
+          <select
+            [(ngModel)]="secretMode"
+            name="secretMode"
+            [title]="t('secrets.mode')"
+            class="rounded border border-default px-2 py-1"
+          >
+            <option value="REFERENCE">{{ t('secrets.mode.REFERENCE') }}</option>
+            <option value="VAULT_WRITE">{{ t('secrets.mode.VAULT_WRITE') }}</option>
+            <option value="DB_ENCRYPTED">{{ t('secrets.mode.DB_ENCRYPTED') }}</option>
+          </select>
+          @if (secretMode === 'REFERENCE') {
+            <input
+              [(ngModel)]="secretReference"
+              name="secretReference"
+              [placeholder]="t('secrets.reference')"
+              title="env:GITHUB_TOKEN"
+              class="rounded border border-default px-2 py-1"
+            />
+          } @else {
+            <input
+              [(ngModel)]="secretValue"
+              name="secretValue"
+              type="password"
+              [placeholder]="t('secrets.value')"
+              class="rounded border border-default px-2 py-1"
+            />
+            @if (secretMode === 'VAULT_WRITE') {
+              <input
+                [(ngModel)]="secretVaultPath"
+                name="secretVaultPath"
+                [placeholder]="t('secrets.vaultPath')"
+                class="rounded border border-default px-2 py-1"
+              />
+            }
+          }
+          <button
+            type="submit"
+            class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
+          >
+            {{ t('common.create') }}
+          </button>
+        </form>
+
+        @if (secretMessage()) {
+          <p class="mb-3 rounded border border-default px-3 py-2 text-sm text-muted">
+            {{ secretMessage() }}
+          </p>
+        }
+
+        <table class="w-full max-w-2xl text-sm">
           <thead>
             <tr class="border-b border-default text-left text-muted">
-              <th class="py-2">Referenz</th>
-              <th>Auflösbar</th>
+              <th class="py-2">{{ t('secrets.name') }}</th>
+              <th>{{ t('secrets.mode') }}</th>
+              <th>{{ t('secrets.col.value') }}</th>
+              <th>{{ t('secrets.col.resolvable') }}</th>
+              <th>{{ t('repos.col.actions') }}</th>
             </tr>
           </thead>
           <tbody>
-            @for (r of s.secretRefs; track r.ref) {
+            @for (sec of secrets(); track sec.id) {
               <tr class="border-b border-default">
-                <td class="py-2 font-mono text-xs">{{ r.ref }}</td>
-                <td [style.color]="r.resolvable ? 'var(--color-sev-low)' : 'var(--color-sev-high)'">
-                  {{ r.resolvable ? 'ja' : 'nein' }}
+                <td class="py-2">{{ sec.name }}</td>
+                <td>{{ t('secrets.mode.' + sec.mode) }}</td>
+                <td class="font-mono text-xs">
+                  {{ sec.mode === 'DB_ENCRYPTED' ? t('secrets.stored') : sec.reference }}
+                </td>
+                <td
+                  [style.color]="sec.resolvable ? 'var(--color-sev-low)' : 'var(--color-sev-high)'"
+                >
+                  {{ sec.resolvable ? t('common.yes') : t('common.no') }}
+                </td>
+                <td>
+                  <button (click)="deleteSecret(sec)" class="text-sev-high hover:underline">
+                    {{ t('common.delete') }}
+                  </button>
                 </td>
               </tr>
             } @empty {
               <tr>
-                <td colspan="2" class="py-3 text-muted">Keine Secret-Referenzen hinterlegt.</td>
+                <td colspan="5" class="py-3 text-muted">{{ t('secrets.empty') }}</td>
               </tr>
             }
           </tbody>
@@ -101,6 +175,7 @@ import { Settings, Severity } from '../../core/models/scanner';
 })
 export class SettingsPage {
   private readonly api = inject(ScannerApi);
+  private readonly i18n = inject(I18nService);
 
   protected readonly severities: Severity[] = ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
   protected readonly settings = signal<Settings | null>(null);
@@ -111,8 +186,63 @@ export class SettingsPage {
   protected scanMode = 'full';
   protected retentionDays = 365;
 
+  // Verwaltete Secrets (WR-19)
+  protected readonly secrets = signal<ManagedSecret[]>([]);
+  protected readonly secretMessage = signal<string>('');
+  protected secretName = '';
+  protected secretMode: SecretStorageMode = 'REFERENCE';
+  protected secretReference = '';
+  protected secretValue = '';
+  protected secretVaultPath = '';
+
   constructor() {
     this.reload();
+    this.reloadSecrets();
+  }
+
+  protected t(key: string, params?: Record<string, string | number>): string {
+    return this.i18n.t(key, params);
+  }
+
+  protected saveSecret(): void {
+    if (!this.secretName.trim()) {
+      return;
+    }
+    const secret: ManagedSecret = {
+      id: null,
+      name: this.secretName.trim(),
+      mode: this.secretMode,
+      reference: this.secretMode === 'REFERENCE' ? this.secretReference.trim() : '',
+      hasStoredValue: false,
+      resolvable: false,
+      plaintext: this.secretMode === 'REFERENCE' ? null : this.secretValue,
+      vaultPath: this.secretMode === 'VAULT_WRITE' ? this.secretVaultPath.trim() || null : null,
+    };
+    this.api.saveSecret(secret).subscribe({
+      next: () => {
+        this.secretMessage.set(this.t('secrets.msg.saved'));
+        this.secretName = '';
+        this.secretReference = '';
+        this.secretValue = '';
+        this.secretVaultPath = '';
+        this.reloadSecrets();
+      },
+      error: (err) =>
+        this.secretMessage.set(
+          this.t('secrets.msg.failed', { error: err?.error?.error ?? this.t('common.error') }),
+        ),
+    });
+  }
+
+  protected deleteSecret(secret: ManagedSecret): void {
+    if (!secret.id) {
+      return;
+    }
+    this.api.deleteSecret(secret.id).subscribe(() => this.reloadSecrets());
+  }
+
+  private reloadSecrets(): void {
+    this.api.secrets().subscribe((list) => this.secrets.set(list));
   }
 
   protected save(): void {

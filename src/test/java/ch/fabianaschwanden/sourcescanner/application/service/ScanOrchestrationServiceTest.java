@@ -66,6 +66,22 @@ class ScanOrchestrationServiceTest {
     }
 
     @Test
+    void meldet_fortschritt_je_abgeschlossenem_repository() {
+        DetectorPort detector = Mockito.mock(DetectorPort.class);
+        when(detector.id()).thenReturn("secret.regex-ruleset");
+        when(detector.category()).thenReturn(DetectorCategory.SECRET);
+        when(detector.supports(any())).thenReturn(true);
+        when(detector.scan(any(), any())).thenReturn(List.of());
+
+        var service = serviceWith(connectorReturning(unit), detector);
+        java.util.List<Integer> reported = new java.util.ArrayList<>();
+        service.scan(config(), reported::add);
+
+        // Ein Repo ⇒ genau eine Meldung am Ende des Bereichs (10 + 85*1/1 = 95).
+        assertEquals(List.of(95), reported);
+    }
+
+    @Test
     void sammelt_funde_aus_aktivem_detektor() {
         DetectorPort detector = Mockito.mock(DetectorPort.class);
         when(detector.id()).thenReturn("secret.regex-ruleset");
