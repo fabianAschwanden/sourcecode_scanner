@@ -92,6 +92,11 @@ public class PiiPatternsDetector implements DetectorPort {
                     if (!rule.validator.test(match)) {
                         continue;
                     }
+                    // Datums-/Zeitstempel-Treffer sind nie PII (z. B. 2024-01-15, 15.01.2024,
+                    // 2024-01-15T12:30:45) und werden ausgefiltert — sie sind immer unbedenklich.
+                    if (looksLikeDate(match)) {
+                        continue;
+                    }
                     findings.add(new Finding(ID, DetectorCategory.PII, rule.severity, rule.key,
                             unit.path(), i + 1, Redaction.redact(match), unit.commitId(), false));
                 }
@@ -123,6 +128,32 @@ public class PiiPatternsDetector implements DetectorPort {
 
     private static int digitCount(String s) {
         return (int) s.chars().filter(Character::isDigit).count();
+    }
+
+    /**
+     * Datums-/Zeitstempel-Muster, die nie PII sind und immer ausgefiltert werden (z. B. von der
+     * Telefon-/Kreditkarten-Heuristik als Falsch-Positiv erfasst). Abgedeckt: ISO {@code 2024-01-15},
+     * mit Zeit {@code 2024-01-15T12:30:45} / {@code 2024-01-15 12:30}, sowie {@code 15.01.2024} /
+     * {@code 15/01/2024} (DD.MM.YYYY / DD/MM/YYYY) und reine Uhrzeiten {@code 12:30:45}.
+     */
+    private static final List<Pattern> DATE_PATTERNS = List.of(
+            // ISO-Datum, optional gefolgt von (auch unvollständiger) Uhrzeit: 2024-01-15, 2024-01-15 12,
+            // 2024-01-15T12:30, 2024-01-15 12:30:45
+            Pattern.compile("^\\d{4}-\\d{2}-\\d{2}(?:[T ]\\d{1,2}(?::\\d{2}(?::\\d{2})?)?)?$"),
+            // DD.MM.YYYY / DD/MM/YYYY, optional mit Uhrzeit-Anhang
+            Pattern.compile("^\\d{1,2}[./]\\d{1,2}[./]\\d{2,4}(?:[T ]\\d{1,2}(?::\\d{2}(?::\\d{2})?)?)?$"),
+            // reine Uhrzeit
+            Pattern.compile("^\\d{1,2}:\\d{2}(?::\\d{2})?$"));
+
+    /** {@code true}, wenn der Treffer (getrimmt) ein Datum/Zeitstempel ist — dann nie als Fund melden. */
+    private static boolean looksLikeDate(String match) {
+        String trimmed = match.trim();
+        for (Pattern p : DATE_PATTERNS) {
+            if (p.matcher(trimmed).matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** IBAN-Validierung per ISO-7064 Mod-97 (Prüfziffer == 1). */

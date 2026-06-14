@@ -67,4 +67,24 @@ class PiiPatternsDetectorTest {
     void deaktiviert_scannt_nicht() {
         assertTrue(scan("a@b.com", new DetectorConfig(false, Map.of())).isEmpty());
     }
+
+    @Test
+    void datums_und_zeitstempel_werden_nie_gemeldet() {
+        String content = String.join(
+                "\n",
+                "created = 2024-01-15",
+                "ts = 2024-01-15T12:30:45",
+                "when: 2024-01-15 12:30",
+                "dmy = 15.01.2024",
+                "dmy2 = 15/01/2024",
+                "time = 12:30:45");
+        List<Finding> f = scan(content, allPatterns());
+        assertTrue(f.isEmpty(), "Datums-/Zeitstempel sind immer unbedenklich und dürfen keinen Fund erzeugen");
+    }
+
+    @Test
+    void echte_telefonnummer_wird_weiterhin_erkannt() {
+        List<Finding> f = scan("phone: +41 44 123 45 67", allPatterns());
+        assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("phone")));
+    }
 }
