@@ -276,6 +276,18 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
       'GitLab: User settings → Access tokens. Create a personal access token with read_api and read_repository scope.',
     'repos.wizard.key.help.bitbucket':
       'Bitbucket: Personal settings → App passwords. Create an app password with repository read permission.',
+    'repos.wizard.key.note.github.finegrained':
+      'Fine-grained token: set the resource owner to the org/user that owns the repo and grant this repository "Contents: Read".',
+    'repos.wizard.key.note.github.classic':
+      'Classic token: the "repo" scope is required for private repositories.',
+    'repos.wizard.key.note.github.sso':
+      'If the organisation uses SAML/SSO, authorise the token for that org ("Configure SSO" on the token page) — otherwise cloning fails with "not authorized".',
+    'repos.wizard.key.note.github.expiry':
+      'Make sure the token is not expired and pasted without extra spaces or line breaks.',
+    'repos.wizard.key.note.gitlab.group':
+      'For group/sub-group repos the token owner needs at least Reporter access to that project.',
+    'repos.wizard.key.note.bitbucket.workspace':
+      'The app password belongs to a user who must be a member of the workspace with repository read access.',
     'repos.wizard.key.openDocs': 'Where to create the token',
     'repos.wizard.key.scopes': 'Recommended scopes',
     'repos.wizard.key.mode': 'How to handle the key',
@@ -601,6 +613,18 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
       'GitLab: Benutzereinstellungen → Access Tokens. Personal Access Token mit Scope read_api und read_repository anlegen.',
     'repos.wizard.key.help.bitbucket':
       'Bitbucket: Persönliche Einstellungen → App-Passwörter. App-Passwort mit Repository-Leserecht anlegen.',
+    'repos.wizard.key.note.github.finegrained':
+      'Fine-grained Token: Resource owner auf die Org/den Nutzer setzen, dem das Repo gehört, und diesem Repository „Contents: Read" geben.',
+    'repos.wizard.key.note.github.classic':
+      'Klassischer Token: Für private Repositories ist der Scope „repo" nötig.',
+    'repos.wizard.key.note.github.sso':
+      'Nutzt die Organisation SAML/SSO, muss der Token für diese Org autorisiert werden („Configure SSO" auf der Token-Seite) — sonst schlägt das Klonen mit „not authorized" fehl.',
+    'repos.wizard.key.note.github.expiry':
+      'Sicherstellen, dass der Token nicht abgelaufen und ohne zusätzliche Leerzeichen/Zeilenumbrüche eingefügt ist.',
+    'repos.wizard.key.note.gitlab.group':
+      'Bei Gruppen-/Untergruppen-Repos braucht der Token-Inhaber mindestens Reporter-Zugriff auf das Projekt.',
+    'repos.wizard.key.note.bitbucket.workspace':
+      'Das App-Passwort gehört zu einem Nutzer, der Mitglied des Workspace mit Repository-Leserecht sein muss.',
     'repos.wizard.key.openDocs': 'Wo der Token zu erstellen ist',
     'repos.wizard.key.scopes': 'Empfohlene Scopes',
     'repos.wizard.key.mode': 'Wie der Key behandelt wird',

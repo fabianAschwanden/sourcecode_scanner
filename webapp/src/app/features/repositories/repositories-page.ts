@@ -275,6 +275,13 @@ import { I18nService } from '../../core/i18n/i18n.service';
                   <p class="mt-2 text-xs text-muted">
                     {{ t('repos.wizard.key.scopes') }}: <span class="font-mono">{{ providerDef().scopes }}</span>
                   </p>
+                  @if (providerDef().notes.length > 0) {
+                    <ul class="mt-2 list-disc space-y-1 pl-4 text-xs text-muted">
+                      @for (note of providerDef().notes; track note) {
+                        <li>{{ t(note) }}</li>
+                      }
+                    </ul>
+                  }
                 </div>
 
                 <div class="mb-3 grid gap-1">
@@ -629,7 +636,13 @@ export class RepositoriesPage {
       envRef: 'env:GITHUB_TOKEN',
       keyPlaceholder: 'ghp_… / github_pat_…',
       keyUrl: 'https://github.com/settings/tokens',
-      scopes: 'repo (read)',
+      scopes: 'repo (read) / Contents: Read',
+      notes: [
+        'repos.wizard.key.note.github.finegrained',
+        'repos.wizard.key.note.github.classic',
+        'repos.wizard.key.note.github.sso',
+        'repos.wizard.key.note.github.expiry',
+      ],
     },
     {
       type: 'gitlab',
@@ -639,6 +652,7 @@ export class RepositoriesPage {
       keyPlaceholder: 'glpat-…',
       keyUrl: 'https://gitlab.com/-/user_settings/personal_access_tokens',
       scopes: 'read_api, read_repository',
+      notes: ['repos.wizard.key.note.gitlab.group'],
     },
     {
       type: 'bitbucket',
@@ -648,6 +662,7 @@ export class RepositoriesPage {
       keyPlaceholder: 'ATBB… / App-Password',
       keyUrl: 'https://bitbucket.org/account/settings/app-passwords/',
       scopes: 'repository:read',
+      notes: ['repos.wizard.key.note.bitbucket.workspace'],
     },
     {
       type: 'localGit',
@@ -657,6 +672,7 @@ export class RepositoriesPage {
       keyPlaceholder: '',
       keyUrl: '',
       scopes: '',
+      notes: [] as string[],
     },
   ];
   protected readonly wizardStep = signal<1 | 2 | 3>(1);
