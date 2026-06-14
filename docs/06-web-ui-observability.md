@@ -136,6 +136,13 @@ Default ist Englisch, eine fehlende Übersetzung fällt auf den Schlüssel/die D
 Sprache zurück. Kein `@angular/localize`-Mehrfach-Build nötig — die Umschaltung ist
 reaktiv über Signals.
 
+> **Status: vollständig umgesetzt.** Alle Feature-Seiten (Dashboard, Repositories, Scans,
+> Findings/Code-Scanning, Datenquellen, Policies, Einstellungen) und die Navigation laufen
+> über `t('key')` — inklusive `placeholder`- und `title`/Tooltip-Texte (NFR-27). Ein
+> Paritäts-Test (`core/i18n/translations.spec.ts`) bricht den Build, sobald ein Schlüssel
+> in `en` oder `de` fehlt oder leer ist (NFR-27a). Neue UI-Texte daher **immer** als Schlüssel
+> in beiden Wörterbüchern ergänzen, nie hartkodieren.
+
 ### 3.9 Einstellungen
 Admin-Ansicht für systemweite Einstellungen, die ohne Neustart änderbar sind (WR-15):
 

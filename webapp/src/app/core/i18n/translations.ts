@@ -107,6 +107,78 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'common.yes': 'yes',
     'common.no': 'no',
     'common.none': '—',
+    'common.saved': 'saved ✓',
+
+    // Dashboard
+    'dashboard.title': 'Dashboard',
+    'dashboard.recentScans': 'Recent scans',
+    'dashboard.col.repository': 'Repository',
+    'dashboard.col.status': 'Status',
+    'dashboard.col.findings': 'Findings',
+    'dashboard.col.started': 'Started',
+    'dashboard.empty': 'No scans yet.',
+
+    // Policies
+    'policies.title': 'Policies',
+    'policies.orgUnit': 'Org unit (empty = default)',
+    'policies.orgUnit.tooltip':
+      'Organisational unit the policy applies to, e.g. team-a or team-a/payments — empty = default policy for all',
+    'policies.failOn.tooltip': 'Minimum severity that breaks the gate (turns it red), e.g. HIGH',
+    'policies.failOnNewOnly.tooltip':
+      'Only new findings (not accepted in the baseline) break the gate',
+    'policies.groups': 'Detector groups (secrets,pii)',
+    'policies.groups.tooltip':
+      'Comma-separated enabled detector groups, e.g. secrets,pii (available: secrets, pii, license, iac)',
+    'policies.col.orgUnit': 'Org unit',
+    'policies.col.newOnly': 'NewOnly',
+    'policies.col.groups': 'Groups',
+    'policies.col.actions': 'Actions',
+    'policies.defaultOrgUnit': '(default)',
+    'policies.empty': 'No policies — default gate applies.',
+
+    // Settings (general form)
+    'settings.email': 'General notification e-mail',
+    'settings.email.placeholder': 'security-team@company.com',
+    'settings.email.tooltip':
+      'Address for system-wide messages/digests, e.g. security-team@company.com',
+    'settings.defaultFailOn': 'Default gate severity',
+    'settings.defaultFailOn.tooltip':
+      'Minimum severity that turns the gate red when no policy applies',
+    'settings.defaultScanMode': 'Default scan mode',
+    'settings.scanMode.tooltip': 'full = entire history; incremental = only new commits',
+    'settings.retentionDays': 'Retention (days)',
+    'settings.retentionDays.tooltip': 'Retention period for scan results in days, e.g. 365',
+
+    // Field placeholders / tooltips (repositories, data sources)
+    'repos.name.tooltip': 'Unique source name, e.g. wm-tippspiel or team-a/payment-service',
+    'repos.type.tooltip':
+      'Source type: localGit (local path) or a platform (github/gitlab/bitbucket)',
+    'repos.location.tooltip':
+      'localGit: local path, e.g. /Users/me/git/project — platform: clone URL, e.g. https://github.com/org/repo.git',
+    'repos.tokenRef.tooltip':
+      'Secret reference, never a cleartext token — e.g. env:GITHUB_TOKEN or vault:secret/scanner#token',
+    'repos.reportEmails.tooltip':
+      'Recipients of the report after scans of this repo, e.g. team@company.com, secops@company.com',
+    'repos.remediation.tooltip':
+      'Enables auto-fix via PR and history scrub for this repo (opt-in, RMR-02). Off by default.',
+    'repos.scrubPreview.tooltip':
+      'Shows redacted which secrets would be removed from git history — without changes (RMR-22).',
+    'repos.remediation.toggleOn': 'Remediation enabled — click to disable',
+    'repos.remediation.toggleOff': 'Remediation disabled — click to enable (opt-in, RMR-02)',
+    'ds.name.tooltip': 'Unique data source name, e.g. crm-partners',
+    'ds.kind.tooltip':
+      'REST API: values loaded live. Upload: key-value list (CSV/JSON), only hashes stored.',
+    'ds.baseUrl': 'Base URL',
+    'ds.baseUrl.tooltip': 'Base URL of the REST API, e.g. https://crm.intern/api/v1',
+    'ds.path': 'Path',
+    'ds.path.tooltip': 'Relative path to the data list, e.g. /partners',
+    'ds.recordsPath': 'Records path',
+    'ds.recordsPath.tooltip': 'JSONPath to the records, e.g. $.data[*] or $[*]',
+    'ds.auth.tooltip': 'Authentication against the API',
+    'ds.tokenRef.tooltip': 'Secret reference, no cleartext — e.g. env:CRM_API_TOKEN',
+    'ds.probe.tooltip':
+      'Fetches the data source for a test and shows the available attributes (redacted).',
+    'ds.uploadAction.tooltip': 'Upload CSV or JSON (key,value). Only hashes are stored.',
 
     // Repositories
     'repos.title': 'Repositories',
@@ -250,6 +322,77 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'common.yes': 'ja',
     'common.no': 'nein',
     'common.none': '—',
+    'common.saved': 'gespeichert ✓',
+
+    'dashboard.title': 'Dashboard',
+    'dashboard.recentScans': 'Letzte Scans',
+    'dashboard.col.repository': 'Repository',
+    'dashboard.col.status': 'Status',
+    'dashboard.col.findings': 'Funde',
+    'dashboard.col.started': 'Gestartet',
+    'dashboard.empty': 'Noch keine Scans.',
+
+    'policies.title': 'Policies',
+    'policies.orgUnit': 'Org-Unit (leer = Default)',
+    'policies.orgUnit.tooltip':
+      'Organisationseinheit, auf die die Policy greift, z. B. team-a oder team-a/payments — leer = Default-Policy für alle',
+    'policies.failOn.tooltip': 'Mindest-Severity, die das Gate verletzt (rot macht), z. B. HIGH',
+    'policies.failOnNewOnly.tooltip':
+      'Nur neue (nicht in der Baseline akzeptierte) Funde brechen das Gate',
+    'policies.groups': 'Detektor-Gruppen (secrets,pii)',
+    'policies.groups.tooltip':
+      'Komma-getrennte aktivierte Detektor-Gruppen, z. B. secrets,pii (verfügbar: secrets, pii, license, iac)',
+    'policies.col.orgUnit': 'Org-Unit',
+    'policies.col.newOnly': 'NewOnly',
+    'policies.col.groups': 'Gruppen',
+    'policies.col.actions': 'Aktionen',
+    'policies.defaultOrgUnit': '(default)',
+    'policies.empty': 'Keine Policies — Default-Gate gilt.',
+
+    'settings.email': 'Allgemeine Benachrichtigungs-E-Mail',
+    'settings.email.placeholder': 'security-team@firma.ch',
+    'settings.email.tooltip':
+      'Adresse für systemweite Meldungen/Sammelreports, z. B. security-team@firma.ch',
+    'settings.defaultFailOn': 'Standard-Gate-Severity',
+    'settings.defaultFailOn.tooltip':
+      'Mindest-Severity, ab der das Gate rot wird, wenn keine Policy greift',
+    'settings.defaultScanMode': 'Standard-Scan-Modus',
+    'settings.scanMode.tooltip': 'full = gesamte Historie; incremental = nur neue Commits',
+    'settings.retentionDays': 'Aufbewahrung (Tage)',
+    'settings.retentionDays.tooltip': 'Aufbewahrungsfrist für Scan-Ergebnisse in Tagen, z. B. 365',
+
+    'repos.name.tooltip':
+      'Eindeutiger Name der Quelle, z. B. wm-tippspiel oder team-a/payment-service',
+    'repos.type.tooltip':
+      'Quellentyp: localGit (lokaler Pfad) oder eine Plattform (github/gitlab/bitbucket)',
+    'repos.location.tooltip':
+      'localGit: lokaler Pfad, z. B. /Users/me/git/projekt — Plattform: Clone-URL, z. B. https://github.com/org/repo.git',
+    'repos.tokenRef.tooltip':
+      'Secret-Referenz, kein Klartext-Token — z. B. env:GITHUB_TOKEN oder vault:secret/scanner#token',
+    'repos.reportEmails.tooltip':
+      'Empfänger für den Report nach Scans dieses Repos, z. B. team@firma.ch, secops@firma.ch',
+    'repos.remediation.tooltip':
+      'Aktiviert Auto-Fix per PR und History-Scrub für dieses Repo (opt-in, RMR-02). Standardmässig aus.',
+    'repos.scrubPreview.tooltip':
+      'Zeigt redigiert, welche Secrets aus der Git-Historie entfernt würden — ohne Änderung (RMR-22).',
+    'repos.remediation.toggleOn': 'Remediation aktiv — klicken zum Deaktivieren',
+    'repos.remediation.toggleOff':
+      'Remediation deaktiviert — klicken zum Aktivieren (opt-in, RMR-02)',
+    'ds.name.tooltip': 'Eindeutiger Name der Datenquelle, z. B. crm-partners',
+    'ds.kind.tooltip':
+      'REST-API: Werte werden live geladen. Upload: Key-Value-Liste (CSV/JSON), nur Hashes gespeichert.',
+    'ds.baseUrl': 'Basis-URL',
+    'ds.baseUrl.tooltip': 'Basis-URL der REST-API, z. B. https://crm.intern/api/v1',
+    'ds.path': 'Pfad',
+    'ds.path.tooltip': 'Relativer Pfad zur Datenliste, z. B. /partners',
+    'ds.recordsPath': 'Datensatz-Pfad',
+    'ds.recordsPath.tooltip': 'JSONPath auf die Datensätze, z. B. $.data[*] oder $[*]',
+    'ds.auth.tooltip': 'Authentifizierung gegen die API',
+    'ds.tokenRef.tooltip': 'Secret-Referenz, kein Klartext — z. B. env:CRM_API_TOKEN',
+    'ds.probe.tooltip':
+      'Ruft die Datenquelle testweise ab und zeigt die verfügbaren Attribute (redigiert).',
+    'ds.uploadAction.tooltip':
+      'CSV oder JSON hochladen (key,value). Es werden nur Hashes gespeichert.',
 
     'repos.title': 'Repositories',
     'repos.name': 'Name',

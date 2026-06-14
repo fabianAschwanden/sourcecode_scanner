@@ -17,15 +17,15 @@ import { I18nService } from '../../core/i18n/i18n.service';
         <input
           [(ngModel)]="name"
           name="name"
-          placeholder="Name"
-          title="Eindeutiger Name der Quelle, z. B. wm-tippspiel oder team-a/payment-service"
+          [placeholder]="t('repos.name')"
+          [title]="t('repos.name.tooltip')"
           required
           class="rounded border border-default px-2 py-1"
         />
         <select
           [(ngModel)]="type"
           name="type"
-          title="Quellentyp: localGit (lokaler Pfad) oder eine Plattform (github/gitlab/bitbucket)"
+          [title]="t('repos.type.tooltip')"
           class="rounded border border-default px-2 py-1"
         >
           <option value="localGit">localGit</option>
@@ -36,28 +36,28 @@ import { I18nService } from '../../core/i18n/i18n.service';
         <input
           [(ngModel)]="location"
           name="location"
-          placeholder="Pfad / Clone-URL"
-          title="localGit: lokaler Pfad, z. B. /Users/me/git/projekt — Plattform: Clone-URL, z. B. https://github.com/org/repo.git"
+          [placeholder]="t('repos.location')"
+          [title]="t('repos.location.tooltip')"
           required
           class="w-72 rounded border border-default px-2 py-1"
         />
         <input
           [(ngModel)]="tokenRef"
           name="tokenRef"
-          placeholder="tokenRef (env:NAME)"
-          title="Secret-Referenz, kein Klartext-Token — z. B. env:GITHUB_TOKEN oder vault:secret/scanner#token"
+          [placeholder]="t('repos.tokenRef')"
+          [title]="t('repos.tokenRef.tooltip')"
           class="rounded border border-default px-2 py-1"
         />
         <input
           [(ngModel)]="reportEmails"
           name="reportEmails"
-          placeholder="Report-E-Mails (komma-getrennt)"
-          title="Empfänger für den Report nach Scans dieses Repos, z. B. team@firma.ch, secops@firma.ch"
+          [placeholder]="t('repos.reportEmails')"
+          [title]="t('repos.reportEmails.tooltip')"
           class="w-72 rounded border border-default px-2 py-1"
         />
         <label
           class="flex items-center gap-1 text-sm text-muted"
-          title="Aktiviert Auto-Fix per PR und History-Scrub für dieses Repo (opt-in, RMR-02). Standardmässig aus."
+          [title]="t('repos.remediation.tooltip')"
         >
           <input [(ngModel)]="remediationEnabled" name="remediationEnabled" type="checkbox" />
           {{ t('repos.remediation') }}
@@ -88,15 +88,17 @@ import { I18nService } from '../../core/i18n/i18n.service';
               <td class="py-2">{{ s.name }}</td>
               <td>{{ s.type }}</td>
               <td class="font-mono text-xs">{{ s.location }}</td>
-              <td>{{ s.tokenRef ?? '—' }}</td>
-              <td class="text-xs">{{ s.reportEmails.length ? s.reportEmails.join(', ') : '—' }}</td>
+              <td>{{ s.tokenRef ?? t('common.none') }}</td>
+              <td class="text-xs">
+                {{ s.reportEmails.length ? s.reportEmails.join(', ') : t('common.none') }}
+              </td>
               <td>
                 <button
                   (click)="toggleRemediation(s)"
                   [title]="
                     s.remediationEnabled
-                      ? 'Remediation aktiv — klicken zum Deaktivieren'
-                      : 'Remediation deaktiviert — klicken zum Aktivieren (opt-in, RMR-02)'
+                      ? t('repos.remediation.toggleOn')
+                      : t('repos.remediation.toggleOff')
                   "
                   class="hover:underline"
                   [class.text-accent]="s.remediationEnabled"
@@ -114,7 +116,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
                 @if (s.remediationEnabled) {
                   <button
                     (click)="scrubDryRun(s)"
-                    title="Zeigt redigiert, welche Secrets aus der Git-Historie entfernt würden — ohne Änderung (RMR-22)."
+                    [title]="t('repos.scrubPreview.tooltip')"
                     class="text-accent hover:underline"
                   >
                     {{ t('repos.scrubPreview') }}

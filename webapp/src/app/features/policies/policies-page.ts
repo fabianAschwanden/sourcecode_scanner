@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { Policy, Severity } from '../../core/models/scanner';
 import { severityColor } from '../../core/severity-color';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 /** Governance-Policies verwalten (FR-20): zentrale Gate-/Detektor-Vorgaben pro Org-Einheit. */
 @Component({
@@ -11,14 +12,14 @@ import { severityColor } from '../../core/severity-color';
   imports: [FormsModule],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">Policies</h2>
+      <h2 class="mb-4 text-xl font-semibold">{{ t('policies.title') }}</h2>
 
       <form (ngSubmit)="create()" class="mb-6 flex flex-wrap items-end gap-2">
         <input
           [(ngModel)]="orgUnit"
           name="orgUnit"
-          placeholder="Org-Unit (leer = Default)"
-          title="Organisationseinheit, auf die die Policy greift, z. B. team-a oder team-a/payments — leer = Default-Policy für alle"
+          [placeholder]="t('policies.orgUnit')"
+          [title]="t('policies.orgUnit.tooltip')"
           class="rounded border border-default px-2 py-1"
         />
         <label class="text-sm text-muted">
@@ -26,7 +27,7 @@ import { severityColor } from '../../core/severity-color';
           <select
             [(ngModel)]="failOn"
             name="failOn"
-            title="Mindest-Severity, die das Gate verletzt (rot macht), z. B. HIGH"
+            [title]="t('policies.failOn.tooltip')"
             class="ml-1 rounded border border-default px-2 py-1"
           >
             @for (s of severities; track s) {
@@ -34,51 +35,50 @@ import { severityColor } from '../../core/severity-color';
             }
           </select>
         </label>
-        <label
-          class="text-sm text-muted"
-          title="Nur neue (nicht in der Baseline akzeptierte) Funde brechen das Gate"
-        >
+        <label class="text-sm text-muted" [title]="t('policies.failOnNewOnly.tooltip')">
           <input type="checkbox" [(ngModel)]="failOnNewOnly" name="failOnNewOnly" /> failOnNewOnly
         </label>
         <input
           [(ngModel)]="groups"
           name="groups"
-          placeholder="Detektor-Gruppen (secrets,pii)"
-          title="Komma-getrennte aktivierte Detektor-Gruppen, z. B. secrets,pii (verfügbar: secrets, pii, license, iac)"
+          [placeholder]="t('policies.groups')"
+          [title]="t('policies.groups.tooltip')"
           class="w-56 rounded border border-default px-2 py-1"
         />
         <button
           type="submit"
           class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
         >
-          Anlegen
+          {{ t('common.create') }}
         </button>
       </form>
 
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-default text-left text-muted">
-            <th class="py-2">Org-Unit</th>
+            <th class="py-2">{{ t('policies.col.orgUnit') }}</th>
             <th>failOn</th>
-            <th>NewOnly</th>
-            <th>Gruppen</th>
-            <th>Aktionen</th>
+            <th>{{ t('policies.col.newOnly') }}</th>
+            <th>{{ t('policies.col.groups') }}</th>
+            <th>{{ t('policies.col.actions') }}</th>
           </tr>
         </thead>
         <tbody>
           @for (p of policies(); track p.id) {
             <tr class="border-b border-default">
-              <td class="py-2">{{ p.orgUnit ?? '(default)' }}</td>
+              <td class="py-2">{{ p.orgUnit ?? t('policies.defaultOrgUnit') }}</td>
               <td [style.color]="severityColor(p.failOn)">{{ p.failOn }}</td>
               <td>{{ p.failOnNewOnly }}</td>
               <td>{{ p.enabledDetectorGroups.join(', ') }}</td>
               <td>
-                <button (click)="remove(p)" class="text-sev-high hover:underline">Löschen</button>
+                <button (click)="remove(p)" class="text-sev-high hover:underline">
+                  {{ t('common.delete') }}
+                </button>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="5" class="py-3 text-muted">Keine Policies — Default-Gate gilt.</td>
+              <td colspan="5" class="py-3 text-muted">{{ t('policies.empty') }}</td>
             </tr>
           }
         </tbody>
@@ -88,6 +88,11 @@ import { severityColor } from '../../core/severity-color';
 })
 export class PoliciesPage {
   private readonly api = inject(ScannerApi);
+  private readonly i18n = inject(I18nService);
+
+  protected t(key: string): string {
+    return this.i18n.t(key);
+  }
 
   protected readonly severities: Severity[] = ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
   protected readonly policies = signal<Policy[]>([]);

@@ -3,6 +3,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { Finding, Scan, Severity } from '../../core/models/scanner';
 import { severityColor } from '../../core/severity-color';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 
@@ -12,7 +13,7 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">Dashboard</h2>
+      <h2 class="mb-4 text-xl font-semibold">{{ t('dashboard.title') }}</h2>
 
       <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
         @for (sev of severities; track sev) {
@@ -25,14 +26,14 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
         }
       </div>
 
-      <h3 class="mb-2 font-medium text-fg">Letzte Scans</h3>
+      <h3 class="mb-2 font-medium text-fg">{{ t('dashboard.recentScans') }}</h3>
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-default text-left text-muted">
-            <th class="py-2">Repository</th>
-            <th>Status</th>
-            <th>Funde</th>
-            <th>Gestartet</th>
+            <th class="py-2">{{ t('dashboard.col.repository') }}</th>
+            <th>{{ t('dashboard.col.status') }}</th>
+            <th>{{ t('dashboard.col.findings') }}</th>
+            <th>{{ t('dashboard.col.started') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -45,7 +46,7 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
             </tr>
           } @empty {
             <tr>
-              <td colspan="4" class="py-3 text-muted">Noch keine Scans.</td>
+              <td colspan="4" class="py-3 text-muted">{{ t('dashboard.empty') }}</td>
             </tr>
           }
         </tbody>
@@ -55,7 +56,12 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 })
 export class DashboardPage {
   private readonly api = inject(ScannerApi);
+  private readonly i18n = inject(I18nService);
   protected readonly severities = SEVERITIES;
+
+  protected t(key: string): string {
+    return this.i18n.t(key);
+  }
 
   protected readonly scans = toSignal(this.api.recentScans(10), {
     initialValue: [] as Scan[],

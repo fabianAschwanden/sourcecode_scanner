@@ -29,15 +29,15 @@ import { I18nService } from '../../core/i18n/i18n.service';
         <input
           [(ngModel)]="name"
           name="name"
-          placeholder="Name"
-          title="Eindeutiger Name der Datenquelle, z. B. crm-partners"
+          [placeholder]="t('repos.name')"
+          [title]="t('ds.name.tooltip')"
           required
           class="rounded border border-default px-2 py-1"
         />
         <select
           [(ngModel)]="kind"
           name="kind"
-          title="REST-API: Werte werden live geladen. Upload: Key-Value-Liste (CSV/JSON), nur Hashes gespeichert."
+          [title]="t('ds.kind.tooltip')"
           class="rounded border border-default px-2 py-1"
         >
           <option value="REST">{{ t('ds.kind.rest') }}</option>
@@ -47,28 +47,28 @@ import { I18nService } from '../../core/i18n/i18n.service';
           <input
             [(ngModel)]="baseUrl"
             name="baseUrl"
-            placeholder="Basis-URL"
-            title="Basis-URL der REST-API, z. B. https://crm.intern/api/v1"
+            [placeholder]="t('ds.baseUrl')"
+            [title]="t('ds.baseUrl.tooltip')"
             class="w-64 rounded border border-default px-2 py-1"
           />
           <input
             [(ngModel)]="path"
             name="path"
-            placeholder="Pfad"
-            title="Relativer Pfad zur Datenliste, z. B. /partners"
+            [placeholder]="t('ds.path')"
+            [title]="t('ds.path.tooltip')"
             class="rounded border border-default px-2 py-1"
           />
           <input
             [(ngModel)]="recordsPath"
             name="recordsPath"
-            placeholder="Datensatz-Pfad"
-            title="JSONPath auf die Datensätze, z. B. $.data[*] oder $[*]"
+            [placeholder]="t('ds.recordsPath')"
+            [title]="t('ds.recordsPath.tooltip')"
             class="rounded border border-default px-2 py-1"
           />
           <select
             [(ngModel)]="authType"
             name="authType"
-            title="Authentifizierung gegen die API"
+            [title]="t('ds.auth.tooltip')"
             class="rounded border border-default px-2 py-1"
           >
             <option value="NONE">Keine Auth</option>
@@ -79,8 +79,8 @@ import { I18nService } from '../../core/i18n/i18n.service';
           <input
             [(ngModel)]="tokenRef"
             name="tokenRef"
-            placeholder="tokenRef (env:NAME)"
-            title="Secret-Referenz, kein Klartext — z. B. env:CRM_API_TOKEN"
+            [placeholder]="t('repos.tokenRef')"
+            [title]="t('ds.tokenRef.tooltip')"
             class="rounded border border-default px-2 py-1"
           />
         }
@@ -94,7 +94,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
           <button
             type="button"
             (click)="probeDraft()"
-            title="Ruft die Datenquelle testweise ab und zeigt die verfügbaren Attribute (redigiert)."
+            [title]="t('ds.probe.tooltip')"
             class="rounded border border-default px-3 py-1 hover:underline"
           >
             {{ t('ds.probe') }}
@@ -188,7 +188,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
                 @if (s.kind === 'UPLOAD') {
                   <label
                     class="cursor-pointer text-accent hover:underline"
-                    title="CSV oder JSON hochladen (key,value). Es werden nur Hashes gespeichert."
+                    [title]="t('ds.uploadAction.tooltip')"
                   >
                     {{ t('ds.upload') }}
                     <input

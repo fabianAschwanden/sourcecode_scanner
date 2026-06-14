@@ -16,21 +16,21 @@ import { I18nService } from '../../core/i18n/i18n.service';
       @if (settings(); as s) {
         <form (ngSubmit)="save()" class="mb-6 grid max-w-xl gap-3">
           <label class="text-sm text-muted">
-            Allgemeine Benachrichtigungs-E-Mail
+            {{ t('settings.email') }}
             <input
               [(ngModel)]="email"
               name="email"
-              placeholder="security-team@firma.ch"
-              title="Adresse für systemweite Meldungen/Sammelreports, z. B. security-team@firma.ch"
+              [placeholder]="t('settings.email.placeholder')"
+              [title]="t('settings.email.tooltip')"
               class="mt-1 w-full rounded border border-default px-2 py-1"
             />
           </label>
           <label class="text-sm text-muted">
-            Standard-Gate-Severity
+            {{ t('settings.defaultFailOn') }}
             <select
               [(ngModel)]="failOn"
               name="failOn"
-              title="Mindest-Severity, ab der das Gate rot wird, wenn keine Policy greift"
+              [title]="t('settings.defaultFailOn.tooltip')"
               class="mt-1 rounded border border-default px-2 py-1"
             >
               @for (sev of severities; track sev) {
@@ -39,11 +39,11 @@ import { I18nService } from '../../core/i18n/i18n.service';
             </select>
           </label>
           <label class="text-sm text-muted">
-            Standard-Scan-Modus
+            {{ t('settings.defaultScanMode') }}
             <select
               [(ngModel)]="scanMode"
               name="scanMode"
-              title="full = gesamte Historie; incremental = nur neue Commits"
+              [title]="t('settings.scanMode.tooltip')"
               class="mt-1 rounded border border-default px-2 py-1"
             >
               <option value="full">full</option>
@@ -51,12 +51,12 @@ import { I18nService } from '../../core/i18n/i18n.service';
             </select>
           </label>
           <label class="text-sm text-muted">
-            Aufbewahrung (Tage)
+            {{ t('settings.retentionDays') }}
             <input
               type="number"
               [(ngModel)]="retentionDays"
               name="retentionDays"
-              title="Aufbewahrungsfrist für Scan-Ergebnisse in Tagen, z. B. 365"
+              [title]="t('settings.retentionDays.tooltip')"
               class="mt-1 w-32 rounded border border-default px-2 py-1"
             />
           </label>
@@ -65,10 +65,10 @@ import { I18nService } from '../../core/i18n/i18n.service';
               type="submit"
               class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
             >
-              Speichern
+              {{ t('common.save') }}
             </button>
             @if (saved()) {
-              <span class="ml-3 text-sm text-muted">gespeichert ✓</span>
+              <span class="ml-3 text-sm text-muted">{{ t('common.saved') }}</span>
             }
           </div>
         </form>
