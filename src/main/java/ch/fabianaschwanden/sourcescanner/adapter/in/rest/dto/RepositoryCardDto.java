@@ -13,10 +13,12 @@ public record RepositoryCardDto(
         String description,
         boolean enabled,
         String language,
-        Instant lastScanAt) {
+        Instant lastScanAt,
+        String lastStatus,
+        String lastError) {
 
     public static RepositoryCardDto from(RepositoryCard c) {
         return new RepositoryCardDto(c.id(), c.name(), c.type(), c.visibility(), c.description(),
-                c.enabled(), c.language(), c.lastScanAt());
+                c.enabled(), c.language(), c.lastScanAt(), c.lastStatus(), c.lastError());
     }
 }

@@ -230,13 +230,18 @@ export class FindingsPage {
     () => this.findings().filter((f) => f.triageStatus !== 'OPEN').length,
   );
 
+  // Optionaler Repo-Vorfilter (aus dem ?repo=-Query-Param, z. B. von der Repo-Karte „Funde anzeigen").
+  protected readonly repoFilter = signal<string>('');
+
   protected readonly visibleFindings = computed(() => {
     const tab = this.statusTab();
     const sev = this.facetSeverity();
     const det = this.facetDetector();
     const rule = this.facetRule();
     const ft = this.facetFileType();
+    const repo = this.repoFilter();
     const list = this.findings().filter((f) => {
+      if (repo && f.repoId !== repo) return false;
       if (tab === 'open' && f.triageStatus !== 'OPEN') return false;
       if (tab === 'closed' && f.triageStatus === 'OPEN') return false;
       if (sev && f.severity.toLowerCase() !== sev) return false;
@@ -252,6 +257,11 @@ export class FindingsPage {
     this.reload();
     this.api.detectors().subscribe((d) => this.toolCount.set(d.length));
     this.onQueryChange();
+    // Repo-Vorfilter aus dem Query-Param übernehmen (Navigation von der Repo-Übersicht).
+    const repo = new URLSearchParams(window.location.search).get('repo');
+    if (repo) {
+      this.repoFilter.set(repo);
+    }
   }
 
   protected t(key: string, params?: Record<string, string | number>): string {

@@ -16,10 +16,13 @@ public record RepositoryCard(
         String description,
         boolean enabled,
         String language,
-        Instant lastScanAt) {
+        Instant lastScanAt,
+        String lastStatus,
+        String lastError) {
 
-    public static RepositoryCard from(RepositorySource source, String language, Instant lastScanAt) {
+    public static RepositoryCard from(RepositorySource source, String language, Instant lastScanAt,
+                                      String lastStatus, String lastError) {
         return new RepositoryCard(source.id(), source.name(), source.type(), source.visibility(),
-                source.description(), source.enabled(), language, lastScanAt);
+                source.description(), source.enabled(), language, lastScanAt, lastStatus, lastError);
     }
 }

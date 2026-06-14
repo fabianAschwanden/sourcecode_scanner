@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { RepositoriesPage } from './repositories-page';
 import { RepositoryCard, RepositorySource } from '../../core/models/scanner';
 
@@ -30,6 +31,8 @@ function card(): RepositoryCard {
     enabled: true,
     language: 'Java',
     lastScanAt: null,
+    lastStatus: null,
+    lastError: null,
   };
 }
 
@@ -39,7 +42,7 @@ describe('RepositoriesPage', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [RepositoriesPage],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
   });
@@ -54,6 +57,22 @@ describe('RepositoriesPage', () => {
 
     const component = fixture.componentInstance as unknown as { cards: () => RepositoryCard[] };
     expect(component.cards().length).toBe(1);
+  });
+
+  it('zeigt den Fehler eines fehlgeschlagenen Scans auf der Karte', () => {
+    const fixture = TestBed.createComponent(RepositoriesPage);
+    fixture.detectChanges();
+    const failed: RepositoryCard = {
+      ...card(),
+      lastStatus: 'FAILED',
+      lastError: 'local path does not exist: https://github.com/x/y',
+    };
+    httpMock.expectOne((r) => r.url === '/api/sources/cards').flush([failed]);
+    httpMock.expectOne('/api/sources').flush([source(false)]);
+    fixture.detectChanges();
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('local path does not exist');
   });
 
   it('schaltet das Repo-Remediation-Opt-in um', () => {

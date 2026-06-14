@@ -227,6 +227,11 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.reportEmails.help': 'Optional recipients for the report after a scan of this repo.',
     'repos.cancel': 'Cancel',
     'repos.manage.title': 'Manage repository sources',
+    'repos.card.scan': 'Scan',
+    'repos.card.scanning': 'Scanning…',
+    'repos.card.insights': 'View findings',
+    'repos.card.scanStarted': 'Scan started for {name}',
+    'repos.card.lastScanFailed': 'Last scan failed',
 
     // Data sources
     'ds.title': 'External data sources',
@@ -471,6 +476,11 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.reportEmails.help': 'Optionale Empfänger für den Report nach einem Scan dieses Repos.',
     'repos.cancel': 'Abbrechen',
     'repos.manage.title': 'Repository-Quellen verwalten',
+    'repos.card.scan': 'Scannen',
+    'repos.card.scanning': 'Scannt…',
+    'repos.card.insights': 'Funde anzeigen',
+    'repos.card.scanStarted': 'Scan gestartet für {name}',
+    'repos.card.lastScanFailed': 'Letzter Scan fehlgeschlagen',
 
     'ds.title': 'Externe Datenquellen',
     'ds.intro':

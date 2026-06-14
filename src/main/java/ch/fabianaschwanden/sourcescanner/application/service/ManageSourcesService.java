@@ -74,9 +74,9 @@ public class ManageSourcesService implements ManageSourcesUseCase {
 
     @Override
     public List<RepositoryCard> cards(SourceQuery query, String language) {
-        Map<String, Instant> lastScanByRepo = lastScanByRepo();
+        Map<String, ScanRecord> lastScanByRepo = lastScanByRepo();
         List<RepositoryCard> cards = sources.query(query).stream()
-                .map(s -> RepositoryCard.from(s, dominantLanguage(s.name()), lastScanByRepo.get(s.name())))
+                .map(s -> toCard(s, lastScanByRepo.get(s.name())))
                 .filter(c -> language == null || language.isBlank() || language.equalsIgnoreCase(c.language()))
                 .toList();
         if ("updated".equalsIgnoreCase(query.sort())) {
@@ -89,14 +89,24 @@ public class ManageSourcesService implements ManageSourcesUseCase {
         return cards;
     }
 
-    /** Letzter Scan-Zeitpunkt je Repo (repoId = Quellen-Name), abgeleitet aus den Scan-Läufen. */
-    private Map<String, Instant> lastScanByRepo() {
-        Map<String, Instant> latest = new LinkedHashMap<>();
+    private RepositoryCard toCard(RepositorySource s, ScanRecord last) {
+        Instant at = last == null ? null : (last.finishedAt() == null ? last.startedAt() : last.finishedAt());
+        String status = last == null ? null : last.status().name();
+        String error = last == null ? null : last.errorMessage();
+        return RepositoryCard.from(s, dominantLanguage(s.name()), at, status, error);
+    }
+
+    /** Letzter Scan-Lauf je Repo (repoId = Quellen-Name), für Zeitpunkt/Status/Fehler der Karte. */
+    private Map<String, ScanRecord> lastScanByRepo() {
+        Map<String, ScanRecord> latest = new LinkedHashMap<>();
         for (ScanRecord r : scanRecords.recent(500)) {
-            Instant at = r.finishedAt() == null ? r.startedAt() : r.finishedAt();
-            latest.merge(r.repoId(), at, (a, b) -> a.isAfter(b) ? a : b);
+            latest.merge(r.repoId(), r, (a, b) -> scanTime(a).isAfter(scanTime(b)) ? a : b);
         }
         return latest;
+    }
+
+    private Instant scanTime(ScanRecord r) {
+        return r.finishedAt() == null ? r.startedAt() : r.finishedAt();
     }
 
     /** Dominanter Dateityp (Sprache) aus den Funden eines Repos; leer, wenn keine vorliegen (DR-/WR-83). */

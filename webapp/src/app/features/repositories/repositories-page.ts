@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { RepositoryCard, RepositorySource } from '../../core/models/scanner';
 import { I18nService } from '../../core/i18n/i18n.service';
@@ -74,33 +75,66 @@ import { I18nService } from '../../core/i18n/i18n.service';
         <!-- Karten (WR-82): Name · Sichtbarkeits-Badge · Beschreibung · Sprache · Aktualisiert -->
         <ul class="divide-y divide-default border-t border-default">
           @for (c of cards(); track c.id) {
-            <li class="py-4">
-              <div class="flex items-center gap-2">
-                <span class="font-semibold text-accent">{{ c.name }}</span>
-                <span class="rounded-full border border-default px-2 text-xs text-muted">
-                  {{ c.visibility }} · {{ c.type }}
-                </span>
-              </div>
-              @if (c.description) {
-                <p class="mt-1 text-sm text-muted">{{ c.description }}</p>
-              }
-              <div class="mt-1 flex items-center gap-3 text-xs text-muted">
-                @if (c.language) {
-                  <span class="flex items-center gap-1">
-                    <span
-                      class="inline-block h-3 w-3 rounded-full"
-                      [style.background]="languageColor(c.language)"
-                    ></span>
-                    {{ c.language }}
+            <li class="flex items-start justify-between gap-4 py-4">
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <button
+                    (click)="openInsights(c)"
+                    class="font-semibold text-accent hover:underline"
+                  >
+                    {{ c.name }}
+                  </button>
+                  <span class="rounded-full border border-default px-2 text-xs text-muted">
+                    {{ c.visibility }} · {{ c.type }}
                   </span>
+                </div>
+                @if (c.lastStatus === 'FAILED') {
+                  <p class="mt-1 text-sm font-medium" [style.color]="'var(--color-sev-high)'">
+                    {{ t('repos.card.lastScanFailed') }}<span class="font-normal">
+                      — {{ c.lastError || t('common.error') }}</span
+                    >
+                  </p>
                 }
-                <span>{{ t('repos.updated', { when: relativeTime(c.lastScanAt) }) }}</span>
+                @if (c.description) {
+                  <p class="mt-1 text-sm text-muted">{{ c.description }}</p>
+                }
+                <div class="mt-1 flex items-center gap-3 text-xs text-muted">
+                  @if (c.language) {
+                    <span class="flex items-center gap-1">
+                      <span
+                        class="inline-block h-3 w-3 rounded-full"
+                        [style.background]="languageColor(c.language)"
+                      ></span>
+                      {{ c.language }}
+                    </span>
+                  }
+                  <span>{{ t('repos.updated', { when: relativeTime(c.lastScanAt) }) }}</span>
+                </div>
+              </div>
+              <div class="flex shrink-0 items-center gap-2">
+                <button
+                  (click)="openInsights(c)"
+                  class="rounded border border-default px-3 py-1.5 text-sm hover:text-accent"
+                >
+                  {{ t('repos.card.insights') }}
+                </button>
+                <button
+                  (click)="scanCard(c)"
+                  [disabled]="scanning() === c.id"
+                  class="rounded bg-accent px-3 py-1.5 text-sm text-white hover:bg-accent-emphasis disabled:opacity-50"
+                >
+                  {{ scanning() === c.id ? t('repos.card.scanning') : t('repos.card.scan') }}
+                </button>
               </div>
             </li>
           } @empty {
             <li class="py-4 text-muted">{{ t('repos.cards.empty') }}</li>
           }
         </ul>
+
+        @if (message()) {
+          <p class="mt-3 rounded border border-default px-3 py-2 text-sm text-muted">{{ message() }}</p>
+        }
       } @else {
         <!-- Verwaltung: anlegen (GitHub-Stil-Formular) + Liste/löschen/testen -->
         <form (ngSubmit)="create()" class="mb-8 max-w-2xl">
@@ -315,6 +349,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
 export class RepositoriesPage {
   private readonly api = inject(ScannerApi);
   private readonly i18n = inject(I18nService);
+  private readonly router = inject(Router);
 
   protected t(key: string, params?: Record<string, string | number>): string {
     return this.i18n.t(key, params);
@@ -323,6 +358,7 @@ export class RepositoriesPage {
   protected readonly view = signal<'cards' | 'list'>('cards');
   protected readonly cards = signal<RepositoryCard[]>([]);
   protected readonly languages = signal<string[]>([]);
+  protected readonly scanning = signal<string | null>(null);
   protected q = '';
   protected filterType = '';
   protected filterLanguage = '';
@@ -371,6 +407,27 @@ export class RepositoriesPage {
           this.languages.set(langs);
         }
       });
+  }
+
+  /** Öffnet die Funde/Code-Scanning-Ansicht, vorgefiltert auf dieses Repo (WR-69/WR-82). */
+  protected openInsights(card: RepositoryCard): void {
+    this.router.navigate(['/findings'], { queryParams: { repo: card.name } });
+  }
+
+  /** Startet einen Full-Scan für das Repo und wechselt zur Scans-Ansicht mit Live-Fortschritt. */
+  protected scanCard(card: RepositoryCard): void {
+    this.scanning.set(card.id);
+    this.api.startScan(card.id, 'full').subscribe({
+      next: () => {
+        this.scanning.set(null);
+        this.message.set(this.t('repos.card.scanStarted', { name: card.name }));
+        this.router.navigate(['/scans']);
+      },
+      error: (err) => {
+        this.scanning.set(null);
+        this.message.set(err?.error?.error ?? this.t('common.error'));
+      },
+    });
   }
 
   /** Relative Zeit (lokalisiert) für „Aktualisiert …"; null ⇒ nie gescannt. */

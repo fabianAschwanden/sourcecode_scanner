@@ -115,10 +115,20 @@ public class ServerScanService implements ManageScansUseCase {
             sendReport(source, completed, stored);
         } catch (RuntimeException e) {
             LOG.errorf(e, "scan %s failed", scanId);
-            persistence.saveRecord(starting.failed());
+            persistence.saveRecord(starting.failed(shortReason(e)));
             broadcaster.publish(new ScanEvent(scanId, ScanStatus.FAILED.name(), 100, 0));
             broadcaster.complete(scanId);
         }
+    }
+
+    /** Kurze, anzeigetaugliche Fehlerursache (keine Stacktraces); nutzt die Message der Ursache. */
+    private String shortReason(RuntimeException e) {
+        Throwable cause = e.getCause() != null ? e.getCause() : e;
+        String msg = cause.getMessage();
+        if (msg == null || msg.isBlank()) {
+            msg = cause.getClass().getSimpleName();
+        }
+        return msg.length() > 500 ? msg.substring(0, 500) : msg;
     }
 
     private void finish(ScanRecord record, List<StoredFinding> stored) {

@@ -72,6 +72,8 @@ export interface RepositoryCard {
   readonly enabled: boolean;
   readonly language: string;
   readonly lastScanAt: string | null;
+  readonly lastStatus: string | null;
+  readonly lastError: string | null;
 }
 
 export interface PrRef {
