@@ -44,6 +44,18 @@ class PiiPatternsDetectorTest {
     }
 
     @Test
+    void triviale_ziffernfolgen_sind_keine_kreditkarte() {
+        // Null-UUID / Default-ID: nur Nullen bestehen Luhn zufällig, sind aber nie eine Kartennummer.
+        String content = String.join(
+                "\n",
+                "<column name=\"id\" value=\"00000000-0000-0000-0000-000000000000\"/>",
+                "zeros = 0000000000000000");
+        List<Finding> f = scan(content, allPatterns());
+        assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("creditcard")),
+                "lauter gleiche Ziffern dürfen keinen Kreditkarten-Fund erzeugen");
+    }
+
+    @Test
     void email_und_iban_werden_erkannt() {
         List<Finding> f = scan("mail: john.doe@firma.ch\niban: DE89 3704 0044 0532 0130 00", allPatterns());
         assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("email")));

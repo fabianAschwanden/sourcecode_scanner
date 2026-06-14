@@ -34,7 +34,7 @@ public class PiiPatternsDetector implements DetectorPort {
         IBAN("iban", Pattern.compile("\\b[A-Z]{2}\\d{2}(?:[ ]?[A-Z0-9]{4}){3,7}(?:[ ]?[A-Z0-9]{1,3})?\\b"),
                 Severity.HIGH, PiiPatternsDetector::isValidIban, true),
         CREDITCARD("creditcard", Pattern.compile("\\b(?:\\d[ -]?){13,19}\\b"),
-                Severity.HIGH, m -> Luhn.isValid(m), true),
+                Severity.HIGH, PiiPatternsDetector::looksLikeCreditCard, true),
         EMAIL("email", Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"),
                 Severity.MEDIUM, m -> true, true),
         // Telefon: standardmässig AUS (DR-50) — die Heuristik ist zu rauschanfällig (Versionen,
@@ -198,6 +198,20 @@ public class PiiPatternsDetector implements DetectorPort {
 
     private static int digitCount(String s) {
         return (int) s.chars().filter(Character::isDigit).count();
+    }
+
+    /**
+     * Kreditkarten-Plausibilität: Luhn-gültig (DR-22) und keine triviale Ziffernfolge. Verwirft
+     * lauter gleiche Ziffern (z. B. {@code 0000…0000} aus einer Null-UUID/Default-ID, die Luhn rein
+     * zufällig besteht) — solche Werte sind nie echte Kartennummern. Echte Testnummern wie
+     * {@code 4111111111111111} (zwei verschiedene Ziffern) bleiben erkannt (FP-Reduktion).
+     */
+    private static boolean looksLikeCreditCard(String match) {
+        if (!Luhn.isValid(match)) {
+            return false;
+        }
+        String digits = match.replaceAll("[\\s-]", "");
+        return digits.chars().distinct().count() > 1;
     }
 
     /**
