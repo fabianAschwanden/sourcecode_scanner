@@ -55,8 +55,17 @@ nie im Klartext eingegeben/angezeigt. Optional je Quelle: eine oder mehrere
 (Zusammenfassung + redigierte Funde) gesendet wird (WR-08, IR-53; opt-in).
 
 ### 3.3 Scan-Steuerung
-Scan manuell starten (Repo, Branch, Modus), laufende Scans live verfolgen
-(WebSocket-Fortschritt), Verlauf einsehen, Scan abbrechen, periodische Scans planen.
+Scan manuell starten (Repo, Branch, Modus), laufende Scans live verfolgen, Verlauf
+einsehen, Scan abbrechen, periodische Scans planen.
+
+**Fortschrittsanzeige (WR-04/04a/04b).** Jeder laufende Scan zeigt einen
+**Prozentwert (0–100 %) mit Fortschrittsleiste**. Der Wert kommt live über den
+SSE-Stream `GET /api/scans/{id}/events` (Mutiny `Multi<ScanEvent>`); die UI abonniert
+ihn per `EventSource`, solange der Scan läuft, und fällt auf Polling zurück, falls SSE
+nicht verfügbar ist. Backend-seitig schreibt der Orchestrator den Fortschritt **granular
+je abgeschlossenem Repository** fort (Start 10 % → anteilig je Repo → Persistenz/Finish
+100 %); `ScanProgressBroadcaster` verteilt die Events, der Stream wird bei Abschluss
+geschlossen. Abbruch/Fehler enden definiert bei 100 %.
 
 ### 3.4 Detektor- & Konfigurationsverwaltung
 Detektoren aktivieren/deaktivieren, Parameter (Entropie-Schwelle, Custom-Regex,

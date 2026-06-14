@@ -58,6 +58,23 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'findings.status.SUPPRESSED': 'dismissed',
     'findings.status.FALSE_POSITIVE': 'false positive',
 
+    // Scans
+    'scans.title': 'Scans',
+    'scans.source': 'Source',
+    'scans.source.tooltip': 'Repository source to scan (create it under Repositories first)',
+    'scans.mode': 'Mode',
+    'scans.mode.tooltip':
+      'full = entire history of all branches; incremental = only new, not-yet-scanned commits',
+    'scans.start': 'Start scan',
+    'scans.col.repository': 'Repository',
+    'scans.col.mode': 'Mode',
+    'scans.col.status': 'Status',
+    'scans.col.progress': 'Progress',
+    'scans.col.findings': 'Findings',
+    'scans.col.actions': 'Actions',
+    'scans.cancel': 'Cancel',
+    'scans.empty': 'No scans yet.',
+
     // Generic
     'common.error': 'Error',
     'common.delete': 'Delete',
@@ -163,6 +180,22 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'findings.status.BASELINE': 'Baseline',
     'findings.status.SUPPRESSED': 'unterdrückt',
     'findings.status.FALSE_POSITIVE': 'False Positive',
+
+    'scans.title': 'Scans',
+    'scans.source': 'Quelle',
+    'scans.source.tooltip': 'Zu scannende Repository-Quelle (zuvor unter Repositories anlegen)',
+    'scans.mode': 'Modus',
+    'scans.mode.tooltip':
+      'full = gesamte Historie aller Branches; incremental = nur neue, noch nicht gescannte Commits',
+    'scans.start': 'Scan starten',
+    'scans.col.repository': 'Repository',
+    'scans.col.mode': 'Modus',
+    'scans.col.status': 'Status',
+    'scans.col.progress': 'Fortschritt',
+    'scans.col.findings': 'Funde',
+    'scans.col.actions': 'Aktionen',
+    'scans.cancel': 'Abbrechen',
+    'scans.empty': 'Noch keine Scans.',
 
     'common.error': 'Fehler',
     'common.delete': 'Löschen',

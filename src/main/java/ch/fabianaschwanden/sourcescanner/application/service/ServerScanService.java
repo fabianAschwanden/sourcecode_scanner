@@ -96,7 +96,10 @@ public class ServerScanService implements ManageScansUseCase {
         broadcaster.publish(new ScanEvent(scanId, ScanStatus.RUNNING.name(), 10, 0));
         try {
             ScanConfig config = configFor(source, mode, policy);
-            List<ScanResult> results = orchestrator.scan(config);
+            // Granularer Fortschritt während des Laufs (WR-04b): jede Orchestrator-Meldung wird als
+            // RUNNING-Event an die SSE-Abonnenten verteilt.
+            List<ScanResult> results = orchestrator.scan(config,
+                    percent -> broadcaster.publish(new ScanEvent(scanId, ScanStatus.RUNNING.name(), percent, 0)));
             if (cancelRequested.remove(scanId) != null) {
                 finish(starting.cancelled(), List.of());
                 return;

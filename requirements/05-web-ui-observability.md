@@ -13,6 +13,8 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | WR-02 | S | Die UI SOLL Repository-Quellen anlegen, bearbeiten, löschen und die Verbindung testen können. |
 | WR-03 | S | Die UI SOLL Scans manuell starten (Repo, Branch, Modus) und abbrechen können. |
 | WR-04 | S | Die UI SOLL laufende Scans live mit Fortschritt anzeigen (WebSocket/SSE). |
+| WR-04a | S | Der Scan-Fortschritt MUSS als **Prozentwert (0–100 %)** dargestellt werden, ergänzt um eine visuelle **Fortschrittsleiste**; der Wert SOLL sich während des Laufs live aktualisieren (SSE-Stream je Scan-ID, WR-04), nicht erst am Ende. |
+| WR-04b | S | Das Backend SOLL den Fortschritt während des Scans **granular fortschreiben** (z. B. anteilig je abgeschlossenem Repository/Arbeitspaket), nicht nur Start/Ende; bei Abschluss/Abbruch/Fehler endet er definiert bei 100 %. |
 | WR-05 | C | Die UI KANN periodische/geplante Scans konfigurieren. |
 | WR-06 | S | Die UI SOLL Detektoren aktivieren/deaktivieren und deren Parameter pflegen, mit Validierung vor dem Speichern. |
 | WR-07 | C | Die UI KANN geladene Plugins mit ID, Kategorie und Version anzeigen. |

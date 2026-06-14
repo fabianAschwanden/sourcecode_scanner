@@ -9,7 +9,12 @@ import java.util.List;
 public interface StartScanUseCase {
 
     /** Scannt alle Repositories der Konfiguration und liefert je Repository ein Ergebnis. */
-    List<ScanResult> scan(ScanConfig config);
+    default List<ScanResult> scan(ScanConfig config) {
+        return scan(config, ScanProgressListener.NONE);
+    }
+
+    /** Wie {@link #scan(ScanConfig)}, meldet aber den granularen Fortschritt (WR-04b). */
+    List<ScanResult> scan(ScanConfig config, ScanProgressListener onProgress);
 
     /** Von den aktiven Detektoren deklarierte Regeln — für die SARIF-{@code tool.driver.rules}. */
     List<DetectorRule> declaredRules();
