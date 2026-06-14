@@ -102,75 +102,143 @@ import { I18nService } from '../../core/i18n/i18n.service';
           }
         </ul>
       } @else {
-        <!-- Verwaltung: anlegen/löschen/testen (Tabelle) -->
-        <form (ngSubmit)="create()" class="mb-6 flex flex-wrap items-end gap-2">
-          <input
-            [(ngModel)]="name"
-            name="name"
-            [placeholder]="t('repos.name')"
-            [title]="t('repos.name.tooltip')"
-            required
-            class="rounded border border-default px-2 py-1"
-          />
-          <select
-            [(ngModel)]="type"
-            name="type"
-            [title]="t('repos.type.tooltip')"
-            class="rounded border border-default px-2 py-1"
-          >
-            <option value="localGit">localGit</option>
-            <option value="github">github</option>
-            <option value="gitlab">gitlab</option>
-            <option value="bitbucket">bitbucket</option>
-          </select>
-          <input
-            [(ngModel)]="location"
-            name="location"
-            [placeholder]="t('repos.location')"
-            [title]="t('repos.location.tooltip')"
-            required
-            class="w-72 rounded border border-default px-2 py-1"
-          />
-          <input
-            [(ngModel)]="description"
-            name="description"
-            [placeholder]="t('repos.description')"
-            class="w-72 rounded border border-default px-2 py-1"
-          />
-          <select
-            [(ngModel)]="visibility"
-            name="visibility"
-            [title]="t('repos.visibility')"
-            class="rounded border border-default px-2 py-1"
-          >
-            <option value="private">private</option>
-            <option value="public">public</option>
-          </select>
-          <input
-            [(ngModel)]="tokenRef"
-            name="tokenRef"
-            [placeholder]="t('repos.tokenRef')"
-            [title]="t('repos.tokenRef.tooltip')"
-            class="rounded border border-default px-2 py-1"
-          />
-          <input
-            [(ngModel)]="reportEmails"
-            name="reportEmails"
-            [placeholder]="t('repos.reportEmails')"
-            [title]="t('repos.reportEmails.tooltip')"
-            class="w-72 rounded border border-default px-2 py-1"
-          />
-          <label
-            class="flex items-center gap-1 text-sm text-muted"
-            [title]="t('repos.remediation.tooltip')"
-          >
-            <input [(ngModel)]="remediationEnabled" name="remediationEnabled" type="checkbox" />
-            {{ t('repos.remediation') }}
-          </label>
-          <button type="submit" class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis">
-            {{ t('common.create') }}
-          </button>
+        <!-- Verwaltung: anlegen (GitHub-Stil-Formular) + Liste/löschen/testen -->
+        <form (ngSubmit)="create()" class="mb-8 max-w-2xl">
+          <div class="rounded-lg border border-default bg-surface p-5">
+            <h3 class="text-lg font-semibold">{{ t('repos.create.title') }}</h3>
+            <p class="mt-1 mb-4 text-sm text-muted">{{ t('repos.create.intro') }}</p>
+
+            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+              {{ t('repos.create.section.basics') }}
+            </h4>
+
+            <div class="mb-4 grid gap-1">
+              <label class="text-sm font-medium" for="repoName">{{ t('repos.name') }}</label>
+              <input
+                id="repoName"
+                [(ngModel)]="name"
+                name="name"
+                [placeholder]="t('repos.name')"
+                required
+                class="w-full rounded border border-default bg-canvas px-3 py-2"
+              />
+              <span class="text-xs text-muted">{{ t('repos.name.help') }}</span>
+            </div>
+
+            <div class="mb-4 grid gap-1">
+              <label class="text-sm font-medium" for="repoType">{{ t('repos.col.type') }}</label>
+              <select
+                id="repoType"
+                [(ngModel)]="type"
+                name="type"
+                class="w-full rounded border border-default bg-canvas px-3 py-2"
+              >
+                <option value="localGit">localGit</option>
+                <option value="github">github</option>
+                <option value="gitlab">gitlab</option>
+                <option value="bitbucket">bitbucket</option>
+              </select>
+              <span class="text-xs text-muted">{{ t('repos.type.tooltip') }}</span>
+            </div>
+
+            <div class="mb-4 grid gap-1">
+              <label class="text-sm font-medium" for="repoLocation">{{ t('repos.location') }}</label>
+              <input
+                id="repoLocation"
+                [(ngModel)]="location"
+                name="location"
+                [placeholder]="t('repos.location')"
+                required
+                class="w-full rounded border border-default bg-canvas px-3 py-2 font-mono text-sm"
+              />
+              <span class="text-xs text-muted">{{ t('repos.location.help') }}</span>
+            </div>
+
+            <div class="mb-4 grid gap-1">
+              <label class="text-sm font-medium" for="repoDescription">
+                {{ t('repos.description') }}
+              </label>
+              <input
+                id="repoDescription"
+                [(ngModel)]="description"
+                name="description"
+                [placeholder]="t('repos.description')"
+                class="w-full rounded border border-default bg-canvas px-3 py-2"
+              />
+              <span class="text-xs text-muted">{{ t('repos.description.help') }}</span>
+            </div>
+
+            <div class="mb-5 grid gap-1">
+              <span class="text-sm font-medium">{{ t('repos.visibility') }}</span>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="radio" [(ngModel)]="visibility" name="visibility" value="private" />
+                private
+              </label>
+              <label class="flex items-center gap-2 text-sm">
+                <input type="radio" [(ngModel)]="visibility" name="visibility" value="public" />
+                public
+              </label>
+              <span class="text-xs text-muted">{{ t('repos.visibility.help') }}</span>
+            </div>
+
+            <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+              {{ t('repos.create.section.access') }}
+            </h4>
+
+            <div class="mb-4 grid gap-1">
+              <label class="text-sm font-medium" for="repoToken">{{ t('repos.tokenRef') }}</label>
+              <input
+                id="repoToken"
+                [(ngModel)]="tokenRef"
+                name="tokenRef"
+                [placeholder]="t('repos.tokenRef')"
+                class="w-full rounded border border-default bg-canvas px-3 py-2 font-mono text-sm"
+              />
+              <span class="text-xs text-muted">{{ t('repos.tokenRef.help') }}</span>
+            </div>
+
+            <div class="mb-4 grid gap-1">
+              <label class="text-sm font-medium" for="repoEmails">
+                {{ t('repos.reportEmails') }}
+              </label>
+              <input
+                id="repoEmails"
+                [(ngModel)]="reportEmails"
+                name="reportEmails"
+                [placeholder]="t('repos.reportEmails')"
+                class="w-full rounded border border-default bg-canvas px-3 py-2"
+              />
+              <span class="text-xs text-muted">{{ t('repos.reportEmails.help') }}</span>
+            </div>
+
+            <label
+              class="mb-5 flex items-center gap-2 text-sm"
+              [title]="t('repos.remediation.tooltip')"
+            >
+              <input [(ngModel)]="remediationEnabled" name="remediationEnabled" type="checkbox" />
+              {{ t('repos.remediation') }}
+            </label>
+
+            <div class="flex justify-end gap-2 border-t border-default pt-4">
+              <button
+                type="button"
+                (click)="setView('cards')"
+                class="rounded border border-default px-3 py-2 text-sm hover:text-accent"
+              >
+                {{ t('repos.cancel') }}
+              </button>
+              <button
+                type="submit"
+                [disabled]="!name || !location"
+                class="rounded bg-accent px-4 py-2 text-sm text-white hover:bg-accent-emphasis disabled:opacity-50"
+              >
+                {{ t('common.create') }}
+              </button>
+            </div>
+          </div>
         </form>
+
+        <h3 class="mb-2 font-medium text-fg">{{ t('repos.manage.title') }}</h3>
 
         <table class="w-full text-sm">
           <thead>

@@ -117,6 +117,8 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'dashboard.col.findings': 'Findings',
     'dashboard.col.started': 'Started',
     'dashboard.empty': 'No scans yet.',
+    'dashboard.row.meta': '{findings} findings · started {when}',
+    'dashboard.findingsBadge': '{count} findings',
 
     // Policies
     'policies.title': 'Policies',
@@ -212,6 +214,19 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.cards.empty': 'No repositories — add one with “New”.',
     'repos.toggleList': 'Manage (table)',
     'repos.toggleCards': 'Overview (cards)',
+    'repos.create.title': 'Create a new repository source',
+    'repos.create.intro':
+      'A repository source tells the scanner where to find code. Credentials are stored only as a reference.',
+    'repos.create.section.basics': 'Basics',
+    'repos.create.section.access': 'Access & options',
+    'repos.name.help': 'A unique name for this source.',
+    'repos.location.help': 'Local path or clone URL — depending on the type.',
+    'repos.description.help': 'Optional. Shown on the repository card.',
+    'repos.visibility.help': 'How the source is labelled in the overview.',
+    'repos.tokenRef.help': 'Secret reference only (env:/vault:), never a cleartext token.',
+    'repos.reportEmails.help': 'Optional recipients for the report after a scan of this repo.',
+    'repos.cancel': 'Cancel',
+    'repos.manage.title': 'Manage repository sources',
 
     // Data sources
     'ds.title': 'External data sources',
@@ -347,6 +362,8 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'dashboard.col.findings': 'Funde',
     'dashboard.col.started': 'Gestartet',
     'dashboard.empty': 'Noch keine Scans.',
+    'dashboard.row.meta': '{findings} Funde · gestartet {when}',
+    'dashboard.findingsBadge': '{count} Funde',
 
     'policies.title': 'Policies',
     'policies.orgUnit': 'Org-Unit (leer = Default)',
@@ -441,6 +458,19 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.cards.empty': 'Keine Repositories — über „Neu" anlegen.',
     'repos.toggleList': 'Verwalten (Tabelle)',
     'repos.toggleCards': 'Übersicht (Karten)',
+    'repos.create.title': 'Neue Repository-Quelle anlegen',
+    'repos.create.intro':
+      'Eine Repository-Quelle sagt dem Scanner, wo der Code liegt. Credentials werden nur als Referenz gespeichert.',
+    'repos.create.section.basics': 'Grunddaten',
+    'repos.create.section.access': 'Zugriff & Optionen',
+    'repos.name.help': 'Ein eindeutiger Name für diese Quelle.',
+    'repos.location.help': 'Lokaler Pfad oder Clone-URL — je nach Typ.',
+    'repos.description.help': 'Optional. Wird auf der Repo-Karte angezeigt.',
+    'repos.visibility.help': 'Wie die Quelle in der Übersicht gekennzeichnet wird.',
+    'repos.tokenRef.help': 'Nur Secret-Referenz (env:/vault:), nie ein Klartext-Token.',
+    'repos.reportEmails.help': 'Optionale Empfänger für den Report nach einem Scan dieses Repos.',
+    'repos.cancel': 'Abbrechen',
+    'repos.manage.title': 'Repository-Quellen verwalten',
 
     'ds.title': 'Externe Datenquellen',
     'ds.intro':
