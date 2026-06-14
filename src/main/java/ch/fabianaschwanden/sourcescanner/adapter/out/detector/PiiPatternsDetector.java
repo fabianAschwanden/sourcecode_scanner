@@ -110,6 +110,12 @@ public class PiiPatternsDetector implements DetectorPort {
                     if (looksLikeDate(match)) {
                         continue;
                     }
+                    // Offensichtliche Test-/Dummy-/Platzhalter-E-Mails sind keine echten Nutzerdaten
+                    // (reservierte Beispiel-/Test-Domains, bekannte Fixture-/Docs-Adressen) und werden
+                    // ausgefiltert — sie sind immer unbedenklich (DR-57).
+                    if (rule == Rule.EMAIL && isTestEmail(match)) {
+                        continue;
+                    }
                     findings.add(new Finding(ID, DetectorCategory.PII, severity, rule.key,
                             unit.path(), i + 1, Redaction.redact(match), unit.commitId(), false));
                 }
@@ -192,6 +198,53 @@ public class PiiPatternsDetector implements DetectorPort {
             if (p.matcher(trimmed).matches()) {
                 return true;
             }
+        }
+        return false;
+    }
+
+    /**
+     * Reservierte Beispiel-/Test-Domains und -TLDs, die nie echte Personen adressieren (RFC 2606/6761
+     * {@code example.*}, {@code .test}, {@code .invalid}, {@code .localhost}; private/interne Namen
+     * {@code .internal}, {@code .local}; deutscher Platzhalter {@code beispiel.*}).
+     */
+    private static final Set<String> TEST_EMAIL_TLDS = Set.of("test", "invalid", "localhost",
+            "example", "internal", "local");
+    private static final Set<String> TEST_EMAIL_SLDS = Set.of("example", "beispiel");
+
+    /**
+     * Bekannte Fixture-/Docs-/Platzhalter-Adressen, die in Beispielen und Test-Setups auftauchen und
+     * keine echten Nutzer sind (z. B. Test-Domains für OAuth, Docs-Fallback-Adressen).
+     */
+    private static final Set<String> TEST_EMAIL_DOMAINS = Set.of(
+            "googletest.com", "resend.dev", "mailinator.com", "test.com");
+
+    /**
+     * {@code true}, wenn die E-Mail offensichtlich eine Test-/Dummy-/Platzhalter-Adresse ist und
+     * damit keine echten Nutzerdaten (DR-57). Erfasst reservierte Beispiel-/Test-Domains und -TLDs
+     * (z. B. {@code fabian@example.com}, {@code bot@wm-tippspiel.internal}, {@code du@beispiel.com})
+     * sowie eine kurze Liste bekannter Fixture-/Docs-Adressen (z. B. {@code fabian@googletest.com},
+     * {@code onboarding@resend.dev}). Fall-insensitiv.
+     */
+    private static boolean isTestEmail(String email) {
+        int at = email.lastIndexOf('@');
+        if (at < 0 || at == email.length() - 1) {
+            return false;
+        }
+        String domain = email.substring(at + 1).toLowerCase(Locale.ROOT);
+        if (TEST_EMAIL_DOMAINS.contains(domain)) {
+            return true;
+        }
+        String[] labels = domain.split("\\.");
+        if (labels.length == 0) {
+            return false;
+        }
+        String tld = labels[labels.length - 1];
+        if (TEST_EMAIL_TLDS.contains(tld)) {
+            return true;
+        }
+        // Second-Level-Domain (z. B. example.com / beispiel.de) als Platzhalter behandeln.
+        if (labels.length >= 2 && TEST_EMAIL_SLDS.contains(labels[labels.length - 2])) {
+            return true;
         }
         return false;
     }

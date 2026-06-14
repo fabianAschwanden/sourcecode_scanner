@@ -45,7 +45,7 @@ class PiiPatternsDetectorTest {
 
     @Test
     void email_und_iban_werden_erkannt() {
-        List<Finding> f = scan("mail: john.doe@example.com\niban: DE89 3704 0044 0532 0130 00", allPatterns());
+        List<Finding> f = scan("mail: john.doe@firma.ch\niban: DE89 3704 0044 0532 0130 00", allPatterns());
         assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("email")));
         assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("iban")));
     }
@@ -80,6 +80,34 @@ class PiiPatternsDetectorTest {
                 "time = 12:30:45");
         List<Finding> f = scan(content, allPatterns());
         assertTrue(f.isEmpty(), "Datums-/Zeitstempel sind immer unbedenklich und dürfen keinen Fund erzeugen");
+    }
+
+    @Test
+    void test_und_platzhalter_emails_werden_nie_gemeldet() {
+        // Reservierte Beispiel-/Test-Domains/-TLDs + bekannte Fixture-/Docs-Adressen (DR-57).
+        String content = String.join(
+                "\n",
+                "fabian@example.com",
+                "eva@example.org",
+                "koenigin@example.com",
+                "bot@wm-tippspiel.internal",
+                "fabian@googletest.com",
+                "eins@googletest.com",
+                "onboarding@resend.dev",
+                "du@beispiel.com",
+                "user@host.test",
+                "x@svc.local");
+        List<Finding> f = scan(content, allPatterns());
+        assertTrue(f.stream().noneMatch(x -> x.ruleId().equals("email")),
+                "Test-/Dummy-/Platzhalter-Adressen sind keine echten Nutzerdaten und dürfen keinen Fund erzeugen");
+    }
+
+    @Test
+    void echte_email_neben_test_domain_wird_weiterhin_erkannt() {
+        List<Finding> f = scan("real: anna@firma.de\ndummy: tester@example.com", allPatterns());
+        List<Finding> emails = f.stream().filter(x -> x.ruleId().equals("email")).toList();
+        assertTrue(emails.size() == 1, "nur die echte Adresse wird gemeldet, die Test-Adresse nicht");
+        assertFalse(emails.get(0).redactedMatch().contains("example.com"));
     }
 
     @Test

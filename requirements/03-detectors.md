@@ -27,6 +27,7 @@
 | DR-20 | S | Ein PII-Detektor SOLL Standardmuster erkennen: IBAN, Kreditkartennummer, E-Mail, Telefonnummer. |
 | DR-21 | M | Kundendaten-Muster MÜSSEN frei über Konfiguration (Regex + Severity) definierbar sein. |
 | DR-22 | C | Kreditkartentreffer KÖNNEN per Luhn-Prüfung gegen False Positives validiert werden. |
+| DR-57 | S | Der PII-Detektor SOLL offensichtlich unbedenkliche Treffer ausfiltern (kein Fund): Datums-/Zeitstempel (z. B. `2024-01-15`, `15.01.2024`, `12:30:45`) sowie **Test-/Dummy-/Platzhalter-E-Mails** — reservierte Beispiel-/Test-Domains und -TLDs (RFC 2606/6761: `example.*`, `.test`, `.invalid`, `.localhost`; private/interne `.internal`, `.local`; deutscher Platzhalter `beispiel.*`) und eine kurze Liste bekannter Fixture-/Docs-Adressen (z. B. `*@googletest.com`, `onboarding@resend.dev`). Echte Adressen (z. B. `anna@firma.de`) bleiben unberührt. |
 
 ## API-gespeister Kundendaten-Detektor (externe REST-Datenquelle)
 
