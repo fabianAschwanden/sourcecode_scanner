@@ -69,6 +69,6 @@ describe('DataSourcesPage', () => {
     req.flush({ partnernummer: 1 });
     httpMock.expectOne('/api/datasources').flush([]);
 
-    expect(component.message()).toContain('Hash');
+    expect(component.message().toLowerCase()).toContain('hash');
   });
 });

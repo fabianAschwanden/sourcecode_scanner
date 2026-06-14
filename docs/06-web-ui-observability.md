@@ -70,6 +70,38 @@ als False Positive markieren, Ticket erzeugen, **Fix per PR/MR vorschlagen** und
 **History bereinigen** (mit Dry-Run-Vorschau, Rotation-Checkliste und
 Freigabe-Dialog; Details in docs/07-remediation.md).
 
+**Code-Scanning-Ansicht (GitHub-Stil, WR-60..68).** Die Fundliste folgt im Aufbau dem
+GitHub-„Code scanning"-Tab: Titel, Tool-Status-Banner, Query-Filterleiste mit
+Offen/Geschlossen-Tabs und Facetten-Dropdowns, darunter die Ergebniszeilen.
+
+```
+Code scanning
+┌───────────────────────────────────────────────────────────────────────────┐
+│ ✓ Alle Detektoren laufen wie erwartet         🔧 Tools 6   + Detektor …    │  WR-60/61
+└───────────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│ 🔍  is:open branch:main severity:high                                      │  WR-62
+└───────────────────────────────────────────────────────────────────────────┘
+ 🛡 12 Offen   ✓ 4 Geschlossen        Sprache▾  Detektor▾  Regel▾  Severity▾  Sortieren▾   WR-63/64
+─────────────────────────────────────────────────────────────────────────────
+ ⚠  AWS Access Key  (HIGH)                                            [ main ]   WR-65
+    #3 offen · vor 1 Minute · erkannt von secret.regex-ruleset in src/Config.java:21
+ ⚠  Partnernummer im Code  (MEDIUM)                                   [ main ]
+    #2 offen · vor 3 Minuten · erkannt von pii.customer-data-api in src/Kunde.java:14
+─────────────────────────────────────────────────────────────────────────────
+```
+
+- **Banner** spiegelt den Detektor-Zustand (degradierte Detektoren ⇒ Warnung statt
+  Haken, OR-05/NFR-07); „Tools N" = Anzahl aktiver Detektoren, „+ Detektor" verlinkt §3.4.
+- **Query-Leiste** und Dropdowns sind synchron: ein Dropdown schreibt seinen Token in die
+  Query (`severity:high`), eine getippte Query setzt die Dropdowns. Facetten-Optionen
+  zeigen nur vorkommende Werte. Sortierung: Severity, zuletzt/zuerst gesehen.
+- **Tabs** Offen/Geschlossen filtern nach Triage-Status (geschlossen = Baseline/Suppressed/FP).
+- **Zeile**: Severity-Icon + Badge (farbcodiert, WR-40), Regeltitel, Metazeile
+  `#N <status> <relative Zeit> · erkannt von <Detektor> in <Datei>:<Zeile>`, Branch-Badge;
+  Klick öffnet die Details. Optional Checkbox-Mehrfachauswahl für Sammel-Triage (WR-67).
+- Alles bleibt **redigiert** (WR-33/68) — kein Klartext in Treffer, Datei- oder Branch-Angabe.
+
 ### 3.6 Baseline- & Policy-Verwaltung
 Baseline-Einträge einsehen/entfernen, zentrale Gate-/Policy-Vorgaben pro
 Organisationseinheit pflegen (knüpft an FR-20 an).
@@ -85,6 +117,15 @@ konsistente Severity-Farben (WR-40). Eingabe-Bedienelemente zeigen eine Hover-Hi
 (Tooltip) mit einem konkreten Eingabe-Beispiel, das das erwartete Format illustriert
 (z. B. lokaler Pfad, Clone-URL, Token-Referenz `env:NAME`, Org-Unit) (WR-41). Umsetzung
 über die Tailwind-Konventionen des Templates; keine zusätzliche UI-Bibliothek nötig.
+
+**Mehrsprachigkeit (i18n, WR-70..73).** Alle sichtbaren Texte laufen über einen
+zentralen, Signal-basierten Übersetzungsdienst (`I18nService` mit Schlüssel→Text-
+Wörterbüchern für `en` und `de`); Komponenten geben Text über `t('key')` aus, kein
+hartkodierter Anzeigetext (NFR-27). Ein Sprachumschalter im Kopfbereich wechselt die
+Sprache zur Laufzeit ohne Neuladen und persistiert die Wahl in `localStorage` (NFR-28);
+Default ist Englisch, eine fehlende Übersetzung fällt auf den Schlüssel/die Default-
+Sprache zurück. Kein `@angular/localize`-Mehrfach-Build nötig — die Umschaltung ist
+reaktiv über Signals.
 
 ### 3.9 Einstellungen
 Admin-Ansicht für systemweite Einstellungen, die ohne Neustart änderbar sind (WR-15):

@@ -27,3 +27,4 @@
 | FR-23 | M | Aus der externen API bezogene vertrauliche Werte MÜSSEN wie Secrets behandelt werden: nur redigiert ausgegeben (FR-18), nie geloggt, nicht persistiert außer als Hash/Fingerprint. | Detection Layer / P6 |
 | FR-24 | S | Das System SOLL alternativ zur API eine **Key-Value-Liste** (CSV oder JSON, Auto-Erkennung) als Datei aufnehmen, wobei der Key der Attributname und der Value der gesuchte Wert ist. | Detection Layer / P7 |
 | FR-25 | M | Hochgeladene Werte MÜSSEN ausschließlich als **Hash** persistiert werden (nie im Klartext); die Erkennung im Code erfolgt durch Hash-Abgleich der Code-Tokens (FR-23, NFR-23). | Detection Layer / P7 |
+| FR-26 | S | Die Web-UI SOLL **mehrsprachig** sein und mindestens **Deutsch und Englisch** anbieten; die Sprache ist zur Laufzeit umschaltbar (WR-70..73). | Web-UI / P7 |

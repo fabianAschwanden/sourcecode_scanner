@@ -46,18 +46,46 @@ welche Attribute im Code geprüft werden (FR-21/FR-22, IR-60..IR-66, DR-23..DR-2
 
 | ID | Prio | Anforderung |
 |----|------|-------------|
-| WR-10 | S | Die UI SOLL Funde filter- und sortierbar darstellen (Repo, Severity, Detektor, Status). |
+| WR-10 | S | Die UI SOLL Funde filter- und sortierbar darstellen (Repo, Severity, Detektor, Status); die konkrete Darstellung folgt der Code-Scanning-Ansicht (WR-60..68). |
 | WR-11 | S | Die UI SOLL Funddetails mit redigiertem Treffer und Code-Kontext anzeigen. |
 | WR-12 | S | Die UI SOLL Funde triagieren: als Baseline akzeptieren, unterdrücken (mit Pflichtbegründung), als False Positive markieren. |
 | WR-13 | C | Die UI KANN aus einem Fund ein Ticket (Jira) erzeugen. |
 | WR-14 | C | Die UI KANN Baseline-Einträge einsehen und entfernen. |
+
+### Code-Scanning-Ansicht (GitHub-Stil)
+
+Die Finding-Liste SOLL im Aufbau der GitHub-„Code scanning"-Ansicht gestaltet sein
+(Referenz: GitHub Security-Tab). Sie konkretisiert WR-10/WR-40 für die Funddarstellung.
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-60 | S | Die Ansicht SOLL den Titel „Code scanning" und ein **Status-Banner** zum Tool-/Scan-Zustand zeigen (z. B. „Alle Detektoren laufen wie erwartet" mit grünem Haken, bzw. eine Warnung bei degradierten Detektoren, OR-05/NFR-07). |
+| WR-61 | C | Das Banner KANN rechts die Anzahl aktiver Detektoren/Tools (`Tools N`) sowie eine Aktion zum Aktivieren weiterer Detektoren (`Detektor hinzufügen`, verweist auf die Detektor-Verwaltung WR-06) anzeigen. |
+| WR-62 | S | Die Ansicht SOLL eine **Such-/Filterleiste** mit Query-Syntax bereitstellen (z. B. `is:open branch:main severity:high detector:secret.regex-ruleset`); die Query SOLL mit den Dropdown-Filtern synchron sein (Änderung am Dropdown aktualisiert die Query und umgekehrt). |
+| WR-63 | S | Die Ansicht SOLL **Status-Tabs mit Zähler** zeigen: `N Offen` und `N Geschlossen` (geschlossen = triagiert: Baseline/Suppressed/False-Positive), jeweils mit Icon; der aktive Tab filtert die Liste. |
+| WR-64 | S | Die Ansicht SOLL **Facetten-Filter** als Dropdowns bereitstellen — mindestens `Sprache/Dateityp`, `Detektor` (entspr. „Tool"), `Regel`, `Severity` — sowie ein **Sortier**-Dropdown (z. B. Severity, zuletzt gesehen, zuerst gesehen). Optionen SOLLEN nur tatsächlich vorkommende Werte enthalten (Facettierung). |
+| WR-65 | S | Jede **Ergebniszeile** SOLL enthalten: Status-/Severity-Icon, Regel-/Fundtitel, ein **Severity-Badge** (farbcodiert, WR-40), eine Metazeile `#<lfd-Nr.> <Status> <relative Zeit> • erkannt von <Detektor> in <Datei>:<Zeile>` und rechts ein **Branch-Badge**; Klick öffnet die Funddetails (WR-11). |
+| WR-66 | C | Funde KÖNNEN eine stabile, fortlaufende Anzeigenummer (`#N`) je Repository tragen und einen relativen Zeitstempel („vor 1 Minute") für Erst-/Letztsichtung zeigen. |
+| WR-67 | C | Die Ansicht KANN Mehrfachauswahl per Checkbox je Zeile und Kopfzeile bieten, um Funde gesammelt zu triagieren (Sammel-Baseline/-Suppress mit Pflichtbegründung, WR-12). |
+| WR-68 | S | Treffer-Anzeige bleibt redigiert (WR-33); Branch-, Datei- und Detektorangaben enthalten nie Klartext-Geheimnisse. |
 
 ### Darstellung & Usability
 
 | ID | Prio | Anforderung |
 |----|------|-------------|
 | WR-40 | S | Die UI SOLL durchgängig in einem dunklen Erscheinungsbild im Stil von GitHub (Dark Mode) gestaltet sein (Hintergründe, Flächen, Text, Akzent- und Severity-Farben), konsistent über alle Ansichten. |
-| WR-41 | S | Eingabe-Bedienelemente (Felder, Auswahllisten) SOLLEN eine Hover-Hilfe (Tooltip) mit einem konkreten Eingabe-Beispiel anzeigen (z. B. Pfad `/Users/me/git/projekt`, Clone-URL `https://github.com/org/repo.git`, Token-Referenz `env:GITHUB_TOKEN`, Org-Unit `team-a/payments`, Datenquellen-URL `https://crm.intern/api/v1/partners`, Datensatz-Pfad `$.data[*]`). |
+| WR-41 | S | Eingabe-Bedienelemente (Felder, Auswahllisten) SOLLEN eine Hover-Hilfe (Tooltip) mit einem konkreten Eingabe-Beispiel anzeigen (z. B. Pfad `/Users/me/git/projekt`, Clone-URL `https://github.com/org/repo.git`, Token-Referenz `env:GITHUB_TOKEN`, Org-Unit `team-a/payments`, Datenquellen-URL `https://crm.intern/api/v1/partners`, Datensatz-Pfad `$.data[*]`, Code-Scanning-Query `is:open branch:main severity:high`). |
+
+### Internationalisierung (i18n)
+
+Die Web-UI ist mehrsprachig (FR-26, NFR-27/28). Mitgeliefert: Englisch (Default) und Deutsch.
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-70 | S | Die UI SOLL alle sichtbaren Texte über einen zentralen Übersetzungsdienst (Schlüssel→Text) ausgeben; **Deutsch und Englisch** sind verfügbar (FR-26). |
+| WR-71 | S | Die UI SOLL einen **Sprachumschalter** (z. B. im Kopfbereich) bereitstellen, der die Sprache zur Laufzeit ohne Neuladen wechselt; die Auswahl SOLL clientseitig persistiert werden (NFR-28). |
+| WR-72 | S | Auch Tooltips/Hilfetexte (WR-41) und Statusmeldungen (z. B. Triage-/Upload-/Remediation-Rückmeldungen) SOLLEN lokalisiert sein. |
+| WR-73 | C | Fehlt eine Übersetzung, KANN die UI nachvollziehbar auf die Default-Sprache bzw. den Schlüssel zurückfallen, ohne zu brechen. |
 
 ### Schnittstelle
 
@@ -65,6 +93,7 @@ welche Attribute im Code geprüft werden (FR-21/FR-22, IR-60..IR-66, DR-23..DR-2
 |----|------|-------------|
 | WR-20 | M | Die UI MUSS ausschließlich über eine dokumentierte REST-API mit dem Backend kommunizieren. |
 | WR-21 | C | Die REST-API KANN per OpenAPI-Spezifikation versioniert und extern nutzbar sein. |
+| WR-22 | S | Die Finding-API SOLL die Code-Scanning-Ansicht (WR-60..68) bedienen: Filter nach Status offen/geschlossen inkl. Zähler, Facetten-Werte (vorkommende Detektoren/Regeln/Dateitypen) und eine Sortierung; die Such-Query (WR-62) wird serverseitig oder clientseitig auf diese Filter abgebildet. |
 
 ### Sicherheit
 

@@ -9,6 +9,7 @@ import {
   DataSourceKind,
   Severity,
 } from '../../core/models/scanner';
+import { I18nService } from '../../core/i18n/i18n.service';
 
 /**
  * Externe Datenquellen für Kundendaten-Erkennung verwalten (WR-50..54): anlegen, testweise abrufen
@@ -21,11 +22,8 @@ import {
   imports: [FormsModule],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">Externe Datenquellen</h2>
-      <p class="mb-4 text-sm text-muted">
-        REST-API mit vertraulichen Kundendaten (z. B. Partnernummern). Die geprüften Attribute
-        werden im Code gesucht. Werte verlassen den Server nie unredigiert; Token nur als Referenz.
-      </p>
+      <h2 class="mb-4 text-xl font-semibold">{{ t('ds.title') }}</h2>
+      <p class="mb-4 text-sm text-muted">{{ t('ds.intro') }}</p>
 
       <form (ngSubmit)="create()" class="mb-6 flex flex-wrap items-end gap-2">
         <input
@@ -42,8 +40,8 @@ import {
           title="REST-API: Werte werden live geladen. Upload: Key-Value-Liste (CSV/JSON), nur Hashes gespeichert."
           class="rounded border border-default px-2 py-1"
         >
-          <option value="REST">REST-API</option>
-          <option value="UPLOAD">Upload (CSV/JSON)</option>
+          <option value="REST">{{ t('ds.kind.rest') }}</option>
+          <option value="UPLOAD">{{ t('ds.kind.upload') }}</option>
         </select>
         @if (kind === 'REST') {
           <input
@@ -90,7 +88,7 @@ import {
           type="submit"
           class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
         >
-          Anlegen
+          {{ t('common.create') }}
         </button>
         @if (kind === 'REST') {
           <button
@@ -99,32 +97,26 @@ import {
             title="Ruft die Datenquelle testweise ab und zeigt die verfügbaren Attribute (redigiert)."
             class="rounded border border-default px-3 py-1 hover:underline"
           >
-            Attribute abrufen
+            {{ t('ds.probe') }}
           </button>
         }
       </form>
 
       @if (kind === 'UPLOAD') {
-        <p class="mb-4 text-sm text-muted">
-          Upload-Datenquelle anlegen, dann in der Liste unten eine CSV/JSON-Datei hochladen (Format
-          <code>key,value</code> bzw. <code>{{ '{' }}"key":..,"value":..{{ '}' }}</code
-          >). Es werden nur Hashes gespeichert — die Werte verlassen den Server nie im Klartext.
-        </p>
+        <p class="mb-4 text-sm text-muted">{{ t('ds.uploadHint') }}</p>
       }
 
       @if (schema().length > 0) {
         <div class="mb-6 rounded border border-default p-3">
-          <h3 class="mb-2 text-sm font-semibold">
-            Attribut-Mapping (redigierte Beispiele) — wählen, was im Code geprüft wird
-          </h3>
+          <h3 class="mb-2 text-sm font-semibold">{{ t('ds.mapping.title') }}</h3>
           <table class="w-full text-sm">
             <thead>
               <tr class="border-b border-default text-left text-muted">
-                <th class="py-1">Attribut</th>
-                <th>Beispiel (maskiert)</th>
-                <th>Prüfen</th>
-                <th>Severity</th>
-                <th>Kategorie</th>
+                <th class="py-1">{{ t('ds.mapping.attribute') }}</th>
+                <th>{{ t('ds.mapping.example') }}</th>
+                <th>{{ t('ds.mapping.check') }}</th>
+                <th>{{ t('findings.facet.severity') }}</th>
+                <th>{{ t('ds.mapping.category') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -160,7 +152,7 @@ import {
             (click)="saveDraftWithMapping()"
             class="mt-2 rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
           >
-            Datenquelle mit Mapping speichern
+            {{ t('ds.mapping.save') }}
           </button>
         </div>
       }
@@ -174,12 +166,12 @@ import {
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-default text-left text-muted">
-            <th class="py-2">Name</th>
-            <th>Typ</th>
-            <th>Quelle</th>
-            <th>Aktiv</th>
-            <th>Geprüfte Attribute</th>
-            <th>Aktionen</th>
+            <th class="py-2">{{ t('repos.name') }}</th>
+            <th>{{ t('repos.col.type') }}</th>
+            <th>{{ t('ds.col.source') }}</th>
+            <th>{{ t('ds.col.active') }}</th>
+            <th>{{ t('ds.col.checkedAttrs') }}</th>
+            <th>{{ t('repos.col.actions') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -188,17 +180,17 @@ import {
               <td class="py-2">{{ s.name }}</td>
               <td>{{ s.kind }}</td>
               <td class="font-mono text-xs">
-                {{ s.kind === 'UPLOAD' ? 'Upload (gehasht)' : s.baseUrl + s.path }}
+                {{ s.kind === 'UPLOAD' ? t('ds.kind.upload') : s.baseUrl + s.path }}
               </td>
-              <td>{{ s.enabled ? 'ja' : 'nein' }}</td>
-              <td class="text-xs">{{ checkedFields(s) || '—' }}</td>
+              <td>{{ s.enabled ? t('common.yes') : t('common.no') }}</td>
+              <td class="text-xs">{{ checkedFields(s) || t('common.none') }}</td>
               <td class="space-x-2">
                 @if (s.kind === 'UPLOAD') {
                   <label
                     class="cursor-pointer text-accent hover:underline"
                     title="CSV oder JSON hochladen (key,value). Es werden nur Hashes gespeichert."
                   >
-                    Upload
+                    {{ t('ds.upload') }}
                     <input
                       type="file"
                       class="hidden"
@@ -207,12 +199,14 @@ import {
                     />
                   </label>
                 }
-                <button (click)="remove(s)" class="text-sev-high hover:underline">Löschen</button>
+                <button (click)="remove(s)" class="text-sev-high hover:underline">
+                  {{ t('common.delete') }}
+                </button>
               </td>
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="py-3 text-muted">Keine Datenquellen.</td>
+              <td colspan="6" class="py-3 text-muted">{{ t('ds.empty') }}</td>
             </tr>
           }
         </tbody>
@@ -222,6 +216,11 @@ import {
 })
 export class DataSourcesPage {
   private readonly api = inject(ScannerApi);
+  private readonly i18n = inject(I18nService);
+
+  protected t(key: string, params?: Record<string, string | number>): string {
+    return this.i18n.t(key, params);
+  }
 
   protected readonly severities: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
   protected readonly sources = signal<DataSource[]>([]);
@@ -245,11 +244,11 @@ export class DataSourcesPage {
   }
 
   protected probeDraft(): void {
-    this.message.set('Rufe Datenquelle ab …');
+    this.message.set(this.t('ds.msg.fetching'));
     this.api.probeDataSource(this.draft([])).subscribe({
       next: (s) => {
         if (!s.reachable) {
-          this.message.set(`Nicht erreichbar: ${s.message}`);
+          this.message.set(this.t('ds.msg.unreachable', { message: s.message }));
           this.schema.set([]);
           return;
         }
@@ -259,10 +258,13 @@ export class DataSourcesPage {
         }
         this.schema.set(s.attributes);
         this.message.set(
-          `${s.sampleRecords} Datensatz/Datensätze, ${s.attributes.length} Attribut(e).`,
+          this.t('ds.msg.records', { records: s.sampleRecords, attrs: s.attributes.length }),
         );
       },
-      error: (err) => this.message.set(`Abruf fehlgeschlagen: ${err?.error?.error ?? 'Fehler'}`),
+      error: (err) =>
+        this.message.set(
+          this.t('ds.msg.fetchFailed', { error: err?.error?.error ?? this.t('common.error') }),
+        ),
     });
   }
 
@@ -274,7 +276,7 @@ export class DataSourcesPage {
       category: this.draftMap[a.field].category,
     }));
     this.api.saveDataSource(this.draft(attributes)).subscribe(() => {
-      this.message.set('Datenquelle gespeichert.');
+      this.message.set(this.t('ds.msg.saved'));
       this.schema.set([]);
       this.resetForm();
       this.reload();
@@ -299,15 +301,18 @@ export class DataSourcesPage {
     }
     const id = source.id;
     file.text().then((content) => {
-      this.message.set('Lade Key-Value-Liste hoch …');
+      this.message.set(this.t('ds.msg.uploading'));
       this.api.uploadKeyValues(id, content).subscribe({
         next: (counts) => {
           const total = Object.values(counts).reduce((a, b) => a + b, 0);
-          const attrs = Object.keys(counts).join(', ');
-          this.message.set(`${total} Hash(es) gespeichert für: ${attrs || '—'}`);
+          const attrs = Object.keys(counts).join(', ') || this.t('common.none');
+          this.message.set(this.t('ds.msg.hashesStored', { count: total, attrs }));
           this.reload();
         },
-        error: (err) => this.message.set(`Upload fehlgeschlagen: ${err?.error?.error ?? 'Fehler'}`),
+        error: (err) =>
+          this.message.set(
+            this.t('ds.msg.uploadFailed', { error: err?.error?.error ?? this.t('common.error') }),
+          ),
       });
     });
     input.value = '';

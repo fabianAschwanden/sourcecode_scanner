@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { FindingsPage } from './findings-page';
 import { Finding } from '../../core/models/scanner';
 
@@ -31,23 +32,25 @@ describe('FindingsPage', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [FindingsPage],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideHttpClient(), provideHttpClientTesting(), provideRouter([])],
     }).compileComponents();
     httpMock = TestBed.inject(HttpTestingController);
   });
 
-  it('lädt die Funde beim Start', () => {
+  it('lädt Funde und Detektoren beim Start', () => {
     const fixture = TestBed.createComponent(FindingsPage);
     fixture.detectChanges();
-    const req = httpMock.expectOne((r) => r.url === '/api/findings');
-    expect(req.request.method).toBe('GET');
-    req.flush([]);
+    httpMock.expectOne((r) => r.url === '/api/findings').flush([]);
+    httpMock
+      .expectOne('/api/detectors')
+      .flush([{ id: 'secret.regex-ruleset', category: 'SECRET' }]);
   });
 
   it('löst einen Auto-Fix-PR aus und zeigt die PR-URL', () => {
     const fixture = TestBed.createComponent(FindingsPage);
     fixture.detectChanges();
     httpMock.expectOne((r) => r.url === '/api/findings').flush([secretFinding()]);
+    httpMock.expectOne('/api/detectors').flush([]);
 
     const component = fixture.componentInstance as unknown as {
       remediate: (f: Finding) => void;
@@ -58,9 +61,26 @@ describe('FindingsPage', () => {
     const req = httpMock.expectOne('/api/findings/f1/remediate');
     expect(req.request.method).toBe('POST');
     req.flush({ url: 'https://github.com/o/r/pull/7', number: 7 });
-    // Re-Load nach Erfolg.
-    httpMock.expectOne((r) => r.url === '/api/findings').flush([]);
 
     expect(component.message()).toContain('#7');
+  });
+
+  it('Status-Tabs filtern offen vs. geschlossen', () => {
+    const fixture = TestBed.createComponent(FindingsPage);
+    fixture.detectChanges();
+    const closed: Finding = { ...secretFinding(), id: 'f2', triageStatus: 'BASELINE' };
+    httpMock.expectOne((r) => r.url === '/api/findings').flush([secretFinding(), closed]);
+    httpMock.expectOne('/api/detectors').flush([]);
+
+    const component = fixture.componentInstance as unknown as {
+      openCount: () => number;
+      closedCount: () => number;
+      setStatusTab: (t: 'open' | 'closed') => void;
+      visibleFindings: () => Finding[];
+    };
+    expect(component.openCount()).toBe(1);
+    expect(component.closedCount()).toBe(1);
+    component.setStatusTab('closed');
+    expect(component.visibleFindings().map((f) => f.id)).toEqual(['f2']);
   });
 });
