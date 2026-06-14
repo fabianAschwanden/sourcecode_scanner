@@ -35,6 +35,22 @@ Stern-/Star-Vergabe sind bewusst ausgenommen** (nicht relevant für den Scanner)
 | WR-84 | S | Suche und Filter SOLLEN auf vorhandene Werte wirken (leere Liste/keine Treffer wird klar dargestellt); alle Texte lokalisiert (WR-70). |
 | WR-85 | C | Eine Karte KANN eine kompakte Aktivitäts-/Trend-Andeutung zeigen (z. B. Fund-Trend); Lizenz und Sterne werden nicht angezeigt. |
 
+### Rulesets (feingranulare Regelsteuerung, GitHub-Stil)
+
+Verwaltung benannter Regelsätze analog GitHubs „Rulesets" (FR-27, DR-50..55). Referenz:
+die hochgeladenen Screenshots (Übersicht mit „New ruleset", Editor mit Name/Enforcement/
+Bypass/Scope, Regel-Liste mit Checkboxen).
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-90 | S | Die UI SOLL eine **Rulesets-Übersicht** zeigen (Liste benannter Rulesets, Enforcement-Status, Scope) mit Aktion **„Neues Ruleset"** und Leerzustand-Hinweis. |
+| WR-91 | S | Der Ruleset-Editor SOLL **Name** (Pflicht) und **Enforcement-Status** (`disabled` \| `active`) erfassen. |
+| WR-92 | S | Der Editor SOLL den **Geltungsbereich** wählbar machen: **alle Repos** oder eine **Repo-Auswahl** (Liste der verwalteten Quellen). |
+| WR-93 | S | Der Editor SOLL je **Regel** eine Checkbox (an/aus) mit Kurzbeschreibung und ein **Severity**-Dropdown anbieten (Liste der verfügbaren Regeln aus den aktiven Detektoren, z. B. `email`, `iban`, `creditcard`, `phone`, `secret.high-entropy`). |
+| WR-94 | S | Für wertbezogene Regeln (z. B. `email`) SOLL der Editor einen **Abgleichsmodus** anbieten: `immer` \| `gegen Liste` \| `gegen API`; bei `Liste`/`API` ist eine Datenquelle wählbar (WR-50/IR-67). |
+| WR-95 | S | Rulesets SOLLEN angelegt, bearbeitet und gelöscht werden können (nur Admin, WR-31); Änderungen wirken auf künftige Scans (DR-54) und werden auditiert (WR-34). |
+| WR-96 | C | Die UI KANN je Repository die zutreffenden/effektiven Rulesets anzeigen (welche Regel/Severity gilt) zur Nachvollziehbarkeit (DR-55). |
+
 ### Externe Datenquellen & Attribut-Mapping
 
 Verwaltung der externen REST-Datenquelle für vertrauliche Kundendaten und das Mapping,

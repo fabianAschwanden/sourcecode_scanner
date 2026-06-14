@@ -160,6 +160,34 @@ export interface DataSourceSchema {
   readonly message: string;
 }
 
+export type EnforcementStatus = 'DISABLED' | 'ACTIVE';
+export type RuleMatchMode = 'ALWAYS' | 'LIST' | 'API';
+
+export interface RuleOverride {
+  readonly ruleId: string;
+  readonly enabled: boolean;
+  readonly severity: Severity | null;
+  readonly matchMode: RuleMatchMode;
+  readonly dataSourceName: string | null;
+}
+
+export interface Ruleset {
+  readonly id: string | null;
+  readonly name: string;
+  readonly enforcement: EnforcementStatus;
+  readonly global: boolean;
+  readonly repoNames: string[];
+  readonly rules: RuleOverride[];
+}
+
+/** Verfügbare Einzelregel für den Ruleset-Editor (von /api/detectors/rules). */
+export interface RuleInfo {
+  readonly id: string;
+  readonly title: string;
+  readonly category: string;
+  readonly defaultSeverity: Severity;
+}
+
 export interface Policy {
   readonly id: string | null;
   readonly orgUnit: string | null;

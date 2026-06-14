@@ -26,6 +26,10 @@ export const routes: Routes = [
       import('./features/datasources/datasources-page').then((m) => m.DataSourcesPage),
   },
   {
+    path: 'rulesets',
+    loadComponent: () => import('./features/rulesets/rulesets-page').then((m) => m.RulesetsPage),
+  },
+  {
     path: 'policies',
     loadComponent: () => import('./features/policies/policies-page').then((m) => m.PoliciesPage),
   },

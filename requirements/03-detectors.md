@@ -59,3 +59,18 @@ Attribute werden über ein Mapping festgelegt (WR-50).
 | DR-40 | M | Detektoren MÜSSEN Inline-Suppression-Direktiven respektieren. |
 | DR-41 | S | Detektoren SOLLEN deterministische Fingerprints für Deduplizierung/Baseline erzeugen. |
 | DR-42 | S | Die False-Positive-Rate SOLL durch Kontext (Pfad, Dateityp, Verifikation) reduziert werden. |
+
+## Regelsätze (Rulesets) — feingranulare Steuerung
+
+Ein **Ruleset** ist eine benannte, eigenständige Sammlung von Regel-Einstellungen (unabhängig
+von der Gate-/Org-Policy FR-20). Es steuert je **einzelner Regel**, ob sie läuft und mit welcher
+Severity; sein **Geltungsbereich** ist entweder global (alle Repos) oder eine Repo-Liste (WR-90..96).
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| DR-50 | S | Eine Regel MUSS einzeln aktivierbar/deaktivierbar sein (z. B. `email`, `iban`, `creditcard`, `phone`, `secret.high-entropy`); Default-aktiv ist die eingebaute Vorgabe der Regel. |
+| DR-51 | S | Je Regel MUSS die **Severity** über das Ruleset überschreibbar sein (INFO..CRITICAL); ohne Override gilt die Default-Severity der Regel. |
+| DR-52 | S | Für Erkennungsregeln mit Wertbezug (z. B. `email`) MUSS ein **Abgleichsmodus** wählbar sein: `always` (Muster überall), `list` (nur gegen eine hochgeladene Werteliste, IR-67) oder `api` (gegen eine externe Datenquelle, IR-60). Bei `list`/`api` wird eine Datenquelle referenziert. |
+| DR-53 | M | Treffen mehrere Rulesets auf ein Repo zu, MÜSSEN ihre Regel-Overrides deterministisch zusammengeführt werden (Repo-spezifisch vor global; „aus" hat Vorrang vor „an" nur bei explizitem Deaktivieren — definierte Merge-Reihenfolge). |
+| DR-54 | M | Nur Rulesets mit Enforcement-Status `active` wirken auf Scans; `disabled` Rulesets bleiben gespeichert, beeinflussen aber keinen Lauf (analog GitHub). |
+| DR-55 | S | Die effektive Regel-Konfiguration eines Laufs SOLL nachvollziehbar sein (welches Ruleset welche Regel/Severity/Modus gesetzt hat) — für Audit/Transparenz (WR-34). |

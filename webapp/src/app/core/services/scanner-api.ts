@@ -10,6 +10,8 @@ import {
   Policy,
   PrRef,
   RepositoryCard,
+  RuleInfo,
+  Ruleset,
   RepositorySource,
   Scan,
   ScrubDryRun,
@@ -87,6 +89,23 @@ export class ScannerApi {
 
   detectors(): Observable<DetectorInfo[]> {
     return this.http.get<DetectorInfo[]>('/api/detectors');
+  }
+
+  /** Verfügbare Einzelregeln für den Ruleset-Editor (WR-93). */
+  detectorRules(): Observable<RuleInfo[]> {
+    return this.http.get<RuleInfo[]>('/api/detectors/rules');
+  }
+
+  rulesets(): Observable<Ruleset[]> {
+    return this.http.get<Ruleset[]>('/api/rulesets');
+  }
+
+  saveRuleset(ruleset: Ruleset): Observable<Ruleset> {
+    return this.http.post<Ruleset>('/api/rulesets', ruleset);
+  }
+
+  deleteRuleset(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/rulesets/${id}`);
   }
 
   policies(): Observable<Policy[]> {

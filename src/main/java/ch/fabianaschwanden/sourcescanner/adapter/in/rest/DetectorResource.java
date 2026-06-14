@@ -30,4 +30,28 @@ public class DetectorResource {
                 .map(d -> Map.of("id", d.id(), "category", d.category().name()))
                 .toList();
     }
+
+    /**
+     * Verfügbare Einzel-Regeln für den Ruleset-Editor (WR-93): je Detektor dessen deklarierte Regeln
+     * (z. B. {@code email}, {@code iban}) mit Default-Severity + Kategorie; ohne deklarierte Regeln
+     * die Detektor-ID selbst.
+     */
+    @GET
+    @Path("/rules")
+    @RolesAllowed({"viewer", "operator", "admin"})
+    public List<Map<String, String>> rules() {
+        List<Map<String, String>> out = new java.util.ArrayList<>();
+        for (DetectorPort d : detectors) {
+            var declared = d.rules();
+            if (declared.isEmpty()) {
+                out.add(Map.of("id", d.id(), "title", d.id(), "category", d.category().name(),
+                        "defaultSeverity", "MEDIUM"));
+            } else {
+                declared.forEach(r -> out.add(Map.of(
+                        "id", r.id(), "title", r.name(), "category", d.category().name(),
+                        "defaultSeverity", r.defaultSeverity() == null ? "MEDIUM" : r.defaultSeverity().name())));
+            }
+        }
+        return out;
+    }
 }

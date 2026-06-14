@@ -18,6 +18,7 @@ export class App {
     { path: '/scans', key: 'nav.scans' },
     { path: '/findings', key: 'nav.findings' },
     { path: '/datasources', key: 'nav.datasources' },
+    { path: '/rulesets', key: 'nav.rulesets' },
     { path: '/policies', key: 'nav.policies' },
     { path: '/settings', key: 'nav.settings' },
   ];

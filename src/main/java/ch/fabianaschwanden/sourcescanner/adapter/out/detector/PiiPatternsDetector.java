@@ -12,6 +12,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -74,6 +75,7 @@ public class PiiPatternsDetector implements DetectorPort {
             return List.of();
         }
         Set<String> enabled = enabledPatterns(config);
+        Map<String, Map<String, Object>> overrides = ruleOverrides(config);
         List<Finding> findings = new ArrayList<>();
         String[] lines = unit.content().split("\n", -1);
         for (int i = 0; i < lines.length; i++) {
@@ -86,6 +88,17 @@ public class PiiPatternsDetector implements DetectorPort {
                 if (!enabled.contains(rule.key)) {
                     continue;
                 }
+                Map<String, Object> ov = overrides.get(rule.key);
+                // Ruleset-Override: Regel deaktiviert (DR-50) ⇒ überspringen.
+                if (ov != null && Boolean.FALSE.equals(ov.get("enabled"))) {
+                    continue;
+                }
+                // Abgleichsmodus (DR-52): bei list/api wird die Muster-Erkennung übersprungen —
+                // die wertbasierte Erkennung übernimmt der Datenquellen-Detektor (pii.customer-data-api).
+                if (ov != null && isValueMode(ov.get("matchMode"))) {
+                    continue;
+                }
+                Severity severity = severityOf(rule, ov);
                 Matcher m = rule.pattern.matcher(safe);
                 while (m.find()) {
                     String match = m.group();
@@ -97,7 +110,7 @@ public class PiiPatternsDetector implements DetectorPort {
                     if (looksLikeDate(match)) {
                         continue;
                     }
-                    findings.add(new Finding(ID, DetectorCategory.PII, rule.severity, rule.key,
+                    findings.add(new Finding(ID, DetectorCategory.PII, severity, rule.key,
                             unit.path(), i + 1, Redaction.redact(match), unit.commitId(), false));
                 }
             }
@@ -112,6 +125,33 @@ public class PiiPatternsDetector implements DetectorPort {
             rules.add(new DetectorRule(rule.key, rule.key, "PII pattern: " + rule.key, rule.severity));
         }
         return rules;
+    }
+
+    /** Ruleset-Overrides aus den params (ruleId → {enabled, severity, matchMode, dataSourceName}). */
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> ruleOverrides(DetectorConfig config) {
+        Object raw = config.params().get("ruleOverrides");
+        if (raw instanceof Map<?, ?> map) {
+            return (Map<String, Map<String, Object>>) map;
+        }
+        return Map.of();
+    }
+
+    /** Effektive Severity einer Regel: Override aus dem Ruleset, sonst die Default-Severity (DR-51). */
+    private Severity severityOf(Rule rule, Map<String, Object> override) {
+        if (override != null && override.get("severity") instanceof String s && !s.isBlank()) {
+            try {
+                return Severity.valueOf(s.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                // ungültige Severity ⇒ Default
+            }
+        }
+        return rule.severity;
+    }
+
+    /** {@code true}, wenn der Modus LIST/API ist (wertbasiert statt Muster, DR-52). */
+    private boolean isValueMode(Object matchMode) {
+        return "LIST".equals(matchMode) || "API".equals(matchMode);
     }
 
     private Set<String> enabledPatterns(DetectorConfig config) {
