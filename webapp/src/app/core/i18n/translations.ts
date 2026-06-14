@@ -77,6 +77,8 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'scans.col.actions': 'Actions',
     'scans.cancel': 'Cancel',
     'scans.empty': 'No scans yet.',
+    'scans.row.meta': '{mode} · {findings} findings',
+    'scans.viewFindings': 'View findings',
 
     // Settings + secrets
     'settings.title': 'Settings',
@@ -137,6 +139,7 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'policies.col.actions': 'Actions',
     'policies.defaultOrgUnit': '(default)',
     'policies.empty': 'No policies — default gate applies.',
+    'policies.row.meta': 'failOn {failOn} · new only: {newOnly} · groups: {groups}',
 
     // Settings (general form)
     'settings.email': 'General notification e-mail',
@@ -330,6 +333,8 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'scans.col.actions': 'Aktionen',
     'scans.cancel': 'Abbrechen',
     'scans.empty': 'Noch keine Scans.',
+    'scans.row.meta': '{mode} · {findings} Funde',
+    'scans.viewFindings': 'Funde anzeigen',
 
     'settings.title': 'Einstellungen',
     'settings.secrets.title': 'Secrets',
@@ -386,6 +391,7 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'policies.col.actions': 'Aktionen',
     'policies.defaultOrgUnit': '(default)',
     'policies.empty': 'Keine Policies — Default-Gate gilt.',
+    'policies.row.meta': 'failOn {failOn} · nur neue: {newOnly} · Gruppen: {groups}',
 
     'settings.email': 'Allgemeine Benachrichtigungs-E-Mail',
     'settings.email.placeholder': 'security-team@firma.ch',

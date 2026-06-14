@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { Finding, Scan, Severity } from '../../core/models/scanner';
 import { severityColor } from '../../core/severity-color';
@@ -33,7 +34,9 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
             <div class="min-w-0">
               <div class="flex items-center gap-2">
                 <span [style.color]="statusColor(s.status)">●</span>
-                <span class="font-semibold">{{ s.repoId }}</span>
+                <button (click)="openInsights(s)" class="font-semibold text-accent hover:underline">
+                  {{ s.repoId }}
+                </button>
                 <span class="rounded-full border border-default px-2 text-xs text-muted">
                   {{ s.status }}
                 </span>
@@ -42,9 +45,12 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
                 {{ t('dashboard.row.meta', { findings: s.findingCount, when: relativeTime(s.startedAt) }) }}
               </p>
             </div>
-            <span class="shrink-0 rounded bg-canvas px-2 py-0.5 text-xs text-muted">
-              {{ t('dashboard.findingsBadge', { count: s.findingCount }) }}
-            </span>
+            <button
+              (click)="openInsights(s)"
+              class="shrink-0 rounded border border-default px-3 py-1.5 text-sm hover:text-accent"
+            >
+              {{ t('scans.viewFindings') }}
+            </button>
           </li>
         } @empty {
           <li class="py-4 text-muted">{{ t('dashboard.empty') }}</li>
@@ -56,7 +62,13 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 export class DashboardPage {
   private readonly api = inject(ScannerApi);
   private readonly i18n = inject(I18nService);
+  private readonly router = inject(Router);
   protected readonly severities = SEVERITIES;
+
+  /** Öffnet die Funde-Ansicht vorgefiltert auf das Repo dieses Scans. */
+  protected openInsights(scan: Scan): void {
+    this.router.navigate(['/findings'], { queryParams: { repo: scan.repoId } });
+  }
 
   protected t(key: string, params?: Record<string, string | number>): string {
     return this.i18n.t(key, params);

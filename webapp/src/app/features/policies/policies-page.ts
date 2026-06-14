@@ -53,36 +53,43 @@ import { I18nService } from '../../core/i18n/i18n.service';
         </button>
       </form>
 
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-default text-left text-muted">
-            <th class="py-2">{{ t('policies.col.orgUnit') }}</th>
-            <th>failOn</th>
-            <th>{{ t('policies.col.newOnly') }}</th>
-            <th>{{ t('policies.col.groups') }}</th>
-            <th>{{ t('policies.col.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (p of policies(); track p.id) {
-            <tr class="border-b border-default">
-              <td class="py-2">{{ p.orgUnit ?? t('policies.defaultOrgUnit') }}</td>
-              <td [style.color]="severityColor(p.failOn)">{{ p.failOn }}</td>
-              <td>{{ p.failOnNewOnly }}</td>
-              <td>{{ p.enabledDetectorGroups.join(', ') }}</td>
-              <td>
-                <button (click)="remove(p)" class="text-sev-high hover:underline">
-                  {{ t('common.delete') }}
-                </button>
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="5" class="py-3 text-muted">{{ t('policies.empty') }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+      <ul class="divide-y divide-default border-t border-default">
+        @for (p of policies(); track p.id) {
+          <li class="flex items-start justify-between gap-4 py-3">
+            <div class="min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold">{{ p.orgUnit ?? t('policies.defaultOrgUnit') }}</span>
+                <span
+                  class="rounded-full border px-2 text-xs"
+                  [style.color]="severityColor(p.failOn)"
+                  [style.borderColor]="severityColor(p.failOn)"
+                >
+                  {{ p.failOn }}
+                </span>
+              </div>
+              <p class="mt-1 text-xs text-muted">
+                {{
+                  t('policies.row.meta', {
+                    failOn: p.failOn,
+                    newOnly: p.failOnNewOnly ? t('common.yes') : t('common.no'),
+                    groups: p.enabledDetectorGroups.join(', ') || t('common.none'),
+                  })
+                }}
+              </p>
+            </div>
+            <div class="flex shrink-0 items-center gap-2">
+              <button
+                (click)="remove(p)"
+                class="rounded border border-default px-3 py-1.5 text-sm text-sev-high hover:underline"
+              >
+                {{ t('common.delete') }}
+              </button>
+            </div>
+          </li>
+        } @empty {
+          <li class="py-4 text-muted">{{ t('policies.empty') }}</li>
+        }
+      </ul>
     </section>
   `,
 })
@@ -90,8 +97,8 @@ export class PoliciesPage {
   private readonly api = inject(ScannerApi);
   private readonly i18n = inject(I18nService);
 
-  protected t(key: string): string {
-    return this.i18n.t(key);
+  protected t(key: string, params?: Record<string, string | number>): string {
+    return this.i18n.t(key, params);
   }
 
   protected readonly severities: Severity[] = ['INFO', 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];

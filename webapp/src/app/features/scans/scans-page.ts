@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { RepositorySource, Scan, ScanEvent } from '../../core/models/scanner';
 import { I18nService } from '../../core/i18n/i18n.service';
@@ -49,59 +50,58 @@ import { I18nService } from '../../core/i18n/i18n.service';
         </button>
       </div>
 
-      <table class="w-full text-sm">
-        <thead>
-          <tr class="border-b border-default text-left text-muted">
-            <th class="py-2">{{ t('scans.col.repository') }}</th>
-            <th>{{ t('scans.col.mode') }}</th>
-            <th>{{ t('scans.col.origin') }}</th>
-            <th>{{ t('scans.col.status') }}</th>
-            <th class="w-56">{{ t('scans.col.progress') }}</th>
-            <th>{{ t('scans.col.findings') }}</th>
-            <th>{{ t('scans.col.actions') }}</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (s of scans(); track s.id) {
-            <tr class="border-b border-default">
-              <td class="py-2">{{ s.repoId }}</td>
-              <td>{{ s.mode }}</td>
-              <td>
+      <ul class="divide-y divide-default border-t border-default">
+        @for (s of scans(); track s.id) {
+          <li class="flex items-start justify-between gap-4 py-3">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-2">
+                <button (click)="openInsights(s)" class="font-semibold text-accent hover:underline">
+                  {{ s.repoId }}
+                </button>
+                <span class="rounded-full border border-default px-2 text-xs text-muted">
+                  {{ liveStatus(s) }}
+                </span>
                 <span
-                  class="rounded-full border border-default px-2 text-xs"
+                  class="rounded-full border border-default px-2 text-xs text-muted"
                   [title]="ciTooltip(s)"
                 >
                   {{ s.trigger === 'CI' ? t('scans.origin.ci') : t('scans.origin.server') }}
                 </span>
-              </td>
-              <td>{{ liveStatus(s) }}</td>
-              <td>
-                <div class="flex items-center gap-2">
-                  <div class="h-2 w-32 overflow-hidden rounded bg-canvas">
-                    <div
-                      class="h-full rounded bg-accent transition-all"
-                      [style.width.%]="livePercent(s)"
-                    ></div>
-                  </div>
-                  <span class="tabular-nums">{{ livePercent(s) }}%</span>
+              </div>
+              <p class="mt-1 text-xs text-muted">
+                {{ t('scans.row.meta', { mode: s.mode, findings: liveFindings(s) }) }}
+              </p>
+              <div class="mt-2 flex items-center gap-2">
+                <div class="h-2 w-48 overflow-hidden rounded bg-canvas">
+                  <div
+                    class="h-full rounded bg-accent transition-all"
+                    [style.width.%]="livePercent(s)"
+                  ></div>
                 </div>
-              </td>
-              <td>{{ liveFindings(s) }}</td>
-              <td>
-                @if (liveStatus(s) === 'RUNNING') {
-                  <button (click)="cancel(s)" class="text-sev-high hover:underline">
-                    {{ t('scans.cancel') }}
-                  </button>
-                }
-              </td>
-            </tr>
-          } @empty {
-            <tr>
-              <td colspan="7" class="py-3 text-muted">{{ t('scans.empty') }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+                <span class="text-xs tabular-nums text-muted">{{ livePercent(s) }}%</span>
+              </div>
+            </div>
+            <div class="flex shrink-0 items-center gap-2">
+              <button
+                (click)="openInsights(s)"
+                class="rounded border border-default px-3 py-1.5 text-sm hover:text-accent"
+              >
+                {{ t('scans.viewFindings') }}
+              </button>
+              @if (liveStatus(s) === 'RUNNING') {
+                <button
+                  (click)="cancel(s)"
+                  class="rounded border border-default px-3 py-1.5 text-sm text-sev-high hover:underline"
+                >
+                  {{ t('scans.cancel') }}
+                </button>
+              }
+            </div>
+          </li>
+        } @empty {
+          <li class="py-4 text-muted">{{ t('scans.empty') }}</li>
+        }
+      </ul>
     </section>
   `,
 })
@@ -109,6 +109,12 @@ export class ScansPage {
   private readonly api = inject(ScannerApi);
   private readonly i18n = inject(I18nService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly router = inject(Router);
+
+  /** Öffnet die Funde/Code-Scanning-Ansicht, vorgefiltert auf das Repo dieses Scans. */
+  protected openInsights(scan: Scan): void {
+    this.router.navigate(['/findings'], { queryParams: { repo: scan.repoId } });
+  }
 
   protected readonly sources = signal<RepositorySource[]>([]);
   protected readonly scans = signal<Scan[]>([]);
@@ -128,8 +134,8 @@ export class ScansPage {
     this.destroyRef.onDestroy(() => this.streams.forEach((es) => es.close()));
   }
 
-  protected t(key: string): string {
-    return this.i18n.t(key);
+  protected t(key: string, params?: Record<string, string | number>): string {
+    return this.i18n.t(key, params);
   }
 
   protected start(): void {
