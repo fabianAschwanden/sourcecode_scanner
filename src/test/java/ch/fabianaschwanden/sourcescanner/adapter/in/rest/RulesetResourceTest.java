@@ -45,4 +45,26 @@ class RulesetResourceTest {
         given().when().get("/api/detectors/rules").then().statusCode(200)
                 .body("id", Matchers.hasItem("email"));
     }
+
+    @Test
+    @TestSecurity(user = "viewer-user", roles = "viewer")
+    void viewer_darf_nicht_bulk_loeschen() {
+        given().contentType("application/json").body("{\"ids\":[]}")
+                .when().post("/api/rulesets/bulk/delete").then().statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "admin-user", roles = "admin")
+    void admin_bulk_loescht_mehrere() {
+        String id1 = given().contentType("application/json").body(body("rs-" + java.util.UUID.randomUUID()))
+                .when().post("/api/rulesets").then().statusCode(200).extract().path("id");
+        String id2 = given().contentType("application/json").body(body("rs-" + java.util.UUID.randomUUID()))
+                .when().post("/api/rulesets").then().statusCode(200).extract().path("id");
+        given().contentType("application/json")
+                .body("{\"ids\":[\"%s\",\"%s\"]}".formatted(id1, id2))
+                .when().post("/api/rulesets/bulk/delete").then().statusCode(200)
+                .body("total", Matchers.equalTo(2))
+                .body("succeeded", Matchers.equalTo(2))
+                .body("failed.size()", Matchers.equalTo(0));
+    }
 }

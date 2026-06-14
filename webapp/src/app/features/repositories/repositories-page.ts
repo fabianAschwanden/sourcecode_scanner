@@ -72,11 +72,40 @@ import { I18nService } from '../../core/i18n/i18n.service';
           </button>
         </div>
 
+        <!-- Sammelaktions-Leiste (WR-67) -->
+        @if (selected().size > 0) {
+          <div class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm">
+            <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
+            <button (click)="bulkScan()" class="text-accent hover:underline">{{ t('bulk.scan') }}</button>
+            <button (click)="bulkRemediation(true)" class="text-accent hover:underline">
+              {{ t('bulk.remediationOn') }}
+            </button>
+            <button (click)="bulkRemediation(false)" class="text-accent hover:underline">
+              {{ t('bulk.remediationOff') }}
+            </button>
+            <button (click)="bulkDelete()" class="text-sev-high hover:underline">{{ t('common.delete') }}</button>
+            <button (click)="clearSelection()" class="text-muted hover:underline">{{ t('bulk.clear') }}</button>
+          </div>
+        }
+
         <!-- Karten (WR-82): Name · Sichtbarkeits-Badge · Beschreibung · Sprache · Aktualisiert -->
         <ul class="divide-y divide-default border-t border-default">
+          @if (cards().length > 0) {
+            <li class="flex items-center gap-2 py-2 text-xs text-muted">
+              <input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" />
+              {{ t('bulk.selectAll') }}
+            </li>
+          }
           @for (c of cards(); track c.id) {
             <li class="flex items-start justify-between gap-4 py-4">
-              <div class="min-w-0">
+              <div class="flex min-w-0 items-start gap-2">
+                <input
+                  type="checkbox"
+                  class="mt-1"
+                  [checked]="selected().has(c.id)"
+                  (change)="toggle(c.id)"
+                />
+                <div class="min-w-0">
                 <div class="flex items-center gap-2">
                   <button
                     (click)="openInsights(c)"
@@ -109,6 +138,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
                     </span>
                   }
                   <span>{{ t('repos.updated', { when: relativeTime(c.lastScanAt) }) }}</span>
+                </div>
                 </div>
               </div>
               <div class="flex shrink-0 items-center gap-2">
@@ -359,6 +389,8 @@ export class RepositoriesPage {
   protected readonly cards = signal<RepositoryCard[]>([]);
   protected readonly languages = signal<string[]>([]);
   protected readonly scanning = signal<string | null>(null);
+  /** Mehrfachauswahl für Sammelaktionen (WR-67). */
+  protected readonly selected = signal<Set<string>>(new Set());
   protected q = '';
   protected filterType = '';
   protected filterLanguage = '';
@@ -389,6 +421,56 @@ export class RepositoriesPage {
     if (view === 'cards') {
       this.reloadCards();
     }
+  }
+
+  // --- Mehrfachauswahl + Sammelaktionen (WR-67) ------------------------------------------------
+
+  protected toggle(id: string): void {
+    const next = new Set(this.selected());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.selected.set(next);
+  }
+
+  protected allSelected(): boolean {
+    const c = this.cards();
+    return c.length > 0 && c.every((x) => this.selected().has(x.id));
+  }
+
+  protected toggleSelectAll(): void {
+    this.selected.set(this.allSelected() ? new Set() : new Set(this.cards().map((c) => c.id)));
+  }
+
+  protected clearSelection(): void {
+    this.selected.set(new Set());
+  }
+
+  protected bulkScan(): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) return;
+    this.api.bulkScanRepos(ids, 'full').subscribe((r) => this.afterBulk(r));
+  }
+
+  protected bulkRemediation(enabled: boolean): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) return;
+    this.api.bulkRepoRemediation(ids, enabled).subscribe((r) => this.afterBulk(r));
+  }
+
+  protected bulkDelete(): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) return;
+    this.api.bulkDeleteRepos(ids).subscribe((r) => this.afterBulk(r));
+  }
+
+  private afterBulk(r: { succeeded: number; total: number }): void {
+    this.message.set(this.t('bulk.done', { succeeded: r.succeeded, total: r.total }));
+    this.clearSelection();
+    this.reload();
+    this.reloadCards();
   }
 
   protected reloadCards(): void {

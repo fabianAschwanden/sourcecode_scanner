@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  BulkResult,
   DataSource,
   DataSourceSchema,
   DetectorInfo,
@@ -54,6 +55,40 @@ export class ScannerApi {
 
   triage(id: string, status: TriageStatus, reason?: string): Observable<Finding> {
     return this.http.post<Finding>(`/api/findings/${id}/triage`, { status, reason });
+  }
+
+  // --- Sammelaktionen (WR-67/23): eine Anfrage, mehrere IDs ---
+
+  bulkTriage(ids: string[], status: TriageStatus, reason?: string): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/findings/bulk/triage', { ids, status, reason });
+  }
+
+  bulkRemediate(ids: string[]): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/findings/bulk/remediate', { ids });
+  }
+
+  bulkCancelScans(ids: string[]): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/scans/bulk/cancel', { ids });
+  }
+
+  bulkScanRepos(ids: string[], mode = 'full'): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/sources/bulk/scan', { ids, mode });
+  }
+
+  bulkRepoRemediation(ids: string[], enabled: boolean): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/sources/bulk/remediation', { ids, enabled });
+  }
+
+  bulkDeleteRepos(ids: string[]): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/sources/bulk/delete', { ids });
+  }
+
+  bulkDeleteRulesets(ids: string[]): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/rulesets/bulk/delete', { ids });
+  }
+
+  bulkDeleteDataSources(ids: string[]): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/datasources/bulk/delete', { ids });
   }
 
   sources(): Observable<RepositorySource[]> {

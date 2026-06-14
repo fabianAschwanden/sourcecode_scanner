@@ -129,6 +129,15 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'rulesets.msg.saved': 'Ruleset saved.',
     'rulesets.msg.failed': 'Save failed: {error}',
 
+    // Bulk actions
+    'bulk.selected': '{count} selected',
+    'bulk.selectAll': 'Select all',
+    'bulk.clear': 'Clear',
+    'bulk.done': '{succeeded}/{total} done',
+    'bulk.scan': 'Scan',
+    'bulk.remediationOn': 'Remediation on',
+    'bulk.remediationOff': 'Remediation off',
+
     // Generic
     'common.error': 'Error',
     'common.delete': 'Delete',
@@ -411,6 +420,14 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'rulesets.col.rules': 'Regeln',
     'rulesets.msg.saved': 'Ruleset gespeichert.',
     'rulesets.msg.failed': 'Speichern fehlgeschlagen: {error}',
+
+    'bulk.selected': '{count} ausgewählt',
+    'bulk.selectAll': 'Alle auswählen',
+    'bulk.clear': 'Aufheben',
+    'bulk.done': '{succeeded}/{total} erledigt',
+    'bulk.scan': 'Scannen',
+    'bulk.remediationOn': 'Remediation an',
+    'bulk.remediationOff': 'Remediation aus',
 
     'common.error': 'Fehler',
     'common.delete': 'Löschen',

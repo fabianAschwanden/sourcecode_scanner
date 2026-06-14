@@ -46,10 +46,25 @@ interface RuleRow {
 
       @if (view() === 'list') {
         <p class="mb-4 text-sm text-muted">{{ t('rulesets.intro') }}</p>
+        @if (selected().size > 0) {
+          <div class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm">
+            <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
+            <button (click)="bulkDelete()" class="text-sev-high hover:underline">{{ t('common.delete') }}</button>
+            <button (click)="clearSelection()" class="text-muted hover:underline">{{ t('bulk.clear') }}</button>
+          </div>
+        }
         <ul class="divide-y divide-default border-t border-default">
+          @if (rulesets().length > 0) {
+            <li class="flex items-center gap-2 py-2 text-xs text-muted">
+              <input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" />
+              {{ t('bulk.selectAll') }}
+            </li>
+          }
           @for (r of rulesets(); track r.id) {
             <li class="flex items-start justify-between gap-4 py-3">
-              <div class="min-w-0">
+              <div class="flex min-w-0 items-start gap-2">
+                <input type="checkbox" class="mt-1" [checked]="selected().has(r.id!)" (change)="toggle(r.id!)" />
+                <div class="min-w-0">
                 <div class="flex items-center gap-2">
                   <button (click)="edit(r)" class="font-semibold text-accent hover:underline">
                     {{ r.name }}
@@ -62,6 +77,7 @@ interface RuleRow {
                   {{ r.global ? t('rulesets.scope.global') : t('rulesets.scope.repos') }} ·
                   {{ r.rules.length }} {{ t('rulesets.col.rules') }}
                 </p>
+                </div>
               </div>
               <button (click)="remove(r)" class="shrink-0 text-sm text-sev-high hover:underline">
                 {{ t('common.delete') }}
@@ -246,6 +262,47 @@ export class RulesetsPage {
       return;
     }
     this.api.deleteRuleset(r.id).subscribe(() => this.reload());
+  }
+
+  /** Mehrfachauswahl für Sammelaktionen (WR-67). */
+  protected readonly selected = signal<Set<string>>(new Set());
+
+  protected toggle(id: string): void {
+    const next = new Set(this.selected());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.selected.set(next);
+  }
+
+  protected allSelected(): boolean {
+    const list = this.rulesets();
+    return list.length > 0 && list.every((r) => !!r.id && this.selected().has(r.id));
+  }
+
+  protected toggleSelectAll(): void {
+    if (this.allSelected()) {
+      this.selected.set(new Set());
+    } else {
+      this.selected.set(new Set(this.rulesets().map((r) => r.id!).filter((id) => !!id)));
+    }
+  }
+
+  protected clearSelection(): void {
+    this.selected.set(new Set());
+  }
+
+  protected bulkDelete(): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) {
+      return;
+    }
+    this.api.bulkDeleteRulesets(ids).subscribe(() => {
+      this.clearSelection();
+      this.reload();
+    });
   }
 
   protected valueRule(ruleId: string): boolean {

@@ -103,7 +103,7 @@ Die Finding-Liste SOLL im Aufbau der GitHub-„Code scanning"-Ansicht gestaltet 
 | WR-65 | S | Jede **Ergebniszeile** SOLL enthalten: Status-/Severity-Icon, Regel-/Fundtitel, ein **Severity-Badge** (farbcodiert, WR-40), eine Metazeile `#<lfd-Nr.> <Status> <relative Zeit> • erkannt von <Detektor> in <Datei>:<Zeile>` und rechts ein **Branch-Badge**; Klick öffnet die Funddetails (WR-11). |
 | WR-66 | C | Funde KÖNNEN eine stabile, fortlaufende Anzeigenummer (`#N`) je Repository tragen und einen relativen Zeitstempel („vor 1 Minute") für Erst-/Letztsichtung zeigen. |
 | WR-69 | S | Die UI SOLL die **Herkunft** eines Laufs/Funds anzeigen (Server vs. CI/CD) und nach Herkunft filterbar machen; bei CI-Läufen SOLLEN die CI-Metadaten (Pipeline/Job-Link, Commit, Branch) einsehbar sein (IR-22/25). |
-| WR-67 | C | Die Ansicht KANN Mehrfachauswahl per Checkbox je Zeile und Kopfzeile bieten, um Funde gesammelt zu triagieren (Sammel-Baseline/-Suppress mit Pflichtbegründung, WR-12). |
+| WR-67 | S | Listen mit Zeilen-Aktionen (Funde, Repositories, Scans, Rulesets, Datenquellen) SOLLEN eine **Mehrfachauswahl** (Checkbox je Zeile + Kopfzeile „alle") und eine **Sammelaktions-Leiste** bieten, die genau die für die Liste sinnvollen Aktionen als Bulk anbietet (Funde: Baseline/False-Positive/Unterdrücken mit Pflichtbegründung + Fix-per-PR; Repositories: Scan starten/Remediation an-aus/löschen; Scans: abbrechen; Rulesets & Datenquellen: löschen). Die Auswahl wird nach der Aktion zurückgesetzt; Anzahl ausgewählter Elemente ist sichtbar. |
 | WR-68 | S | Treffer-Anzeige bleibt redigiert (WR-33); Branch-, Datei- und Detektorangaben enthalten nie Klartext-Geheimnisse. |
 
 ### Darstellung & Usability
@@ -131,6 +131,7 @@ Die Web-UI ist mehrsprachig (FR-26, NFR-27/28). Mitgeliefert: Englisch (Default)
 | WR-20 | M | Die UI MUSS ausschließlich über eine dokumentierte REST-API mit dem Backend kommunizieren. |
 | WR-21 | C | Die REST-API KANN per OpenAPI-Spezifikation versioniert und extern nutzbar sein. |
 | WR-22 | S | Die Finding-API SOLL die Code-Scanning-Ansicht (WR-60..68) bedienen: Filter nach Status offen/geschlossen inkl. Zähler, Facetten-Werte (vorkommende Detektoren/Regeln/Dateitypen) und eine Sortierung; die Such-Query (WR-62) wird serverseitig oder clientseitig auf diese Filter abgebildet. |
+| WR-23 | S | Die REST-API SOLL **Batch-Endpunkte** für Sammelaktionen (WR-67) bereitstellen (eine Anfrage, mehrere IDs): je Element wird die Aktion ausgeführt und auditiert; die Antwort meldet Erfolg/Fehler je ID. RBAC wie bei der jeweiligen Einzelaktion. |
 
 ### Sicherheit
 

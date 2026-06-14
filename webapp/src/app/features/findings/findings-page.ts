@@ -141,11 +141,46 @@ const SEVERITY_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
         </p>
       }
 
+      <!-- Sammelaktions-Leiste (WR-67) -->
+      @if (selected().size > 0) {
+        <div class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm">
+          <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
+          <button (click)="bulkTriage('BASELINE')" class="text-accent hover:underline">
+            {{ t('findings.action.baseline') }}
+          </button>
+          <button (click)="bulkTriage('FALSE_POSITIVE')" class="text-accent hover:underline">
+            {{ t('findings.action.fp') }}
+          </button>
+          <button (click)="bulkTriage('SUPPRESSED')" class="text-accent hover:underline">
+            {{ t('findings.action.suppress') }}
+          </button>
+          <button (click)="bulkRemediate()" class="text-accent hover:underline">
+            {{ t('findings.action.fixPr') }}
+          </button>
+          <button (click)="clearSelection()" class="text-muted hover:underline">
+            {{ t('bulk.clear') }}
+          </button>
+        </div>
+      }
+
       <!-- Ergebniszeilen (WR-65) -->
       <ul class="divide-y divide-default border-t border-default">
+        @if (visibleFindings().length > 0) {
+          <li class="flex items-center gap-2 py-2 text-xs text-muted">
+            <input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" />
+            {{ t('bulk.selectAll') }}
+          </li>
+        }
         @for (f of visibleFindings(); track f.id) {
           <li class="flex items-start justify-between gap-4 py-3">
-            <div class="min-w-0">
+            <div class="flex min-w-0 items-start gap-2">
+              <input
+                type="checkbox"
+                class="mt-1"
+                [checked]="selected().has(f.id)"
+                (change)="toggle(f.id)"
+              />
+              <div class="min-w-0">
               <div class="flex items-center gap-2">
                 <span [style.color]="severityColor(f.severity)">⚠</span>
                 <span class="font-semibold">{{ f.ruleId }}</span>
@@ -182,6 +217,7 @@ const SEVERITY_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
                   </button>
                 }
               </div>
+              </div>
             </div>
             <span class="shrink-0 rounded bg-canvas px-2 py-0.5 text-xs text-muted">{{
               f.repoId
@@ -206,6 +242,9 @@ export class FindingsPage {
   protected readonly findings = signal<Finding[]>([]);
   protected readonly message = signal<string>('');
   protected readonly toolCount = signal<number>(0);
+
+  /** Mehrfachauswahl für Sammelaktionen (WR-67). */
+  protected readonly selected = signal<Set<string>>(new Set());
 
   // Aus der Query abgeleitete Filter (Query ist die Quelle der Wahrheit, WR-62).
   protected readonly statusTab = signal<'open' | 'closed'>('open');
@@ -266,6 +305,60 @@ export class FindingsPage {
 
   protected t(key: string, params?: Record<string, string | number>): string {
     return this.i18n.t(key, params);
+  }
+
+  // --- Mehrfachauswahl + Sammelaktionen (WR-67) ------------------------------------------------
+
+  protected toggle(id: string): void {
+    const next = new Set(this.selected());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.selected.set(next);
+  }
+
+  protected allSelected(): boolean {
+    const visible = this.visibleFindings();
+    return visible.length > 0 && visible.every((f) => this.selected().has(f.id));
+  }
+
+  protected toggleSelectAll(): void {
+    this.selected.set(this.allSelected() ? new Set() : new Set(this.visibleFindings().map((f) => f.id)));
+  }
+
+  protected clearSelection(): void {
+    this.selected.set(new Set());
+  }
+
+  protected bulkTriage(status: TriageStatus): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) {
+      return;
+    }
+    const needsReason = status === 'SUPPRESSED' || status === 'FALSE_POSITIVE';
+    const reason = needsReason ? (prompt(this.t('findings.reason.prompt')) ?? '') : undefined;
+    if (needsReason && !reason) {
+      return;
+    }
+    this.api.bulkTriage(ids, status, reason).subscribe((r) => {
+      this.message.set(this.t('bulk.done', { succeeded: r.succeeded, total: r.total }));
+      this.clearSelection();
+      this.reload();
+    });
+  }
+
+  protected bulkRemediate(): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) {
+      return;
+    }
+    this.api.bulkRemediate(ids).subscribe((r) => {
+      this.message.set(this.t('bulk.done', { succeeded: r.succeeded, total: r.total }));
+      this.clearSelection();
+      this.reload();
+    });
   }
 
   // --- Query <-> Facetten-Synchronisation (WR-62) ----------------------------------------------

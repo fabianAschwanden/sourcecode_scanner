@@ -1,5 +1,6 @@
 package ch.fabianaschwanden.sourcescanner.adapter.in.rest;
 
+import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.BulkResultDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.RulesetDto;
 import ch.fabianaschwanden.sourcescanner.domain.port.in.ManageRulesetsUseCase;
 import io.quarkus.security.identity.SecurityIdentity;
@@ -51,6 +52,31 @@ public class RulesetResource {
     @RolesAllowed("admin")
     public void delete(@PathParam("id") UUID id) {
         rulesets.delete(id, actor());
+    }
+
+    /** Sammel-Löschen mehrerer Rulesets (WR-67/23); je ID einzeln + auditiert. */
+    @POST
+    @Path("/bulk/delete")
+    @RolesAllowed("admin")
+    public BulkResultDto bulkDelete(BulkIdsRequest request) {
+        String who = actor();
+        BulkResultDto.Builder result = new BulkResultDto.Builder();
+        for (UUID id : request.ids()) {
+            try {
+                rulesets.delete(id, who);
+                result.success();
+            } catch (RuntimeException e) {
+                result.failure(id.toString(), e.getMessage());
+            }
+        }
+        return result.build();
+    }
+
+    /** Batch-Anfrage nur mit IDs. */
+    public record BulkIdsRequest(List<UUID> ids) {
+        public BulkIdsRequest {
+            ids = ids == null ? List.of() : List.copyOf(ids);
+        }
     }
 
     private String actor() {

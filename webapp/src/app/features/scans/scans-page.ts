@@ -50,10 +50,26 @@ import { I18nService } from '../../core/i18n/i18n.service';
         </button>
       </div>
 
+      @if (selected().size > 0) {
+        <div class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm">
+          <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
+          <button (click)="bulkCancel()" class="text-sev-high hover:underline">{{ t('scans.cancel') }}</button>
+          <button (click)="clearSelection()" class="text-muted hover:underline">{{ t('bulk.clear') }}</button>
+        </div>
+      }
+
       <ul class="divide-y divide-default border-t border-default">
+        @if (scans().length > 0) {
+          <li class="flex items-center gap-2 py-2 text-xs text-muted">
+            <input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" />
+            {{ t('bulk.selectAll') }}
+          </li>
+        }
         @for (s of scans(); track s.id) {
           <li class="flex items-start justify-between gap-4 py-3">
-            <div class="min-w-0 flex-1">
+            <div class="flex min-w-0 flex-1 items-start gap-2">
+              <input type="checkbox" class="mt-1" [checked]="selected().has(s.id)" (change)="toggle(s.id)" />
+              <div class="min-w-0 flex-1">
               <div class="flex items-center gap-2">
                 <button (click)="openInsights(s)" class="font-semibold text-accent hover:underline">
                   {{ s.repoId }}
@@ -79,6 +95,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
                   ></div>
                 </div>
                 <span class="text-xs tabular-nums text-muted">{{ livePercent(s) }}%</span>
+              </div>
               </div>
             </div>
             <div class="flex shrink-0 items-center gap-2">
@@ -114,6 +131,43 @@ export class ScansPage {
   /** Öffnet die Funde/Code-Scanning-Ansicht, vorgefiltert auf das Repo dieses Scans. */
   protected openInsights(scan: Scan): void {
     this.router.navigate(['/findings'], { queryParams: { repo: scan.repoId } });
+  }
+
+  /** Mehrfachauswahl für Sammelaktionen (WR-67). */
+  protected readonly selected = signal<Set<string>>(new Set());
+
+  protected toggle(id: string): void {
+    const next = new Set(this.selected());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.selected.set(next);
+  }
+
+  protected allSelected(): boolean {
+    const s = this.scans();
+    return s.length > 0 && s.every((x) => this.selected().has(x.id));
+  }
+
+  protected toggleSelectAll(): void {
+    this.selected.set(this.allSelected() ? new Set() : new Set(this.scans().map((s) => s.id)));
+  }
+
+  protected clearSelection(): void {
+    this.selected.set(new Set());
+  }
+
+  protected bulkCancel(): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) {
+      return;
+    }
+    this.api.bulkCancelScans(ids).subscribe(() => {
+      this.clearSelection();
+      this.reload();
+    });
   }
 
   protected readonly sources = signal<RepositorySource[]>([]);

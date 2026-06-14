@@ -163,9 +163,20 @@ import { I18nService } from '../../core/i18n/i18n.service';
         </p>
       }
 
+      @if (selected().size > 0) {
+        <div class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm">
+          <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
+          <button (click)="bulkDelete()" class="text-sev-high hover:underline">{{ t('common.delete') }}</button>
+          <button (click)="clearSelection()" class="text-muted hover:underline">{{ t('bulk.clear') }}</button>
+        </div>
+      }
+
       <table class="w-full text-sm">
         <thead>
           <tr class="border-b border-default text-left text-muted">
+            <th class="py-2">
+              <input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" />
+            </th>
             <th class="py-2">{{ t('repos.name') }}</th>
             <th>{{ t('repos.col.type') }}</th>
             <th>{{ t('ds.col.source') }}</th>
@@ -177,6 +188,9 @@ import { I18nService } from '../../core/i18n/i18n.service';
         <tbody>
           @for (s of sources(); track s.id) {
             <tr class="border-b border-default">
+              <td class="py-2">
+                <input type="checkbox" [checked]="selected().has(s.id!)" (change)="toggle(s.id!)" />
+              </td>
               <td class="py-2">{{ s.name }}</td>
               <td>{{ s.kind }}</td>
               <td class="font-mono text-xs">
@@ -206,7 +220,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="py-3 text-muted">{{ t('ds.empty') }}</td>
+              <td colspan="7" class="py-3 text-muted">{{ t('ds.empty') }}</td>
             </tr>
           }
         </tbody>
@@ -323,6 +337,47 @@ export class DataSourcesPage {
       return;
     }
     this.api.deleteDataSource(source.id).subscribe(() => this.reload());
+  }
+
+  /** Mehrfachauswahl für Sammelaktionen (WR-67). */
+  protected readonly selected = signal<Set<string>>(new Set());
+
+  protected toggle(id: string): void {
+    const next = new Set(this.selected());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.selected.set(next);
+  }
+
+  protected allSelected(): boolean {
+    const list = this.sources();
+    return list.length > 0 && list.every((s) => !!s.id && this.selected().has(s.id));
+  }
+
+  protected toggleSelectAll(): void {
+    if (this.allSelected()) {
+      this.selected.set(new Set());
+    } else {
+      this.selected.set(new Set(this.sources().map((s) => s.id!).filter((id) => !!id)));
+    }
+  }
+
+  protected clearSelection(): void {
+    this.selected.set(new Set());
+  }
+
+  protected bulkDelete(): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) {
+      return;
+    }
+    this.api.bulkDeleteDataSources(ids).subscribe(() => {
+      this.clearSelection();
+      this.reload();
+    });
   }
 
   protected checkedFields(source: DataSource): string {

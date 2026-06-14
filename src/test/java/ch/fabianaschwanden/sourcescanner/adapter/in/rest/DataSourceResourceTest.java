@@ -61,4 +61,25 @@ class DataSourceResourceTest {
                 .when().post("/api/datasources/" + java.util.UUID.randomUUID() + "/upload")
                 .then().statusCode(403);
     }
+
+    @Test
+    @TestSecurity(user = "viewer-user", roles = "viewer")
+    void viewer_darf_nicht_bulk_loeschen() {
+        given().contentType("application/json").body("{\"ids\":[]}")
+                .when().post("/api/datasources/bulk/delete").then().statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "op-user", roles = "operator")
+    void operator_bulk_loescht_mehrere() {
+        String id1 = given().contentType("application/json").body(String.format(BODY, java.util.UUID.randomUUID()))
+                .when().post("/api/datasources").then().statusCode(200).extract().path("id");
+        String id2 = given().contentType("application/json").body(String.format(BODY, java.util.UUID.randomUUID()))
+                .when().post("/api/datasources").then().statusCode(200).extract().path("id");
+        given().contentType("application/json")
+                .body("{\"ids\":[\"%s\",\"%s\"]}".formatted(id1, id2))
+                .when().post("/api/datasources/bulk/delete").then().statusCode(200)
+                .body("total", org.hamcrest.Matchers.equalTo(2))
+                .body("succeeded", org.hamcrest.Matchers.equalTo(2));
+    }
 }

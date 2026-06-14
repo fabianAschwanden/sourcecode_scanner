@@ -160,6 +160,13 @@ export interface DataSourceSchema {
   readonly message: string;
 }
 
+/** Ergebnis einer Sammelaktion (WR-23). */
+export interface BulkResult {
+  readonly total: number;
+  readonly succeeded: number;
+  readonly failed: { readonly id: string; readonly error: string }[];
+}
+
 export type EnforcementStatus = 'DISABLED' | 'ACTIVE';
 export type RuleMatchMode = 'ALWAYS' | 'LIST' | 'API';
 

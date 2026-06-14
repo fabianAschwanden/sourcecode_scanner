@@ -1,5 +1,6 @@
 package ch.fabianaschwanden.sourcescanner.adapter.in.rest;
 
+import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.BulkResultDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.FindingDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.PrRefDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.TriageRequest;
@@ -11,6 +12,7 @@ import ch.fabianaschwanden.sourcescanner.domain.port.out.FindingPort;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -73,6 +75,59 @@ public class FindingResource {
     @RolesAllowed({"operator", "admin"})
     public PrRefDto remediate(@PathParam("id") UUID id) {
         return PrRefDto.from(remediate.remediate(id, actor()));
+    }
+
+    /** Sammel-Triage mehrerer Funde (WR-67/23); je ID einzeln ausgeführt + auditiert. */
+    @POST
+    @Path("/bulk/triage")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"operator", "admin"})
+    public BulkResultDto bulkTriage(BulkTriageRequest request) {
+        TriageStatus status = TriageStatus.valueOf(request.status().trim().toUpperCase(Locale.ROOT));
+        String who = actor();
+        BulkResultDto.Builder result = new BulkResultDto.Builder();
+        for (UUID id : request.ids()) {
+            try {
+                triage.triage(id, status, request.reason(), who);
+                result.success();
+            } catch (RuntimeException e) {
+                result.failure(id.toString(), e.getMessage());
+            }
+        }
+        return result.build();
+    }
+
+    /** Sammel-Auto-Fix mehrerer Funde (WR-67/23); je ID einzeln ausgeführt + auditiert. */
+    @POST
+    @Path("/bulk/remediate")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"operator", "admin"})
+    public BulkResultDto bulkRemediate(BulkIdsRequest request) {
+        String who = actor();
+        BulkResultDto.Builder result = new BulkResultDto.Builder();
+        for (UUID id : request.ids()) {
+            try {
+                remediate.remediate(id, who);
+                result.success();
+            } catch (RuntimeException e) {
+                result.failure(id.toString(), e.getMessage());
+            }
+        }
+        return result.build();
+    }
+
+    /** Batch-Anfrage nur mit IDs. */
+    public record BulkIdsRequest(List<UUID> ids) {
+        public BulkIdsRequest {
+            ids = ids == null ? List.of() : List.copyOf(ids);
+        }
+    }
+
+    /** Batch-Triage: IDs + Ziel-Status + (für Suppress/FP) Begründung. */
+    public record BulkTriageRequest(List<UUID> ids, String status, String reason) {
+        public BulkTriageRequest {
+            ids = ids == null ? List.of() : List.copyOf(ids);
+        }
     }
 
     private String actor() {

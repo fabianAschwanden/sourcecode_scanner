@@ -1,5 +1,6 @@
 package ch.fabianaschwanden.sourcescanner.adapter.in.rest;
 
+import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.BulkResultDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.ScanDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.StartScanRequest;
 import ch.fabianaschwanden.sourcescanner.application.service.ScanProgressBroadcaster;
@@ -9,6 +10,7 @@ import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Multi;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.POST;
 import jakarta.ws.rs.Path;
@@ -57,6 +59,32 @@ public class ScanResource {
     public Response cancel(@PathParam("id") UUID id) {
         scans.cancelScan(id, actor());
         return Response.noContent().build();
+    }
+
+    /** Sammel-Abbruch mehrerer laufender Scans (WR-67/23); je ID einzeln + auditiert. */
+    @POST
+    @Path("/bulk/cancel")
+    @Consumes(MediaType.APPLICATION_JSON)
+    @RolesAllowed({"operator", "admin"})
+    public BulkResultDto bulkCancel(BulkIdsRequest request) {
+        String who = actor();
+        BulkResultDto.Builder result = new BulkResultDto.Builder();
+        for (UUID id : request.ids()) {
+            try {
+                scans.cancelScan(id, who);
+                result.success();
+            } catch (RuntimeException e) {
+                result.failure(id.toString(), e.getMessage());
+            }
+        }
+        return result.build();
+    }
+
+    /** Batch-Anfrage nur mit IDs. */
+    public record BulkIdsRequest(List<UUID> ids) {
+        public BulkIdsRequest {
+            ids = ids == null ? List.of() : List.copyOf(ids);
+        }
     }
 
     /** Live-Fortschritt eines Laufs als Server-Sent Events (WR-04). */
