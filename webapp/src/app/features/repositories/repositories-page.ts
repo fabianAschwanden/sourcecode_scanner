@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
 import { ScannerApi } from '../../core/services/scanner-api';
-import { RepositoryCard, RepositorySource } from '../../core/models/scanner';
+import { ManagedSecret, RepositoryCard, RepositorySource } from '../../core/models/scanner';
 import { I18nService } from '../../core/i18n/i18n.service';
 
 /**
@@ -67,10 +67,16 @@ import { I18nService } from '../../core/i18n/i18n.service';
             <option value="updated">{{ t('repos.sort') }}: {{ t('repos.sort.updated') }}</option>
           </select>
           <button
-            (click)="setView('list')"
+            (click)="startWizard()"
             class="rounded bg-accent px-3 py-2 text-sm text-white hover:bg-accent-emphasis"
           >
-            + {{ t('repos.new') }}
+            + {{ t('repos.wizard.start') }}
+          </button>
+          <button
+            (click)="setView('list')"
+            class="rounded border border-default px-3 py-2 text-sm hover:text-accent"
+          >
+            {{ t('repos.new') }}
           </button>
         </div>
 
@@ -191,6 +197,171 @@ import { I18nService } from '../../core/i18n/i18n.service';
         @if (message()) {
           <p class="mt-3 rounded border border-default px-3 py-2 text-sm text-muted">{{ message() }}</p>
         }
+      } @else if (view() === 'wizard') {
+        <!-- Mini-Wizard: Provider wählen → Defaults → Repo + Key (mit Hilfe) → Übersicht/Anlegen -->
+        <div class="max-w-2xl">
+          <div class="mb-4 flex items-center gap-2 text-xs text-muted">
+            <span [class.text-accent]="wizardStep() === 1" class="font-medium">
+              1 · {{ t('repos.wizard.step.provider') }}
+            </span>
+            <span>›</span>
+            <span [class.text-accent]="wizardStep() === 2" class="font-medium">
+              2 · {{ t('repos.wizard.step.details') }}
+            </span>
+            <span>›</span>
+            <span [class.text-accent]="wizardStep() === 3" class="font-medium">
+              3 · {{ t('repos.wizard.step.review') }}
+            </span>
+          </div>
+
+          <div class="rounded-lg border border-default bg-surface p-5">
+            @if (wizardStep() === 1) {
+              <h3 class="text-lg font-semibold">{{ t('repos.wizard.provider.title') }}</h3>
+              <p class="mt-1 mb-4 text-sm text-muted">{{ t('repos.wizard.provider.intro') }}</p>
+              <div class="grid gap-2">
+                @for (p of providers; track p.type) {
+                  <button
+                    type="button"
+                    (click)="pickProvider(p.type)"
+                    class="flex items-center justify-between rounded border px-4 py-3 text-left hover:border-accent"
+                    [class.border-accent]="wizardProvider() === p.type"
+                    [class.border-default]="wizardProvider() !== p.type"
+                  >
+                    <span class="font-medium">{{ p.label }}</span>
+                    <span class="font-mono text-xs text-muted">{{ p.type }}</span>
+                  </button>
+                }
+              </div>
+            } @else if (wizardStep() === 2) {
+              <h3 class="text-lg font-semibold">{{ t('repos.wizard.details.title') }}</h3>
+              <p class="mt-1 mb-4 text-sm text-muted">{{ t('repos.wizard.details.intro') }}</p>
+
+              <div class="mb-4 grid gap-1">
+                <label class="text-sm font-medium" for="wzLocation">{{ t('repos.location') }}</label>
+                <input
+                  id="wzLocation"
+                  [(ngModel)]="location"
+                  (ngModelChange)="deriveNameFromLocation()"
+                  [placeholder]="providerDef().locationPlaceholder"
+                  class="w-full rounded border border-default bg-canvas px-3 py-2 font-mono text-sm"
+                />
+                <span class="text-xs text-muted">{{ t('repos.wizard.location.help') }}</span>
+              </div>
+
+              <div class="mb-4 grid gap-1">
+                <label class="text-sm font-medium" for="wzName">{{ t('repos.name') }}</label>
+                <input
+                  id="wzName"
+                  [(ngModel)]="name"
+                  [placeholder]="t('repos.name')"
+                  class="w-full rounded border border-default bg-canvas px-3 py-2"
+                />
+              </div>
+
+              @if (wizardProvider() !== 'localGit') {
+                <h4 class="mt-5 mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
+                  {{ t('repos.wizard.key.title') }}
+                </h4>
+                <div class="mb-3 rounded border border-default bg-canvas p-3 text-sm">
+                  <p class="text-muted">{{ t('repos.wizard.key.help.' + wizardProvider()) }}</p>
+                  <a
+                    [href]="providerDef().keyUrl"
+                    target="_blank"
+                    rel="noopener"
+                    class="mt-1 inline-block text-accent hover:underline"
+                  >
+                    {{ t('repos.wizard.key.openDocs') }} ↗
+                  </a>
+                  <p class="mt-2 text-xs text-muted">
+                    {{ t('repos.wizard.key.scopes') }}: <span class="font-mono">{{ providerDef().scopes }}</span>
+                  </p>
+                </div>
+
+                <div class="mb-3 grid gap-1">
+                  <span class="text-sm font-medium">{{ t('repos.wizard.key.mode') }}</span>
+                  <label class="flex items-center gap-2 text-sm">
+                    <input type="radio" [(ngModel)]="keyMode" name="keyMode" value="store" />
+                    {{ t('repos.wizard.key.mode.store') }}
+                  </label>
+                  <label class="flex items-center gap-2 text-sm">
+                    <input type="radio" [(ngModel)]="keyMode" name="keyMode" value="reference" />
+                    {{ t('repos.wizard.key.mode.reference') }}
+                  </label>
+                </div>
+
+                @if (keyMode === 'store') {
+                  <div class="grid gap-1">
+                    <label class="text-sm font-medium" for="wzKey">{{ t('repos.wizard.key.value') }}</label>
+                    <input
+                      id="wzKey"
+                      [(ngModel)]="keyValue"
+                      type="password"
+                      autocomplete="off"
+                      [placeholder]="providerDef().keyPlaceholder"
+                      class="w-full rounded border border-default bg-canvas px-3 py-2 font-mono text-sm"
+                    />
+                    <span class="text-xs text-muted">{{ t('repos.wizard.key.value.help') }}</span>
+                  </div>
+                } @else {
+                  <div class="grid gap-1">
+                    <label class="text-sm font-medium" for="wzRef">{{ t('repos.tokenRef') }}</label>
+                    <input
+                      id="wzRef"
+                      [(ngModel)]="tokenRef"
+                      [placeholder]="providerDef().envRef"
+                      class="w-full rounded border border-default bg-canvas px-3 py-2 font-mono text-sm"
+                    />
+                    <span class="text-xs text-muted">{{ t('repos.wizard.key.ref.help') }}</span>
+                  </div>
+                }
+              }
+            } @else {
+              <h3 class="text-lg font-semibold">{{ t('repos.wizard.review.title') }}</h3>
+              <dl class="mt-3 grid grid-cols-[8rem_1fr] gap-y-2 text-sm">
+                <dt class="text-muted">{{ t('repos.col.type') }}</dt>
+                <dd class="font-mono">{{ type }}</dd>
+                <dt class="text-muted">{{ t('repos.name') }}</dt>
+                <dd>{{ name }}</dd>
+                <dt class="text-muted">{{ t('repos.location') }}</dt>
+                <dd class="font-mono break-all">{{ location }}</dd>
+                <dt class="text-muted">{{ t('repos.tokenRef') }}</dt>
+                <dd class="font-mono">{{ wizardTokenSummary() }}</dd>
+              </dl>
+              @if (message()) {
+                <p class="mt-3 rounded border border-default px-3 py-2 text-sm text-muted">{{ message() }}</p>
+              }
+            }
+
+            <div class="mt-5 flex justify-between border-t border-default pt-4">
+              <button
+                type="button"
+                (click)="wizardBack()"
+                class="rounded border border-default px-3 py-2 text-sm hover:text-accent"
+              >
+                {{ wizardStep() === 1 ? t('repos.cancel') : t('repos.wizard.back') }}
+              </button>
+              @if (wizardStep() < 3) {
+                <button
+                  type="button"
+                  (click)="wizardNext()"
+                  [disabled]="!wizardStepValid()"
+                  class="rounded bg-accent px-4 py-2 text-sm text-white hover:bg-accent-emphasis disabled:opacity-50"
+                >
+                  {{ t('repos.wizard.next') }}
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  (click)="wizardFinish()"
+                  [disabled]="wizardBusy()"
+                  class="rounded bg-accent px-4 py-2 text-sm text-white hover:bg-accent-emphasis disabled:opacity-50"
+                >
+                  {{ wizardBusy() ? t('repos.wizard.creating') : t('repos.wizard.finish') }}
+                </button>
+              }
+            </div>
+          </div>
+        </div>
       } @else {
         <!-- Verwaltung: anlegen (GitHub-Stil-Formular) + Liste/löschen/testen -->
         <form (ngSubmit)="create()" class="mb-8 max-w-2xl">
@@ -416,7 +587,7 @@ export class RepositoriesPage {
     return this.i18n.t(key, params);
   }
 
-  protected readonly view = signal<'cards' | 'list'>('cards');
+  protected readonly view = signal<'cards' | 'list' | 'wizard'>('cards');
   protected readonly cards = signal<RepositoryCard[]>([]);
   protected readonly languages = signal<string[]>([]);
   protected readonly scanning = signal<string | null>(null);
@@ -440,6 +611,53 @@ export class RepositoriesPage {
   protected remediationEnabled = false;
   protected readonly message = signal<string>('');
 
+  // --- Wizard-Status -----------------------------------------------------------------------------
+  /** Provider-Defaults + Key-Hilfe (WR-02-Wizard). URLs auf die jeweiligen Token-Seiten. */
+  protected readonly providers = [
+    {
+      type: 'github',
+      label: 'GitHub',
+      locationPlaceholder: 'https://github.com/<org>/<repo>',
+      envRef: 'env:GITHUB_TOKEN',
+      keyPlaceholder: 'ghp_… / github_pat_…',
+      keyUrl: 'https://github.com/settings/tokens',
+      scopes: 'repo (read)',
+    },
+    {
+      type: 'gitlab',
+      label: 'GitLab',
+      locationPlaceholder: 'https://gitlab.com/<group>/<repo>',
+      envRef: 'env:GITLAB_TOKEN',
+      keyPlaceholder: 'glpat-…',
+      keyUrl: 'https://gitlab.com/-/user_settings/personal_access_tokens',
+      scopes: 'read_api, read_repository',
+    },
+    {
+      type: 'bitbucket',
+      label: 'Bitbucket',
+      locationPlaceholder: 'https://bitbucket.org/<workspace>/<repo>',
+      envRef: 'env:BITBUCKET_TOKEN',
+      keyPlaceholder: 'ATBB… / App-Password',
+      keyUrl: 'https://bitbucket.org/account/settings/app-passwords/',
+      scopes: 'repository:read',
+    },
+    {
+      type: 'localGit',
+      label: 'Local Git',
+      locationPlaceholder: '/pfad/zum/repo  oder  https://host/repo.git',
+      envRef: '',
+      keyPlaceholder: '',
+      keyUrl: '',
+      scopes: '',
+    },
+  ];
+  protected readonly wizardStep = signal<1 | 2 | 3>(1);
+  protected readonly wizardProvider = signal<string>('github');
+  protected readonly wizardBusy = signal(false);
+  /** 'store' = Key DB-verschlüsselt ablegen; 'reference' = nur env:-Referenz. */
+  protected keyMode: 'store' | 'reference' = 'store';
+  protected keyValue = '';
+
   constructor() {
     this.reloadCards();
     this.reload();
@@ -457,11 +675,158 @@ export class RepositoriesPage {
     this.setView(this.view() === 'cards' ? 'list' : 'cards');
   }
 
-  protected setView(view: 'cards' | 'list'): void {
+  protected setView(view: 'cards' | 'list' | 'wizard'): void {
     this.view.set(view);
     if (view === 'cards') {
       this.reloadCards();
     }
+  }
+
+  // --- Mini-Wizard (Provider-Defaults + Key-Hilfe) ---------------------------------------------
+
+  protected providerDef(): (typeof this.providers)[number] {
+    return this.providers.find((p) => p.type === this.wizardProvider()) ?? this.providers[0];
+  }
+
+  protected startWizard(): void {
+    this.resetForm();
+    this.message.set('');
+    this.keyMode = 'store';
+    this.keyValue = '';
+    this.wizardProvider.set('github');
+    this.type = 'github';
+    this.wizardStep.set(1);
+    this.view.set('wizard');
+  }
+
+  protected pickProvider(type: string): void {
+    this.wizardProvider.set(type);
+    this.type = type;
+    // Bei localGit gibt es keinen Key — direkt auf Referenzmodus ohne Token.
+    if (type === 'localGit') {
+      this.keyMode = 'reference';
+      this.tokenRef = '';
+    }
+  }
+
+  /** Leitet aus der Repo-URL einen Default-Namen ab (org/repo), solange der Nutzer keinen gesetzt hat. */
+  protected deriveNameFromLocation(): void {
+    if (this.name.trim()) {
+      return;
+    }
+    const cleaned = this.location.trim().replace(/\.git$/, '').replace(/\/$/, '');
+    const parts = cleaned.split('/').filter((p) => p.length > 0);
+    if (parts.length >= 2) {
+      this.name = parts.slice(-2).join('/');
+    } else if (parts.length === 1) {
+      this.name = parts[0];
+    }
+  }
+
+  protected wizardStepValid(): boolean {
+    if (this.wizardStep() === 1) {
+      return !!this.wizardProvider();
+    }
+    if (this.wizardStep() === 2) {
+      if (!this.location.trim() || !this.name.trim()) {
+        return false;
+      }
+      if (this.wizardProvider() === 'localGit') {
+        return true;
+      }
+      return this.keyMode === 'store' ? !!this.keyValue.trim() : !!this.tokenRef.trim();
+    }
+    return true;
+  }
+
+  protected wizardNext(): void {
+    if (!this.wizardStepValid()) {
+      return;
+    }
+    this.wizardStep.update((s) => (s < 3 ? ((s + 1) as 1 | 2 | 3) : s));
+  }
+
+  protected wizardBack(): void {
+    if (this.wizardStep() === 1) {
+      this.cancelEdit();
+      return;
+    }
+    this.message.set('');
+    this.wizardStep.update((s) => ((s - 1) as 1 | 2 | 3));
+  }
+
+  /** Vorschau der tokenRef in der Übersicht (gespeicherter Key wird zu secret:<name>). */
+  protected wizardTokenSummary(): string {
+    if (this.wizardProvider() === 'localGit') {
+      return this.t('common.none');
+    }
+    return this.keyMode === 'store' ? `secret:${this.secretName()}` : this.tokenRef.trim();
+  }
+
+  /** Eindeutiger Secret-Name aus dem Repo-Namen (für den DB-verschlüsselten Schlüssel). */
+  private secretName(): string {
+    const slug = this.name.trim().replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+    return `repo-${slug || 'token'}`;
+  }
+
+  protected wizardFinish(): void {
+    if (this.wizardBusy()) {
+      return;
+    }
+    this.wizardBusy.set(true);
+    // localGit oder reine Referenz → kein Secret anzulegen, direkt erstellen.
+    if (this.wizardProvider() === 'localGit' || this.keyMode === 'reference') {
+      this.createFromWizard(this.wizardProvider() === 'localGit' ? '' : this.tokenRef.trim());
+      return;
+    }
+    // Key DB-verschlüsselt als verwaltetes Secret ablegen, dann als secret:<name> referenzieren.
+    const secret: ManagedSecret = {
+      id: null,
+      name: this.secretName(),
+      mode: 'DB_ENCRYPTED',
+      reference: '',
+      hasStoredValue: false,
+      resolvable: false,
+      plaintext: this.keyValue.trim(),
+    };
+    this.api.saveSecret(secret).subscribe({
+      next: () => this.createFromWizard(`secret:${this.secretName()}`),
+      error: (err) => {
+        this.wizardBusy.set(false);
+        this.message.set(this.t('repos.wizard.msg.secretFailed', {
+          error: err?.error?.error ?? this.t('common.error'),
+        }));
+      },
+    });
+  }
+
+  private createFromWizard(tokenRef: string): void {
+    const source: RepositorySource = {
+      id: null,
+      name: this.name.trim(),
+      type: this.type,
+      location: this.location.trim(),
+      branches: [],
+      tokenRef: tokenRef || null,
+      enabled: true,
+      reportEmails: [],
+      remediationEnabled: false,
+      description: this.description,
+      visibility: this.visibility,
+    };
+    this.api.createSource(source).subscribe({
+      next: () => {
+        this.wizardBusy.set(false);
+        this.resetForm();
+        this.keyValue = '';
+        this.reload();
+        this.setView('cards');
+      },
+      error: (err) => {
+        this.wizardBusy.set(false);
+        this.message.set(err?.error?.error ?? this.t('common.error'));
+      },
+    });
   }
 
   // --- Mehrfachauswahl + Sammelaktionen (WR-67) ------------------------------------------------

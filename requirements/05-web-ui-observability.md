@@ -11,6 +11,8 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 |----|------|-------------|
 | WR-01 | S | Die Web-UI SOLL die vollständige Steuerung ohne CLI ermöglichen (Quellen, Detektoren, Scans, Baseline, Gate). |
 | WR-02 | S | Die UI SOLL Repository-Quellen anlegen, bearbeiten, löschen und die Verbindung testen können; die Listendarstellung folgt der Repo-Übersicht (WR-80..85). |
+| WR-02a | S | Die UI SOLL einen **Anlege-Assistenten** bieten: Anbieter wählen (GitHub/GitLab/Bitbucket/Local Git) → anbieter-spezifische Defaults (Typ, URL-Platzhalter, env-Referenz-Vorschlag) vorbelegt → nur Repo-URL/Name und Zugriffs-Key ergänzen, mit Hilfetext + Link, wo der Token zu erstellen ist und welche Scopes nötig sind → Übersicht/Anlegen. |
+| WR-02b | S | Im Assistenten SOLL der Key wahlweise (a) **DB-verschlüsselt** als verwaltetes Secret abgelegt und automatisch als `secret:<name>` referenziert werden (WR-19c, Admin) oder (b) als reine **Umgebungs-Referenz** (`env:NAME`) hinterlegt werden; ein Klartext-Key wird nie ins `tokenRef`-Feld geschrieben (WR-32). |
 | WR-03 | S | Die UI SOLL Scans manuell starten (Repo, Branch, Modus) und abbrechen können. |
 | WR-04 | S | Die UI SOLL laufende Scans live mit Fortschritt anzeigen (WebSocket/SSE). |
 | WR-04a | S | Der Scan-Fortschritt MUSS als **Prozentwert (0–100 %)** dargestellt werden, ergänzt um eine visuelle **Fortschrittsleiste**; der Wert SOLL sich während des Laufs live aktualisieren (SSE-Stream je Scan-ID, WR-04), nicht erst am Ende. |
@@ -77,6 +79,7 @@ welche Attribute im Code geprüft werden (FR-21/FR-22, IR-60..IR-66, DR-23..DR-2
 | WR-18 | C | Die UI KANN nicht-geheime Betriebsparameter pflegen (z. B. Standard-Gate-Severity, Aufbewahrungsfrist, Standard-Scan-Modus), mit Validierung vor dem Speichern. |
 | WR-19 | S | Die UI SOLL beim Anlegen eines Secrets je Eintrag einen **Modus** wählbar machen: (a) **Referenz** (`env:`/`vault:`, kein Wert im Backend, Default — WR-32-konform); (b) **Vault-Write** (Klartext entgegennehmen, an den Secret-Store schreiben, nur die Referenz behalten, Klartext sofort verwerfen, IR-30); (c) **DB-verschlüsselt** (Klartext at-rest verschlüsselt in der zentralen DB, NFR-29). Der Modus bestimmt Speicherung und Anzeige. |
 | WR-19a | M | In allen Modi DARF ein Klartext-Wert nie zurückgegeben, nie geloggt und in der Liste nur als Status/Referenz (bzw. maskiert) dargestellt werden (WR-33, NFR-09); Eingabefelder für Klartext sind maskiert. |
+| WR-19c | S | Ein **DB-verschlüsseltes** Secret SOLL als `secret:<name>` referenzierbar sein (z. B. als `tokenRef` einer Repo-Quelle); die Auflösung entschlüsselt den Wert transient zur Laufzeit (nur env/dev/server mit Encryption-Key, NFR-30) und gibt ihn nie zurück/loggt ihn nie. |
 | WR-19b | M | Secret-Verwaltung (alle Modi) ist nur der Rolle **Admin** zugänglich (WR-31) und jede Änderung wird auditiert (WR-34). |
 
 ### Finding-Workflow
