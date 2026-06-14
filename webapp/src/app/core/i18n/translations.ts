@@ -143,6 +143,7 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'common.delete': 'Delete',
     'common.save': 'Save',
     'common.test': 'Test',
+    'common.edit': 'Edit',
     'common.create': 'Create',
     'common.yes': 'yes',
     'common.no': 'no',
@@ -256,6 +257,7 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.toggleList': 'Manage (table)',
     'repos.toggleCards': 'Overview (cards)',
     'repos.create.title': 'Create a new repository source',
+    'repos.edit.title': 'Edit repository source',
     'repos.create.intro':
       'A repository source tells the scanner where to find code. Credentials are stored only as a reference.',
     'repos.create.section.basics': 'Basics',
@@ -433,6 +435,7 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'common.delete': 'Löschen',
     'common.save': 'Speichern',
     'common.test': 'Testen',
+    'common.edit': 'Bearbeiten',
     'common.create': 'Anlegen',
     'common.yes': 'ja',
     'common.no': 'nein',
@@ -544,6 +547,7 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.toggleList': 'Verwalten (Tabelle)',
     'repos.toggleCards': 'Übersicht (Karten)',
     'repos.create.title': 'Neue Repository-Quelle anlegen',
+    'repos.edit.title': 'Repository-Quelle bearbeiten',
     'repos.create.intro':
       'Eine Repository-Quelle sagt dem Scanner, wo der Code liegt. Credentials werden nur als Referenz gespeichert.',
     'repos.create.section.basics': 'Grunddaten',

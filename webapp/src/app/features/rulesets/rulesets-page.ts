@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ScannerApi } from '../../core/services/scanner-api';
 import {
@@ -233,6 +236,14 @@ export class RulesetsPage {
     this.reload();
     this.api.sources().subscribe((list) => this.sources.set(list));
     this.api.dataSources().subscribe((list) => this.dataSources.set(list));
+    // Nav-Link erneut anklicken ⇒ zurück in die Listenansicht (onSameUrlNavigation: 'reload').
+    inject(Router)
+      .events.pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        filter((e) => e.urlAfterRedirects.startsWith('/rulesets')),
+        takeUntilDestroyed(inject(DestroyRef)),
+      )
+      .subscribe(() => this.view.set('list'));
   }
 
   protected startNew(): void {

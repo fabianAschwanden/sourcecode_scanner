@@ -1,6 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { RepositoryCard, RepositorySource } from '../../core/models/scanner';
 import { I18nService } from '../../core/i18n/i18n.service';
@@ -169,7 +171,9 @@ import { I18nService } from '../../core/i18n/i18n.service';
         <!-- Verwaltung: anlegen (GitHub-Stil-Formular) + Liste/löschen/testen -->
         <form (ngSubmit)="create()" class="mb-8 max-w-2xl">
           <div class="rounded-lg border border-default bg-surface p-5">
-            <h3 class="text-lg font-semibold">{{ t('repos.create.title') }}</h3>
+            <h3 class="text-lg font-semibold">
+              {{ editingId() ? t('repos.edit.title') : t('repos.create.title') }}
+            </h3>
             <p class="mt-1 mb-4 text-sm text-muted">{{ t('repos.create.intro') }}</p>
 
             <h4 class="mb-2 text-xs font-semibold uppercase tracking-wide text-muted">
@@ -286,7 +290,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
             <div class="flex justify-end gap-2 border-t border-default pt-4">
               <button
                 type="button"
-                (click)="setView('cards')"
+                (click)="cancelEdit()"
                 class="rounded border border-default px-3 py-2 text-sm hover:text-accent"
               >
                 {{ t('repos.cancel') }}
@@ -296,7 +300,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
                 [disabled]="!name || !location"
                 class="rounded bg-accent px-4 py-2 text-sm text-white hover:bg-accent-emphasis disabled:opacity-50"
               >
-                {{ t('common.create') }}
+                {{ editingId() ? t('common.save') : t('common.create') }}
               </button>
             </div>
           </div>
@@ -342,6 +346,9 @@ import { I18nService } from '../../core/i18n/i18n.service';
                   </button>
                 </td>
                 <td class="space-x-2">
+                  <button (click)="edit(s)" class="text-accent hover:underline">
+                    {{ t('common.edit') }}
+                  </button>
                   <button (click)="test(s)" class="text-accent hover:underline">
                     {{ t('common.test') }}
                   </button>
@@ -397,6 +404,8 @@ export class RepositoriesPage {
   protected sort = 'name';
 
   protected readonly sources = signal<RepositorySource[]>([]);
+  /** Gesetzt, wenn ein bestehendes Repo bearbeitet wird (sonst Anlegen-Modus). */
+  protected readonly editingId = signal<string | null>(null);
   protected name = '';
   protected type = 'localGit';
   protected location = '';
@@ -410,6 +419,14 @@ export class RepositoriesPage {
   constructor() {
     this.reloadCards();
     this.reload();
+    // Nav-Link erneut anklicken ⇒ zurück in die Karten-/Listenansicht (onSameUrlNavigation: 'reload').
+    inject(Router)
+      .events.pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        filter((e) => e.urlAfterRedirects.startsWith('/repositories')),
+        takeUntilDestroyed(inject(DestroyRef)),
+      )
+      .subscribe(() => this.setView('cards'));
   }
 
   protected toggleView(): void {
@@ -536,9 +553,35 @@ export class RepositoriesPage {
   }
 
   protected toggleRemediation(source: RepositorySource): void {
+    if (!source.id) {
+      return;
+    }
     this.api
-      .createSource({ ...source, remediationEnabled: !source.remediationEnabled })
-      .subscribe(() => this.reload());
+      .updateSource(source.id, { ...source, remediationEnabled: !source.remediationEnabled })
+      .subscribe(() => {
+        this.reload();
+        this.reloadCards();
+      });
+  }
+
+  /** Lädt ein bestehendes Repo zum Bearbeiten ins Formular (Verwaltungsansicht). */
+  protected edit(source: RepositorySource): void {
+    this.editingId.set(source.id);
+    this.name = source.name;
+    this.type = source.type;
+    this.location = source.location;
+    this.description = source.description;
+    this.visibility = source.visibility;
+    this.tokenRef = source.tokenRef ?? '';
+    this.reportEmails = source.reportEmails.join(', ');
+    this.remediationEnabled = source.remediationEnabled;
+    this.message.set('');
+    this.view.set('list');
+  }
+
+  protected cancelEdit(): void {
+    this.resetForm();
+    this.setView('cards');
   }
 
   protected scrubDryRun(source: RepositorySource): void {
@@ -560,8 +603,9 @@ export class RepositoriesPage {
     if (!this.name || !this.location) {
       return;
     }
+    const id = this.editingId();
     const source: RepositorySource = {
-      id: null,
+      id,
       name: this.name,
       type: this.type,
       location: this.location,
@@ -576,17 +620,25 @@ export class RepositoriesPage {
       description: this.description,
       visibility: this.visibility,
     };
-    this.api.createSource(source).subscribe(() => {
-      this.name = '';
-      this.location = '';
-      this.description = '';
-      this.visibility = 'private';
-      this.tokenRef = '';
-      this.reportEmails = '';
-      this.remediationEnabled = false;
+    const request$ = id ? this.api.updateSource(id, source) : this.api.createSource(source);
+    request$.subscribe(() => {
+      this.resetForm();
       this.reload();
-      this.reloadCards();
+      // Nach erfolgreichem Anlegen/Bearbeiten zurück in die initiale Karten-/Listenansicht.
+      this.setView('cards');
     });
+  }
+
+  private resetForm(): void {
+    this.editingId.set(null);
+    this.name = '';
+    this.type = 'localGit';
+    this.location = '';
+    this.description = '';
+    this.visibility = 'private';
+    this.tokenRef = '';
+    this.reportEmails = '';
+    this.remediationEnabled = false;
   }
 
   protected test(source: RepositorySource): void {

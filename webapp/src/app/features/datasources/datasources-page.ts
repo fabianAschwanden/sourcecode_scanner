@@ -1,4 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router } from '@angular/router';
+import { filter } from 'rxjs';
 import { FormsModule } from '@angular/forms';
 import { ScannerApi } from '../../core/services/scanner-api';
 import {
@@ -88,7 +91,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
           type="submit"
           class="rounded bg-accent px-3 py-1 text-white hover:bg-accent-emphasis"
         >
-          {{ t('common.create') }}
+          {{ editingId() ? t('common.save') : t('common.create') }}
         </button>
         @if (kind === 'REST') {
           <button
@@ -98,6 +101,15 @@ import { I18nService } from '../../core/i18n/i18n.service';
             class="rounded border border-default px-3 py-1 hover:underline"
           >
             {{ t('ds.probe') }}
+          </button>
+        }
+        @if (editingId()) {
+          <button
+            type="button"
+            (click)="cancelEdit()"
+            class="rounded border border-default px-3 py-1 hover:text-accent"
+          >
+            {{ t('repos.cancel') }}
           </button>
         }
       </form>
@@ -213,6 +225,9 @@ import { I18nService } from '../../core/i18n/i18n.service';
                     />
                   </label>
                 }
+                <button (click)="editSource(s)" class="text-accent hover:underline">
+                  {{ t('common.edit') }}
+                </button>
                 <button (click)="remove(s)" class="text-sev-high hover:underline">
                   {{ t('common.delete') }}
                 </button>
@@ -241,6 +256,8 @@ export class DataSourcesPage {
   protected readonly schema = signal<{ field: string; maskedExample: string }[]>([]);
   protected readonly message = signal<string>('');
 
+  /** Gesetzt, wenn eine bestehende Datenquelle bearbeitet wird (sonst Anlegen-Modus). */
+  protected readonly editingId = signal<string | null>(null);
   protected name = '';
   protected kind: DataSourceKind = 'REST';
   protected baseUrl = '';
@@ -255,6 +272,40 @@ export class DataSourcesPage {
 
   constructor() {
     this.reload();
+    // Nav-Link erneut anklicken ⇒ ein halbfertiges Bearbeiten-Formular zurücksetzen.
+    inject(Router)
+      .events.pipe(
+        filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+        filter((e) => e.urlAfterRedirects.startsWith('/datasources')),
+        takeUntilDestroyed(inject(DestroyRef)),
+      )
+      .subscribe(() => {
+        this.schema.set([]);
+        this.resetForm();
+      });
+  }
+
+  /** Lädt eine bestehende Datenquelle zum Bearbeiten ins Formular. */
+  protected editSource(source: DataSource): void {
+    this.editingId.set(source.id);
+    this.name = source.name;
+    this.kind = source.kind;
+    this.baseUrl = source.baseUrl;
+    this.path = source.path;
+    this.recordsPath = source.recordsPath;
+    this.authType = source.authType;
+    this.tokenRef = source.tokenRef ?? '';
+    this.draftMap = {};
+    for (const a of source.attributes) {
+      this.draftMap[a.field] = { check: a.check, severity: a.severity, category: a.category };
+    }
+    this.schema.set(source.attributes.map((a) => ({ field: a.field, maskedExample: '••••' })));
+    this.message.set('');
+  }
+
+  protected cancelEdit(): void {
+    this.schema.set([]);
+    this.resetForm();
   }
 
   protected probeDraft(): void {
@@ -389,7 +440,7 @@ export class DataSourcesPage {
 
   private draft(attributes: AttributeRule[]): DataSource {
     return {
-      id: null,
+      id: this.editingId(),
       name: this.name,
       kind: this.kind,
       baseUrl: this.baseUrl,
@@ -407,6 +458,7 @@ export class DataSourcesPage {
   }
 
   private resetForm(): void {
+    this.editingId.set(null);
     this.name = '';
     this.kind = 'REST';
     this.baseUrl = '';

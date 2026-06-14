@@ -114,6 +114,10 @@ export class ScannerApi {
     return this.http.post<RepositorySource>('/api/sources', source);
   }
 
+  updateSource(id: string, source: RepositorySource): Observable<RepositorySource> {
+    return this.http.put<RepositorySource>(`/api/sources/${id}`, source);
+  }
+
   deleteSource(id: string): Observable<void> {
     return this.http.delete<void>(`/api/sources/${id}`);
   }

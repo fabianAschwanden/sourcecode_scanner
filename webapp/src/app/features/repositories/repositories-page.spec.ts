@@ -86,11 +86,13 @@ describe('RepositoriesPage', () => {
     };
     component.toggleRemediation(source(false));
 
-    const req = httpMock.expectOne('/api/sources');
-    expect(req.request.method).toBe('POST');
+    const req = httpMock.expectOne('/api/sources/r1');
+    expect(req.request.method).toBe('PUT');
     expect(req.request.body.remediationEnabled).toBe(true);
     req.flush(source(true));
+    // Nach dem Umschalten werden Verwaltungsliste und Karten neu geladen.
     httpMock.expectOne('/api/sources').flush([source(true)]);
+    httpMock.expectOne((r) => r.url === '/api/sources/cards').flush([]);
   });
 
   it('holt eine redigierte Scrub-Vorschau', () => {
