@@ -18,7 +18,9 @@ public class IdpRoleMappingAugmentor implements SecurityIdentityAugmentor {
     private static final Map<String, String> IDP_TO_INTERNAL = Map.of(
             "sourcecode-scanner-viewer", "viewer",
             "sourcecode-scanner-operator", "operator",
-            "sourcecode-scanner-admin", "admin");
+            "sourcecode-scanner-admin", "admin",
+            // Service-Rolle für die CI/CD-Ergebnis-Einlieferung (IR-23); kein UI-Login.
+            "sourcecode-scanner-ci", "ci");
 
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {

@@ -54,6 +54,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
           <tr class="border-b border-default text-left text-muted">
             <th class="py-2">{{ t('scans.col.repository') }}</th>
             <th>{{ t('scans.col.mode') }}</th>
+            <th>{{ t('scans.col.origin') }}</th>
             <th>{{ t('scans.col.status') }}</th>
             <th class="w-56">{{ t('scans.col.progress') }}</th>
             <th>{{ t('scans.col.findings') }}</th>
@@ -65,6 +66,14 @@ import { I18nService } from '../../core/i18n/i18n.service';
             <tr class="border-b border-default">
               <td class="py-2">{{ s.repoId }}</td>
               <td>{{ s.mode }}</td>
+              <td>
+                <span
+                  class="rounded-full border border-default px-2 text-xs"
+                  [title]="ciTooltip(s)"
+                >
+                  {{ s.trigger === 'CI' ? t('scans.origin.ci') : t('scans.origin.server') }}
+                </span>
+              </td>
               <td>{{ liveStatus(s) }}</td>
               <td>
                 <div class="flex items-center gap-2">
@@ -88,7 +97,7 @@ import { I18nService } from '../../core/i18n/i18n.service';
             </tr>
           } @empty {
             <tr>
-              <td colspan="6" class="py-3 text-muted">{{ t('scans.empty') }}</td>
+              <td colspan="7" class="py-3 text-muted">{{ t('scans.empty') }}</td>
             </tr>
           }
         </tbody>
@@ -147,6 +156,21 @@ export class ScansPage {
 
   protected liveFindings(scan: Scan): number {
     return this.live()[scan.id]?.findingCount ?? scan.findingCount;
+  }
+
+  /** Zeigt die CI-Metadaten als Tooltip auf dem Herkunfts-Badge (WR-69). */
+  protected ciTooltip(scan: Scan): string {
+    if (scan.trigger !== 'CI') {
+      return this.t('scans.origin.server');
+    }
+    return [
+      scan.ciBranch ? `branch: ${scan.ciBranch}` : null,
+      scan.ciCommit ? `commit: ${scan.ciCommit}` : null,
+      scan.ciActor ? `actor: ${scan.ciActor}` : null,
+      scan.ciPipelineUrl ?? null,
+    ]
+      .filter((x): x is string => !!x)
+      .join(' · ');
   }
 
   private reload(): void {

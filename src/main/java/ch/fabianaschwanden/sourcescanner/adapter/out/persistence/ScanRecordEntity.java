@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanStatus;
+import ch.fabianaschwanden.sourcescanner.domain.model.ScanTrigger;
 
 /** JPA-Entity eines Scan-Laufs. Lebt ausschliesslich im Persistence-Adapter (Blueprint §4). */
 @Entity
@@ -39,4 +40,25 @@ public class ScanRecordEntity {
 
     @Column(name = "finished_at")
     public Instant finishedAt;
+
+    /** Herkunft des Laufs (IR-25); Default SERVER für Bestandsdaten. */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "trigger_source", nullable = false)
+    public ScanTrigger triggerSource;
+
+    /** CI-Metadaten (nur bei trigger=CI gesetzt). */
+    @Column(name = "ci_run_ref")
+    public String ciRunRef;
+
+    @Column(name = "ci_pipeline_url")
+    public String ciPipelineUrl;
+
+    @Column(name = "ci_commit")
+    public String ciCommit;
+
+    @Column(name = "ci_branch")
+    public String ciBranch;
+
+    @Column(name = "ci_actor")
+    public String ciActor;
 }

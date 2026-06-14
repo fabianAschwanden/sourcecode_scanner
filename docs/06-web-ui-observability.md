@@ -141,10 +141,21 @@ Admin-Ansicht für systemweite Einstellungen, die ohne Neustart änderbar sind (
 
 - **Allgemeine Benachrichtigungs-E-Mail** für systemweite Meldungen/Sammelreports
   (WR-16, IR-52/54).
-- **Credential-/Secret-Referenzen** (z. B. `env:GITHUB_TOKEN`) verwalten — nur als
-  Referenz, nie im Klartext; angezeigt wird, welche Referenzen erwartet/auflösbar
-  sind (WR-17, WR-32). Hinweis: Environment-Variablen werden zum Prozessstart
-  gelesen; die UI pflegt die Referenzen, nicht die OS-Variablen selbst.
+- **Secret-Verwaltung** (CRUD, nur Admin, auditiert — WR-17/19/19a/19b). Beim Anlegen
+  wählt man je Eintrag einen **Modus**:
+  - **Referenz** (Default, WR-32-konform): nur `env:`/`vault:`-Verweis, kein Wert im
+    Backend; angezeigt wird die Auflösbarkeit.
+  - **Vault-Write** (IR-30): Klartext wird entgegengenommen, an den Secret-Store
+    geschrieben; behalten/zurückgegeben wird nur die entstehende Referenz, der Klartext
+    wird sofort verworfen.
+  - **DB-verschlüsselt** (NFR-29/30): Klartext wird **symmetrisch verschlüsselt** in der
+    zentralen DB abgelegt (Schlüssel aus Env/Secret-Store, nie in der DB); transient zum
+    Auflösen entschlüsselt, nie über die API zurückgegeben, nie geloggt. Bewusste,
+    dokumentierte Abweichung von WR-32.
+
+  In allen Modi werden Klartext-Eingaben maskiert und nie zurückgegeben (WR-19a). Hinweis:
+  Environment-Variablen werden zum Prozessstart gelesen; die UI pflegt die Referenzen,
+  nicht die OS-Variablen selbst.
 - Nicht-geheime Betriebsparameter (Default-Gate-Severity, Aufbewahrungsfrist,
   Standard-Scan-Modus) mit Validierung (WR-18).
 
@@ -163,7 +174,7 @@ Absender werden konfiguriert, Credentials nur als Secret-Referenz (NFR-08).
 | Aspekt | Umsetzung |
 |--------|-----------|
 | Authentifizierung | OIDC-Anbindung an Unternehmens-IdP (SSO, `quarkus-oidc`/BFF). SAML nur, falls der Blueprint es aufnimmt (docs/09, TR-13). |
-| Autorisierung | RBAC: Rollen `Viewer`, `Operator`, `Admin` |
+| Autorisierung | RBAC: Rollen `Viewer`, `Operator`, `Admin` + Service-Rolle `ci` (nur Ergebnis-Einlieferung über `POST /api/ingest`, IR-22/23) |
 | Transport | TLS erzwungen |
 | Credentials | nur Secret-Store-Referenzen, Eingabe maskiert, nie Rückgabe im Klartext |
 | Treffer-Anzeige | serverseitig redigiert (Klartext verlässt nie das Backend) |

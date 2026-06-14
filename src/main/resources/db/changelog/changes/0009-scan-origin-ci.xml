@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Herkunft eines Scan-Laufs (SERVER/CI) + CI-Metadaten für eingelieferte Builds (IR-22/25).
+         Additiv zu scan_record; Default SERVER für Bestandsdaten. -->
+    <changeSet id="0009-scan-origin-ci" author="scanner">
+        <addColumn tableName="scan_record">
+            <column name="trigger_source" type="VARCHAR(16)" defaultValue="SERVER">
+                <constraints nullable="false"/>
+            </column>
+            <column name="ci_run_ref" type="VARCHAR(256)"/>
+            <column name="ci_pipeline_url" type="VARCHAR(1024)"/>
+            <column name="ci_commit" type="VARCHAR(128)"/>
+            <column name="ci_branch" type="VARCHAR(256)"/>
+            <column name="ci_actor" type="VARCHAR(256)"/>
+        </addColumn>
+        <createIndex tableName="scan_record" indexName="idx_scan_ci_run_ref">
+            <column name="ci_run_ref"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

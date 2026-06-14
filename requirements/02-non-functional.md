@@ -30,6 +30,8 @@
 | NFR-12 | C | Plugin-JARs KÖNNEN signiert und vor Laden verifiziert werden. | Plugin / P5 |
 | NFR-23 | M | Aus externen Datenquellen bezogene vertrauliche Werte (Kundendaten) MÜSSEN wie Geheimnisse behandelt werden: REST-Werte nur im Speicher (TTL-Cache), Upload-Werte nur als **Hash** persistiert (nie Klartext); nie geloggt und nur redigiert ausgegeben (FR-23/FR-25, DR-26/DR-27/DR-30, IR-64). | Detection / Datenschutz |
 | NFR-26 | S | Das Hashing hochgeladener Werte SOLL ein konfigurierbares Pepper verwenden (Secret-Referenz), um Rainbow-Table-Angriffe auf das Hash-Repository zu erschweren. | Detection / Datenschutz |
+| NFR-29 | M | Wird ein Secret im UI-Modus **DB-verschlüsselt** abgelegt (WR-19c), MUSS der Wert at-rest **symmetrisch verschlüsselt** gespeichert werden (Schlüssel aus Secret-Referenz/Env, nie in der DB); der Klartext wird nur transient zum Auflösen entschlüsselt, nie über die API zurückgegeben und nie geloggt. Dieser Modus ist eine bewusste, dokumentierte Abweichung von WR-32 und nur Admin + auditiert (WR-19b). | Server / Sicherheit |
+| NFR-30 | S | Der Verschlüsselungsschlüssel für DB-verschlüsselte Secrets MUSS konfigurierbar sein (Env/Secret-Store); fehlt er, MUSS der Modus deaktiviert sein (kein unverschlüsseltes Fallback-Speichern). | Server / Sicherheit |
 | NFR-24 | S | Der Zugriff auf externe Datenquellen und das Attribut-Mapping SOLL der RBAC unterliegen (Pflege nur Admin/Operator gemäß WR-31) und jede Änderung SOLL auditierbar sein (NFR-11). | Server |
 | NFR-25 | S | Datenquellen-Tokens SOLLEN Least-Privilege/read-only sein (analog NFR-10) und ausschliesslich als Secret-Referenz hinterlegt werden (NFR-08). | Integration |
 

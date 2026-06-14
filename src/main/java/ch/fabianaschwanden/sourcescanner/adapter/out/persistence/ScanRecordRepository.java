@@ -1,5 +1,6 @@
 package ch.fabianaschwanden.sourcescanner.adapter.out.persistence;
 
+import ch.fabianaschwanden.sourcescanner.domain.model.CiMetadata;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanRecord;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.ScanRecordPort;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
@@ -30,6 +31,13 @@ public class ScanRecordRepository implements PanacheRepositoryBase<ScanRecordEnt
         entity.findingCount = record.findingCount();
         entity.startedAt = record.startedAt();
         entity.finishedAt = record.finishedAt();
+        entity.triggerSource = record.trigger();
+        CiMetadata ci = record.ci();
+        entity.ciRunRef = ci.runRef();
+        entity.ciPipelineUrl = ci.pipelineUrl();
+        entity.ciCommit = ci.commit();
+        entity.ciBranch = ci.branch();
+        entity.ciActor = ci.actor();
         persist(entity);
         return record;
     }
@@ -37,6 +45,14 @@ public class ScanRecordRepository implements PanacheRepositoryBase<ScanRecordEnt
     @Override
     public Optional<ScanRecord> byId(UUID id) {
         return Optional.ofNullable(findById(id)).map(ScanRecordRepository::toDomain);
+    }
+
+    @Override
+    public Optional<ScanRecord> byCiRunRef(String runRef) {
+        if (runRef == null || runRef.isBlank()) {
+            return Optional.empty();
+        }
+        return find("ciRunRef", runRef).firstResultOptional().map(ScanRecordRepository::toDomain);
     }
 
     @Override
@@ -48,7 +64,8 @@ public class ScanRecordRepository implements PanacheRepositoryBase<ScanRecordEnt
     }
 
     static ScanRecord toDomain(ScanRecordEntity e) {
+        CiMetadata ci = new CiMetadata(e.ciRunRef, e.ciPipelineUrl, e.ciCommit, e.ciBranch, e.ciActor);
         return new ScanRecord(e.id, e.repoId, e.mode, e.status, e.progress, e.findingCount,
-                e.startedAt, e.finishedAt);
+                e.startedAt, e.finishedAt, e.triggerSource, ci);
     }
 }

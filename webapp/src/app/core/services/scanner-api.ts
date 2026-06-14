@@ -6,6 +6,7 @@ import {
   DataSourceSchema,
   DetectorInfo,
   Finding,
+  ManagedSecret,
   Policy,
   PrRef,
   RepositorySource,
@@ -132,6 +133,20 @@ export class ScannerApi {
     return this.http.post<Record<string, number>>(`/api/datasources/${id}/upload`, content, {
       headers: { 'Content-Type': 'text/plain' },
     });
+  }
+
+  // --- Verwaltete Secrets (WR-17/19) ---
+
+  secrets(): Observable<ManagedSecret[]> {
+    return this.http.get<ManagedSecret[]>('/api/secrets');
+  }
+
+  saveSecret(secret: ManagedSecret): Observable<ManagedSecret> {
+    return this.http.post<ManagedSecret>('/api/secrets', secret);
+  }
+
+  deleteSecret(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/secrets/${id}`);
   }
 
   settings(): Observable<Settings> {

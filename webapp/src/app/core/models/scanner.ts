@@ -24,6 +24,8 @@ export interface Finding {
   readonly lastSeen: string;
 }
 
+export type ScanTrigger = 'SERVER' | 'CI';
+
 export interface Scan {
   readonly id: string;
   readonly repoId: string;
@@ -33,6 +35,11 @@ export interface Scan {
   readonly findingCount: number;
   readonly startedAt: string;
   readonly finishedAt: string | null;
+  readonly trigger: ScanTrigger;
+  readonly ciPipelineUrl: string | null;
+  readonly ciCommit: string | null;
+  readonly ciBranch: string | null;
+  readonly ciActor: string | null;
 }
 
 export interface ScanEvent {
@@ -74,6 +81,20 @@ export interface ScrubResult {
 export interface SecretRefStatus {
   readonly ref: string;
   readonly resolvable: boolean;
+}
+
+export type SecretStorageMode = 'REFERENCE' | 'VAULT_WRITE' | 'DB_ENCRYPTED';
+
+export interface ManagedSecret {
+  readonly id: string | null;
+  readonly name: string;
+  readonly mode: SecretStorageMode;
+  readonly reference: string;
+  readonly hasStoredValue: boolean;
+  readonly resolvable: boolean;
+  // Nur Eingabe (transient); wird nie zurückgegeben:
+  readonly plaintext?: string | null;
+  readonly vaultPath?: string | null;
 }
 
 export interface Settings {

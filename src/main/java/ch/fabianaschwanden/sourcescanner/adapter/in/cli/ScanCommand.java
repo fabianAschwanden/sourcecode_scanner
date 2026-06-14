@@ -51,6 +51,7 @@ public class ScanCommand implements Callable<Integer> {
     private final ScanConfigPort configPort;
     private final BaselinePort baselinePort;
     private final List<ReportPort> reportPorts;
+    private final ReportBackClient reportBack = new ReportBackClient();
 
     @Inject
     public ScanCommand(StartScanUseCase startScan, ScanConfigPort configPort,
@@ -88,6 +89,12 @@ public class ScanCommand implements Callable<Integer> {
         } catch (RuntimeException e) {
             System.err.println("Report-Erzeugung fehlgeschlagen: " + e.getMessage());
             return 2;
+        }
+
+        // Optionaler Push an den zentralen Server (IR-21); gate-entkoppelt — Fehler ändern den
+        // Exit-Code nie (IR-26). Aktiv nur, wenn die nötigen Env-Variablen gesetzt sind.
+        if (reportBack.enabled()) {
+            reportBack.send(results, scanConfig.mode().name().toLowerCase(Locale.ROOT));
         }
 
         return evaluateGate(results, scanConfig.gate());

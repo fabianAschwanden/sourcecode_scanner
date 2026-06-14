@@ -41,8 +41,11 @@ welche Attribute im Code geprüft werden (FR-21/FR-22, IR-60..IR-66, DR-23..DR-2
 |----|------|-------------|
 | WR-15 | S | Die UI SOLL eine Einstellungs-Ansicht bereitstellen, in der allgemeine Systemeinstellungen ohne Neustart geändert werden können (nur Rolle Admin, WR-31). |
 | WR-16 | S | Die Einstellungen SOLLEN eine allgemeine Benachrichtigungs-E-Mail-Adresse umfassen, an die systemweite Meldungen (z. B. Betriebs-/Sammelreports) gesendet werden (IR-52). |
-| WR-17 | S | Die UI SOLL Credential-/Secret-Referenzen (z. B. Environment-Variablen wie `env:GITHUB_TOKEN`) als verwaltbare Einträge anzeigen und pflegen können — ausschliesslich als Referenz, nie als Klartext (WR-32). |
+| WR-17 | S | Die UI SOLL Credential-/Secret-Referenzen (z. B. Environment-Variablen wie `env:GITHUB_TOKEN`) als verwaltbare Einträge anlegen/bearbeiten/löschen und ihre Auflösbarkeit anzeigen — voller CRUD (WR-19). |
 | WR-18 | C | Die UI KANN nicht-geheime Betriebsparameter pflegen (z. B. Standard-Gate-Severity, Aufbewahrungsfrist, Standard-Scan-Modus), mit Validierung vor dem Speichern. |
+| WR-19 | S | Die UI SOLL beim Anlegen eines Secrets je Eintrag einen **Modus** wählbar machen: (a) **Referenz** (`env:`/`vault:`, kein Wert im Backend, Default — WR-32-konform); (b) **Vault-Write** (Klartext entgegennehmen, an den Secret-Store schreiben, nur die Referenz behalten, Klartext sofort verwerfen, IR-30); (c) **DB-verschlüsselt** (Klartext at-rest verschlüsselt in der zentralen DB, NFR-29). Der Modus bestimmt Speicherung und Anzeige. |
+| WR-19a | M | In allen Modi DARF ein Klartext-Wert nie zurückgegeben, nie geloggt und in der Liste nur als Status/Referenz (bzw. maskiert) dargestellt werden (WR-33, NFR-09); Eingabefelder für Klartext sind maskiert. |
+| WR-19b | M | Secret-Verwaltung (alle Modi) ist nur der Rolle **Admin** zugänglich (WR-31) und jede Änderung wird auditiert (WR-34). |
 
 ### Finding-Workflow
 
@@ -68,6 +71,7 @@ Die Finding-Liste SOLL im Aufbau der GitHub-„Code scanning"-Ansicht gestaltet 
 | WR-64 | S | Die Ansicht SOLL **Facetten-Filter** als Dropdowns bereitstellen — mindestens `Sprache/Dateityp`, `Detektor` (entspr. „Tool"), `Regel`, `Severity` — sowie ein **Sortier**-Dropdown (z. B. Severity, zuletzt gesehen, zuerst gesehen). Optionen SOLLEN nur tatsächlich vorkommende Werte enthalten (Facettierung). |
 | WR-65 | S | Jede **Ergebniszeile** SOLL enthalten: Status-/Severity-Icon, Regel-/Fundtitel, ein **Severity-Badge** (farbcodiert, WR-40), eine Metazeile `#<lfd-Nr.> <Status> <relative Zeit> • erkannt von <Detektor> in <Datei>:<Zeile>` und rechts ein **Branch-Badge**; Klick öffnet die Funddetails (WR-11). |
 | WR-66 | C | Funde KÖNNEN eine stabile, fortlaufende Anzeigenummer (`#N`) je Repository tragen und einen relativen Zeitstempel („vor 1 Minute") für Erst-/Letztsichtung zeigen. |
+| WR-69 | S | Die UI SOLL die **Herkunft** eines Laufs/Funds anzeigen (Server vs. CI/CD) und nach Herkunft filterbar machen; bei CI-Läufen SOLLEN die CI-Metadaten (Pipeline/Job-Link, Commit, Branch) einsehbar sein (IR-22/25). |
 | WR-67 | C | Die Ansicht KANN Mehrfachauswahl per Checkbox je Zeile und Kopfzeile bieten, um Funde gesammelt zu triagieren (Sammel-Baseline/-Suppress mit Pflichtbegründung, WR-12). |
 | WR-68 | S | Treffer-Anzeige bleibt redigiert (WR-33); Branch-, Datei- und Detektorangaben enthalten nie Klartext-Geheimnisse. |
 

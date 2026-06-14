@@ -14,6 +14,11 @@ function runningScan(progress: number): Scan {
     findingCount: 0,
     startedAt: '2026-06-14T00:00:00Z',
     finishedAt: null,
+    trigger: 'SERVER',
+    ciPipelineUrl: null,
+    ciCommit: null,
+    ciBranch: null,
+    ciActor: null,
   };
 }
 
