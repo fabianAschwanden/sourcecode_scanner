@@ -10,7 +10,7 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | ID | Prio | Anforderung |
 |----|------|-------------|
 | WR-01 | S | Die Web-UI SOLL die vollständige Steuerung ohne CLI ermöglichen (Quellen, Detektoren, Scans, Baseline, Gate). |
-| WR-02 | S | Die UI SOLL Repository-Quellen anlegen, bearbeiten, löschen und die Verbindung testen können. |
+| WR-02 | S | Die UI SOLL Repository-Quellen anlegen, bearbeiten, löschen und die Verbindung testen können; die Listendarstellung folgt der Repo-Übersicht (WR-80..85). |
 | WR-03 | S | Die UI SOLL Scans manuell starten (Repo, Branch, Modus) und abbrechen können. |
 | WR-04 | S | Die UI SOLL laufende Scans live mit Fortschritt anzeigen (WebSocket/SSE). |
 | WR-04a | S | Der Scan-Fortschritt MUSS als **Prozentwert (0–100 %)** dargestellt werden, ergänzt um eine visuelle **Fortschrittsleiste**; der Wert SOLL sich während des Laufs live aktualisieren (SSE-Stream je Scan-ID, WR-04), nicht erst am Ende. |
@@ -19,6 +19,21 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | WR-06 | S | Die UI SOLL Detektoren aktivieren/deaktivieren und deren Parameter pflegen, mit Validierung vor dem Speichern. |
 | WR-07 | C | Die UI KANN geladene Plugins mit ID, Kategorie und Version anzeigen. |
 | WR-08 | S | Die UI SOLL beim Anlegen/Bearbeiten einer Repository-Quelle optional eine oder mehrere Report-E-Mail-Adressen erfassen, an die nach Scans dieses Repos ein Report versendet wird (IR-53). |
+
+### Repo-Übersicht (GitHub-Stil)
+
+Die Repository-Liste SOLL im Aufbau der GitHub-Repository-Übersicht gestaltet sein
+(Referenz: GitHub „Your repositories"). Konkretisiert WR-02/WR-40. **Lizenz-Anzeige und
+Stern-/Star-Vergabe sind bewusst ausgenommen** (nicht relevant für den Scanner).
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-80 | S | Die Übersicht SOLL eine **Suchleiste** („Repository suchen…") sowie eine Aktion **„Neu"** (Repo-Quelle anlegen) bereitstellen. |
+| WR-81 | S | Die Übersicht SOLL **Filter-/Sortier-Dropdowns** bieten: `Typ` (localGit/github/gitlab/bitbucket), `Sprache` (dominanter Dateityp) und `Sortieren` (Name, zuletzt aktualisiert); Filter/Sortierung wirken **serverseitig** über `/api/sources` (Query-Parameter). |
+| WR-82 | S | Repos SOLLEN als **Karten** dargestellt werden mit: Name (Link zu Details/Scan), **Sichtbarkeits-/Typ-Badge** (z. B. `public`/`private`/`localGit`), optionaler **Beschreibung**, **Sprach-Indikator** (farbiger Punkt + Sprachname) und **„Aktualisiert <relative Zeit>"** (Zeitpunkt des letzten Scans). |
+| WR-83 | S | Die Felder **Beschreibung** und **Sichtbarkeit** SOLLEN beim Anlegen/Bearbeiten der Quelle erfassbar sein (eigene Felder, WR-02); **Sprache** und **Aktualisiert** werden serverseitig abgeleitet (dominanter Dateityp der letzten Funde bzw. letzter Scan-Zeitpunkt). |
+| WR-84 | S | Suche und Filter SOLLEN auf vorhandene Werte wirken (leere Liste/keine Treffer wird klar dargestellt); alle Texte lokalisiert (WR-70). |
+| WR-85 | C | Eine Karte KANN eine kompakte Aktivitäts-/Trend-Andeutung zeigen (z. B. Fund-Trend); Lizenz und Sterne werden nicht angezeigt. |
 
 ### Externe Datenquellen & Attribut-Mapping
 

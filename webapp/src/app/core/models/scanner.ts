@@ -59,6 +59,19 @@ export interface RepositorySource {
   readonly enabled: boolean;
   readonly reportEmails: string[];
   readonly remediationEnabled: boolean;
+  readonly description: string;
+  readonly visibility: string;
+}
+
+export interface RepositoryCard {
+  readonly id: string;
+  readonly name: string;
+  readonly type: string;
+  readonly visibility: string;
+  readonly description: string;
+  readonly enabled: boolean;
+  readonly language: string;
+  readonly lastScanAt: string | null;
 }
 
 export interface PrRef {

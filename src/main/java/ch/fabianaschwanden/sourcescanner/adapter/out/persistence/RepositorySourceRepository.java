@@ -31,6 +31,8 @@ public class RepositorySourceRepository
         entity.enabled = source.enabled();
         entity.reportEmails = String.join(",", source.reportEmails());
         entity.remediationEnabled = source.remediationEnabled();
+        entity.description = source.description();
+        entity.visibility = source.visibility();
         persist(entity);
         return toDomain(entity);
     }
@@ -46,6 +48,25 @@ public class RepositorySourceRepository
     }
 
     @Override
+    public List<RepositorySource> query(SourceQuery query) {
+        // q (Name/Beschreibung) + type serverseitig filtern; Sortierung name (Default) hier,
+        // updated/language löst die Application-Schicht über die abgeleiteten Felder auf.
+        return all().stream()
+                .filter(s -> query.type() == null || query.type().equalsIgnoreCase(s.type()))
+                .filter(s -> matchesText(s, query.q()))
+                .sorted((a, b) -> a.name().compareToIgnoreCase(b.name()))
+                .toList();
+    }
+
+    private boolean matchesText(RepositorySource s, String q) {
+        if (q == null) {
+            return true;
+        }
+        String needle = q.toLowerCase();
+        return s.name().toLowerCase().contains(needle) || s.description().toLowerCase().contains(needle);
+    }
+
+    @Override
     @Transactional
     public void delete(UUID id) {
         deleteById(id);
@@ -53,7 +74,7 @@ public class RepositorySourceRepository
 
     static RepositorySource toDomain(RepositorySourceEntity e) {
         return new RepositorySource(e.id, e.name, e.type, e.location, csv(e.branches), e.tokenRef,
-                e.enabled, csv(e.reportEmails), e.remediationEnabled);
+                e.enabled, csv(e.reportEmails), e.remediationEnabled, e.description, e.visibility);
     }
 
     private static List<String> csv(String value) {

@@ -19,7 +19,9 @@ public record RepositorySource(
         String tokenRef,
         boolean enabled,
         List<String> reportEmails,
-        boolean remediationEnabled) {
+        boolean remediationEnabled,
+        String description,
+        String visibility) {
 
     public RepositorySource {
         if (name == null || name.isBlank()) {
@@ -33,19 +35,28 @@ public record RepositorySource(
         }
         branches = branches == null ? List.of() : List.copyOf(branches);
         reportEmails = reportEmails == null ? List.of() : List.copyOf(reportEmails);
+        description = description == null ? "" : description;
+        visibility = visibility == null || visibility.isBlank() ? "private" : visibility;
     }
 
     /** Bequemer Konstruktor ohne Report-E-Mails / Remediation-Flag (Abwärtskompatibilität / Tests). */
     public RepositorySource(UUID id, String name, String type, String location,
                             List<String> branches, String tokenRef, boolean enabled) {
-        this(id, name, type, location, branches, tokenRef, enabled, List.of(), false);
+        this(id, name, type, location, branches, tokenRef, enabled, List.of(), false, "", "private");
     }
 
     /** Bequemer Konstruktor ohne Remediation-Flag (Abwärtskompatibilität / Tests). */
     public RepositorySource(UUID id, String name, String type, String location,
                             List<String> branches, String tokenRef, boolean enabled,
                             List<String> reportEmails) {
-        this(id, name, type, location, branches, tokenRef, enabled, reportEmails, false);
+        this(id, name, type, location, branches, tokenRef, enabled, reportEmails, false, "", "private");
+    }
+
+    /** Bequemer Konstruktor ohne Beschreibung/Sichtbarkeit (Abwärtskompatibilität / Tests). */
+    public RepositorySource(UUID id, String name, String type, String location,
+                            List<String> branches, String tokenRef, boolean enabled,
+                            List<String> reportEmails, boolean remediationEnabled) {
+        this(id, name, type, location, branches, tokenRef, enabled, reportEmails, remediationEnabled, "", "private");
     }
 
     /** Wandelt die Quelle in eine scanbare {@link RepositoryRef} (für den Orchestrator). */

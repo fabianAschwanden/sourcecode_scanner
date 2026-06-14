@@ -1,7 +1,9 @@
 package ch.fabianaschwanden.sourcescanner.adapter.in.rest;
 
+import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.RepositoryCardDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.RepositorySourceDto;
 import ch.fabianaschwanden.sourcescanner.domain.port.in.ManageSourcesUseCase;
+import ch.fabianaschwanden.sourcescanner.domain.port.out.RepositorySourcePort.SourceQuery;
 import io.quarkus.security.identity.SecurityIdentity;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
@@ -13,6 +15,7 @@ import jakarta.ws.rs.PUT;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.PathParam;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.util.List;
@@ -37,6 +40,18 @@ public class RepositorySourceResource {
     @RolesAllowed({"viewer", "operator", "admin"})
     public List<RepositorySourceDto> all() {
         return sources.all().stream().map(RepositorySourceDto::from).toList();
+    }
+
+    /** Repo-Übersicht im GitHub-Stil (WR-80..84): serverseitige Suche/Filter/Sortierung + Karten. */
+    @GET
+    @Path("/cards")
+    @RolesAllowed({"viewer", "operator", "admin"})
+    public List<RepositoryCardDto> cards(@QueryParam("q") String q,
+                                         @QueryParam("type") String type,
+                                         @QueryParam("language") String language,
+                                         @QueryParam("sort") String sort) {
+        return sources.cards(new SourceQuery(q, type, sort), language).stream()
+                .map(RepositoryCardDto::from).toList();
     }
 
     @POST

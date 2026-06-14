@@ -2,7 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { RepositoriesPage } from './repositories-page';
-import { RepositorySource } from '../../core/models/scanner';
+import { RepositoryCard, RepositorySource } from '../../core/models/scanner';
 
 function source(remediationEnabled: boolean): RepositorySource {
   return {
@@ -15,6 +15,21 @@ function source(remediationEnabled: boolean): RepositorySource {
     enabled: true,
     reportEmails: [],
     remediationEnabled,
+    description: '',
+    visibility: 'private',
+  };
+}
+
+function card(): RepositoryCard {
+  return {
+    id: 'r1',
+    name: 'repo-x',
+    type: 'github',
+    visibility: 'public',
+    description: 'demo',
+    enabled: true,
+    language: 'Java',
+    lastScanAt: null,
   };
 }
 
@@ -29,9 +44,22 @@ describe('RepositoriesPage', () => {
     httpMock = TestBed.inject(HttpTestingController);
   });
 
+  it('lädt beim Start die Karten-Übersicht (serverseitige Query)', () => {
+    const fixture = TestBed.createComponent(RepositoriesPage);
+    fixture.detectChanges();
+    const cardsReq = httpMock.expectOne((r) => r.url === '/api/sources/cards');
+    expect(cardsReq.request.method).toBe('GET');
+    cardsReq.flush([card()]);
+    httpMock.expectOne('/api/sources').flush([source(false)]);
+
+    const component = fixture.componentInstance as unknown as { cards: () => RepositoryCard[] };
+    expect(component.cards().length).toBe(1);
+  });
+
   it('schaltet das Repo-Remediation-Opt-in um', () => {
     const fixture = TestBed.createComponent(RepositoriesPage);
     fixture.detectChanges();
+    httpMock.expectOne((r) => r.url === '/api/sources/cards').flush([]);
     httpMock.expectOne('/api/sources').flush([source(false)]);
 
     const component = fixture.componentInstance as unknown as {
@@ -49,6 +77,7 @@ describe('RepositoriesPage', () => {
   it('holt eine redigierte Scrub-Vorschau', () => {
     const fixture = TestBed.createComponent(RepositoriesPage);
     fixture.detectChanges();
+    httpMock.expectOne((r) => r.url === '/api/sources/cards').flush([]);
     httpMock.expectOne('/api/sources').flush([source(true)]);
 
     const component = fixture.componentInstance as unknown as {

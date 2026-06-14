@@ -9,6 +9,7 @@ import {
   ManagedSecret,
   Policy,
   PrRef,
+  RepositoryCard,
   RepositorySource,
   Scan,
   ScrubDryRun,
@@ -55,6 +56,21 @@ export class ScannerApi {
 
   sources(): Observable<RepositorySource[]> {
     return this.http.get<RepositorySource[]>('/api/sources');
+  }
+
+  /** Repo-Übersicht im GitHub-Stil: serverseitige Suche/Filter/Sortierung + Karten (WR-80..84). */
+  repositoryCards(filter: {
+    q?: string;
+    type?: string;
+    language?: string;
+    sort?: string;
+  }): Observable<RepositoryCard[]> {
+    let params = new HttpParams();
+    if (filter.q) params = params.set('q', filter.q);
+    if (filter.type) params = params.set('type', filter.type);
+    if (filter.language) params = params.set('language', filter.language);
+    if (filter.sort) params = params.set('sort', filter.sort);
+    return this.http.get<RepositoryCard[]>('/api/sources/cards', { params });
   }
 
   createSource(source: RepositorySource): Observable<RepositorySource> {

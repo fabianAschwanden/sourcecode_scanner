@@ -54,6 +54,26 @@ nie im Klartext eingegeben/angezeigt. Optional je Quelle: eine oder mehrere
 **Report-E-Mail-Adressen**, an die nach einem Scan dieses Repos ein Report
 (Zusammenfassung + redigierte Funde) gesendet wird (WR-08, IR-53; opt-in).
 
+**Repo-Übersicht (GitHub-Stil, WR-80..85).** Die Liste folgt der GitHub-Repository-
+Übersicht: Suchleiste + „Neu", Dropdowns `Typ`/`Sprache`/`Sortieren` (serverseitig über
+`/api/sources?q=&type=&language=&sort=`) und Repo-**Karten** mit Name, Sichtbarkeits-/
+Typ-Badge, optionaler Beschreibung, Sprach-Indikator (farbiger Punkt + Sprache) und
+„Aktualisiert <relative Zeit>". Beschreibung/Sichtbarkeit sind eigene Felder der Quelle;
+**Sprache** (dominanter Dateityp der letzten Funde) und **Aktualisiert** (letzter Scan)
+werden serverseitig abgeleitet. **Lizenz und Sterne werden bewusst nicht angezeigt.**
+
+```
+┌───────────────────────────────────────────────────────────────────────────┐
+│ 🔍 Repository suchen…              Typ ▾   Sprache ▾   Sortieren ▾   + Neu  │  WR-80/81
+└───────────────────────────────────────────────────────────────────────────┘
+ payment-service   [ github ]                                                   WR-82
+ Zahlungs-Service der Plattform
+ ● Java   ·   Aktualisiert vor 50 Minuten
+─────────────────────────────────────────────────────────────────────────────
+ wm-tippspiel      [ localGit ]
+ ● TypeScript   ·   Aktualisiert gestern
+```
+
 ### 3.3 Scan-Steuerung
 Scan manuell starten (Repo, Branch, Modus), laufende Scans live verfolgen, Verlauf
 einsehen, Scan abbrechen, periodische Scans planen.
