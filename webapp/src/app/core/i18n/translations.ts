@@ -279,6 +279,9 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.wizard.key.openDocs': 'Where to create the token',
     'repos.wizard.key.scopes': 'Recommended scopes',
     'repos.wizard.key.mode': 'How to handle the key',
+    'repos.wizard.key.mode.none': 'No key — public / anonymous access',
+    'repos.wizard.key.none.help':
+      'For public repositories no token is needed. Private repositories will fail to clone without one.',
     'repos.wizard.key.mode.store': 'Store key (AES-encrypted in DB), referenced automatically',
     'repos.wizard.key.mode.reference': 'Only reference an environment variable (env:NAME)',
     'repos.wizard.key.value': 'Access key',
@@ -601,6 +604,9 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.wizard.key.openDocs': 'Wo der Token zu erstellen ist',
     'repos.wizard.key.scopes': 'Empfohlene Scopes',
     'repos.wizard.key.mode': 'Wie der Key behandelt wird',
+    'repos.wizard.key.mode.none': 'Ohne Key — öffentlicher / anonymer Zugriff',
+    'repos.wizard.key.none.help':
+      'Für öffentliche Repositories ist kein Token nötig. Private Repositories lassen sich ohne Token nicht klonen.',
     'repos.wizard.key.mode.store': 'Key speichern (AES-verschlüsselt in DB), automatisch referenziert',
     'repos.wizard.key.mode.reference': 'Nur eine Umgebungsvariable referenzieren (env:NAME)',
     'repos.wizard.key.value': 'Zugriffs-Key',

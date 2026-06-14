@@ -280,6 +280,10 @@ import { I18nService } from '../../core/i18n/i18n.service';
                 <div class="mb-3 grid gap-1">
                   <span class="text-sm font-medium">{{ t('repos.wizard.key.mode') }}</span>
                   <label class="flex items-center gap-2 text-sm">
+                    <input type="radio" [(ngModel)]="keyMode" name="keyMode" value="none" />
+                    {{ t('repos.wizard.key.mode.none') }}
+                  </label>
+                  <label class="flex items-center gap-2 text-sm">
                     <input type="radio" [(ngModel)]="keyMode" name="keyMode" value="store" />
                     {{ t('repos.wizard.key.mode.store') }}
                   </label>
@@ -289,7 +293,11 @@ import { I18nService } from '../../core/i18n/i18n.service';
                   </label>
                 </div>
 
-                @if (keyMode === 'store') {
+                @if (keyMode === 'none') {
+                  <p class="rounded border border-default bg-canvas px-3 py-2 text-xs text-muted">
+                    {{ t('repos.wizard.key.none.help') }}
+                  </p>
+                } @else if (keyMode === 'store') {
                   <div class="grid gap-1">
                     <label class="text-sm font-medium" for="wzKey">{{ t('repos.wizard.key.value') }}</label>
                     <input
@@ -654,8 +662,8 @@ export class RepositoriesPage {
   protected readonly wizardStep = signal<1 | 2 | 3>(1);
   protected readonly wizardProvider = signal<string>('github');
   protected readonly wizardBusy = signal(false);
-  /** 'store' = Key DB-verschlüsselt ablegen; 'reference' = nur env:-Referenz. */
-  protected keyMode: 'store' | 'reference' = 'store';
+  /** 'none' = ohne Key (öffentlich/anonym); 'store' = Key DB-verschlüsselt; 'reference' = env:-Referenz. */
+  protected keyMode: 'none' | 'store' | 'reference' = 'store';
   protected keyValue = '';
 
   constructor() {
@@ -702,9 +710,9 @@ export class RepositoriesPage {
   protected pickProvider(type: string): void {
     this.wizardProvider.set(type);
     this.type = type;
-    // Bei localGit gibt es keinen Key — direkt auf Referenzmodus ohne Token.
+    // Bei localGit gibt es keinen Key — ohne Token anlegen.
     if (type === 'localGit') {
-      this.keyMode = 'reference';
+      this.keyMode = 'none';
       this.tokenRef = '';
     }
   }
@@ -731,7 +739,7 @@ export class RepositoriesPage {
       if (!this.location.trim() || !this.name.trim()) {
         return false;
       }
-      if (this.wizardProvider() === 'localGit') {
+      if (this.wizardProvider() === 'localGit' || this.keyMode === 'none') {
         return true;
       }
       return this.keyMode === 'store' ? !!this.keyValue.trim() : !!this.tokenRef.trim();
@@ -757,7 +765,7 @@ export class RepositoriesPage {
 
   /** Vorschau der tokenRef in der Übersicht (gespeicherter Key wird zu secret:<name>). */
   protected wizardTokenSummary(): string {
-    if (this.wizardProvider() === 'localGit') {
+    if (this.wizardProvider() === 'localGit' || this.keyMode === 'none') {
       return this.t('common.none');
     }
     return this.keyMode === 'store' ? `secret:${this.secretName()}` : this.tokenRef.trim();
@@ -774,9 +782,13 @@ export class RepositoriesPage {
       return;
     }
     this.wizardBusy.set(true);
-    // localGit oder reine Referenz → kein Secret anzulegen, direkt erstellen.
-    if (this.wizardProvider() === 'localGit' || this.keyMode === 'reference') {
-      this.createFromWizard(this.wizardProvider() === 'localGit' ? '' : this.tokenRef.trim());
+    // Ohne Key (öffentlich/localGit) oder reine Referenz → kein Secret anlegen, direkt erstellen.
+    if (this.wizardProvider() === 'localGit' || this.keyMode === 'none') {
+      this.createFromWizard('');
+      return;
+    }
+    if (this.keyMode === 'reference') {
+      this.createFromWizard(this.tokenRef.trim());
       return;
     }
     // Key DB-verschlüsselt als verwaltetes Secret ablegen, dann als secret:<name> referenzieren.
