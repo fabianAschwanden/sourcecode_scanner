@@ -193,6 +193,7 @@ export interface RuleInfo {
   readonly title: string;
   readonly category: string;
   readonly defaultSeverity: Severity;
+  readonly defaultEnabled: string;
 }
 
 export interface Policy {

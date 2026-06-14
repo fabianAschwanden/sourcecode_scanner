@@ -129,8 +129,25 @@ class PiiPatternsDetectorTest {
     }
 
     @Test
-    void echte_telefonnummer_wird_weiterhin_erkannt() {
+    void telefon_ist_standardmaessig_aus_und_meldet_nichts() {
+        // phone ist defaultOn=false (DR-50) — ohne explizite Aktivierung kein Fund.
         List<Finding> f = scan("phone: +41 44 123 45 67", allPatterns());
+        assertTrue(f.stream().noneMatch(x -> x.ruleId().equals("phone")),
+                "Telefon-Regel ist standardmässig deaktiviert und darf keinen Fund erzeugen");
+    }
+
+    @Test
+    void telefon_wird_erkannt_wenn_explizit_in_patterns_aktiviert() {
+        DetectorConfig cfg = new DetectorConfig(true, Map.of("patterns", List.of("phone")));
+        List<Finding> f = scan("phone: +41 44 123 45 67", cfg);
+        assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("phone")));
+    }
+
+    @Test
+    void telefon_wird_erkannt_wenn_per_ruleset_aktiviert() {
+        DetectorConfig cfg = new DetectorConfig(true, Map.of(
+                "ruleOverrides", Map.of("phone", Map.of("enabled", true, "matchMode", "ALWAYS"))));
+        List<Finding> f = scan("phone: +41 44 123 45 67", cfg);
         assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("phone")));
     }
 }

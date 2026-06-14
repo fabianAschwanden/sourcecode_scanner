@@ -32,24 +32,28 @@ public class PiiPatternsDetector implements DetectorPort {
 
     private enum Rule {
         IBAN("iban", Pattern.compile("\\b[A-Z]{2}\\d{2}(?:[ ]?[A-Z0-9]{4}){3,7}(?:[ ]?[A-Z0-9]{1,3})?\\b"),
-                Severity.HIGH, PiiPatternsDetector::isValidIban),
+                Severity.HIGH, PiiPatternsDetector::isValidIban, true),
         CREDITCARD("creditcard", Pattern.compile("\\b(?:\\d[ -]?){13,19}\\b"),
-                Severity.HIGH, m -> Luhn.isValid(m)),
+                Severity.HIGH, m -> Luhn.isValid(m), true),
         EMAIL("email", Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"),
-                Severity.MEDIUM, m -> true),
+                Severity.MEDIUM, m -> true, true),
+        // Telefon: standardmässig AUS (DR-50) — die Heuristik ist zu rauschanfällig (Versionen,
+        // IDs, Beträge). Nur aktiv, wenn explizit in patterns gelistet oder per Ruleset aktiviert.
         PHONE("phone", Pattern.compile("(?<![\\w.])\\+?\\d[\\d ()/-]{7,16}\\d(?![\\w.])"),
-                Severity.MEDIUM, m -> digitCount(m) >= 8 && digitCount(m) <= 15);
+                Severity.MEDIUM, m -> digitCount(m) >= 8 && digitCount(m) <= 15, false);
 
         final String key;
         final Pattern pattern;
         final Severity severity;
         final Predicate<String> validator;
+        final boolean defaultOn;
 
-        Rule(String key, Pattern pattern, Severity severity, Predicate<String> validator) {
+        Rule(String key, Pattern pattern, Severity severity, Predicate<String> validator, boolean defaultOn) {
             this.key = key;
             this.pattern = pattern;
             this.severity = severity;
             this.validator = validator;
+            this.defaultOn = defaultOn;
         }
     }
 
@@ -74,8 +78,8 @@ public class PiiPatternsDetector implements DetectorPort {
         if (!config.enabled()) {
             return List.of();
         }
-        Set<String> enabled = enabledPatterns(config);
         Map<String, Map<String, Object>> overrides = ruleOverrides(config);
+        Set<String> enabled = enabledPatterns(config, overrides);
         TestEmailFilter testEmails = TestEmailFilter.from(config, overrides.get(Rule.EMAIL.key));
         List<Finding> findings = new ArrayList<>();
         String[] lines = unit.content().split("\n", -1);
@@ -130,7 +134,8 @@ public class PiiPatternsDetector implements DetectorPort {
     public List<DetectorRule> rules() {
         List<DetectorRule> rules = new ArrayList<>();
         for (Rule rule : Rule.values()) {
-            rules.add(new DetectorRule(rule.key, rule.key, "PII pattern: " + rule.key, rule.severity));
+            rules.add(new DetectorRule(rule.key, rule.key, "PII pattern: " + rule.key, rule.severity,
+                    rule.defaultOn));
         }
         return rules;
     }
@@ -162,16 +167,33 @@ public class PiiPatternsDetector implements DetectorPort {
         return "LIST".equals(matchMode) || "API".equals(matchMode);
     }
 
-    private Set<String> enabledPatterns(DetectorConfig config) {
+    /**
+     * Effektiv aktive Muster: explizite {@code patterns}-Liste, falls gesetzt; sonst alle Regeln mit
+     * {@code defaultOn} (DR-50). Eine Regel, die im Ruleset ausdrücklich {@code enabled=true} trägt,
+     * wird zusätzlich aktiviert — so lässt sich z. B. {@code phone} (standardmässig aus) gezielt
+     * wieder einschalten.
+     */
+    private Set<String> enabledPatterns(DetectorConfig config, Map<String, Map<String, Object>> overrides) {
         Object raw = config.params().get("patterns");
+        Set<String> result;
         if (raw instanceof List<?> list && !list.isEmpty()) {
-            return list.stream().map(o -> String.valueOf(o).toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+            result = list.stream().map(o -> String.valueOf(o).toLowerCase(Locale.ROOT))
+                    .collect(Collectors.toCollection(java.util.HashSet::new));
+        } else {
+            result = new java.util.HashSet<>();
+            for (Rule r : Rule.values()) {
+                if (r.defaultOn) {
+                    result.add(r.key);
+                }
+            }
         }
-        Set<String> all = new java.util.HashSet<>();
-        for (Rule r : Rule.values()) {
-            all.add(r.key);
-        }
-        return all;
+        // Im Ruleset ausdrücklich aktivierte Regeln ergänzen (DR-50), auch wenn defaultOn=false.
+        overrides.forEach((ruleId, ov) -> {
+            if (Boolean.TRUE.equals(ov.get("enabled"))) {
+                result.add(ruleId);
+            }
+        });
+        return result;
     }
 
     private static int digitCount(String s) {

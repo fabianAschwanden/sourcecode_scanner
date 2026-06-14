@@ -365,7 +365,7 @@ export class RulesetsPage {
         return {
           ruleId: ri.id,
           title: ri.title,
-          enabled: o ? o.enabled : true,
+          enabled: o ? o.enabled : ri.defaultEnabled !== 'false',
           severity: (o?.severity ?? ri.defaultSeverity) as Severity,
           matchMode: (o?.matchMode ?? 'ALWAYS') as RuleMatchMode,
           dataSourceName: o?.dataSourceName ?? '',

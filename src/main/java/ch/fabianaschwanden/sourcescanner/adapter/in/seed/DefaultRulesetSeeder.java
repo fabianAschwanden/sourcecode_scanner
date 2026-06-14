@@ -60,7 +60,10 @@ public class DefaultRulesetSeeder {
                 seeded.rules().size());
     }
 
-    /** Alle deklarierten Detektor-Regeln mit Default-Severity, aktiviert, Abgleichsmodus ALWAYS. */
+    /**
+     * Alle deklarierten Detektor-Regeln mit Default-Severity und Abgleichsmodus ALWAYS; der
+     * Aktiv-Zustand folgt dem Default der Regel ({@code defaultEnabled}) — z. B. {@code phone} ist aus.
+     */
     private List<RuleOverride> defaultRules() {
         List<RuleOverride> rules = new ArrayList<>();
         for (DetectorPort d : detectors) {
@@ -70,7 +73,7 @@ public class DefaultRulesetSeeder {
             } else {
                 for (var r : declared) {
                     Severity sev = r.defaultSeverity();
-                    rules.add(new RuleOverride(r.id(), true, sev, RuleMatchMode.ALWAYS, null));
+                    rules.add(new RuleOverride(r.id(), r.defaultEnabled(), sev, RuleMatchMode.ALWAYS, null));
                 }
             }
         }

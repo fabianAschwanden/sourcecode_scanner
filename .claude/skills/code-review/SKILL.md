@@ -73,6 +73,14 @@ If no specific file or URL is provided, ask what to review.
 - Test coverage
 - Documentation for non-obvious logic
 
+### Testdaten & PII-Diskriminatoren
+Testdaten müssen eindeutig als synthetisch erkennbar sein, damit PII-Scanner keine false positives erzeugen:
+- E-Mail-Adressen in Tests: ausschliesslich `@example.com`, `@example.org` oder `@test.invalid` (RFC 2606 reservierte Domains)
+- Niemals produktionsähnliche Domains (`@gmail.com`, `@firma.ch`) in Fixtures oder Tests
+- Namen/IDs in Testdaten: generisch halten (`user1`, `test-player`, nicht echte Vornamen)
+- Interne Systemadressen (z.B. Bot-Accounts): `.internal`-Domain oder klar synthetisches Muster
+- Verstoss flaggen als: `🟡 Mittel — Testdaten ohne PII-Diskriminator`
+
 ## Output
 
 ```markdown

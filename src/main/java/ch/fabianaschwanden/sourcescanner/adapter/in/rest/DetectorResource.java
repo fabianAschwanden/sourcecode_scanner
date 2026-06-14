@@ -45,11 +45,12 @@ public class DetectorResource {
             var declared = d.rules();
             if (declared.isEmpty()) {
                 out.add(Map.of("id", d.id(), "title", d.id(), "category", d.category().name(),
-                        "defaultSeverity", "MEDIUM"));
+                        "defaultSeverity", "MEDIUM", "defaultEnabled", "true"));
             } else {
                 declared.forEach(r -> out.add(Map.of(
                         "id", r.id(), "title", r.name(), "category", d.category().name(),
-                        "defaultSeverity", r.defaultSeverity() == null ? "MEDIUM" : r.defaultSeverity().name())));
+                        "defaultSeverity", r.defaultSeverity() == null ? "MEDIUM" : r.defaultSeverity().name(),
+                        "defaultEnabled", String.valueOf(r.defaultEnabled()))));
             }
         }
         return out;
