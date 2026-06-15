@@ -54,15 +54,29 @@ public class LoginResource {
         return Response.seeOther(URI.create("/login")).cookie(expired).build();
     }
 
-    /** Aktueller Nutzer (Login + Rollen) — nur authentifiziert; nie ein Secret/Token. */
+    /**
+     * Aktueller Nutzer (Login + Rollen) — nur authentifiziert; nie ein Secret/Token. {@code attributes}
+     * listet die nicht-sensiblen Identitäts-Attribute des IdP (z. B. GitHub {@code login}, {@code name})
+     * zur Nachvollziehbarkeit des Rollen-Mappings (WR-31a).
+     */
     @GET
     @Path("/api/me")
     @Authenticated
     @Produces(MediaType.APPLICATION_JSON)
     public CurrentUser me() {
         String login = identity.getPrincipal() == null ? "unknown" : identity.getPrincipal().getName();
-        return new CurrentUser(login, List.copyOf(identity.getRoles()));
+        java.util.Map<String, String> attrs = new java.util.TreeMap<>();
+        identity.getAttributes().forEach((key, v) -> {
+            // Nur kurze, unsensible Skalare anzeigen (kein Token/UserInfo-Blob).
+            if (v instanceof String || v instanceof Number || v instanceof Boolean) {
+                String s = String.valueOf(v);
+                if (s.length() <= 64) {
+                    attrs.put(key, s);
+                }
+            }
+        });
+        return new CurrentUser(login, List.copyOf(identity.getRoles()), attrs);
     }
 
-    public record CurrentUser(String login, List<String> roles) {}
+    public record CurrentUser(String login, List<String> roles, java.util.Map<String, String> attributes) {}
 }
