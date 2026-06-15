@@ -7,6 +7,7 @@ import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
 import java.util.List;
@@ -33,6 +34,24 @@ public class LoginResource {
     @Authenticated
     public Response login() {
         return Response.seeOther(URI.create("/dashboard")).build();
+    }
+
+    /**
+     * Lokaler Logout: GitHub bietet kein OIDC-RP-Logout (kein end_session_endpoint), daher löschen wir
+     * das Quarkus-OIDC-Session-Cookie selbst (max-age 0) und leiten zur Login-Seite. Nicht
+     * authentifiziert, damit auch ein abgelaufenes/teilweises Cookie sauber entfernt werden kann.
+     */
+    @GET
+    @Path("/logout")
+    public Response logout() {
+        NewCookie expired = new NewCookie.Builder("q_session")
+                .path("/")
+                .maxAge(0)
+                .expiry(new java.util.Date(0))
+                .httpOnly(true)
+                .secure(true)
+                .build();
+        return Response.seeOther(URI.create("/login")).cookie(expired).build();
     }
 
     /** Aktueller Nutzer (Login + Rollen) — nur authentifiziert; nie ein Secret/Token. */
