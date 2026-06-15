@@ -7,9 +7,11 @@ primary_region = "fra"   # Frankfurt; an Bedarf anpassen (z. B. zur DB-Region)
   dockerfile = "Dockerfile"
 
 [env]
-  # staging: ohne OIDC (nur zum Hochfahren/DB-Test). Für produktiven Betrieb auf "prod,server"
-  # umstellen und die OIDC_*-Secrets setzen.
-  QUARKUS_PROFILE = "prod,staging"
+  # ghauth: produktiv mit GitHub-Login (OAuth2). Voraussetzung: Fly-Secrets GITHUB_CLIENT_ID/
+  # GITHUB_CLIENT_SECRET/GITHUB_ADMIN_LOGINS gesetzt + GitHub OAuth App mit Callback
+  # https://<app>.fly.dev/q/oidc/github. Alternativen: "prod,staging" (offen, Test) / "prod,server"
+  # (klassisches OIDC). Überschreibt den Dockerfile-Default zur Laufzeit.
+  QUARKUS_PROFILE = "prod,ghauth"
   # Quarkus lauscht in fast-jar standardmässig auf 8080; Host wird im Dockerfile auf 0.0.0.0 gesetzt.
 
 [http_service]
