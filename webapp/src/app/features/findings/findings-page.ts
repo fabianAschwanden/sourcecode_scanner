@@ -143,7 +143,9 @@ const SEVERITY_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
 
       <!-- Sammelaktions-Leiste (WR-67) -->
       @if (selected().size > 0) {
-        <div class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm">
+        <div
+          class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm"
+        >
           <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
           <button (click)="bulkTriage('BASELINE')" class="text-accent hover:underline">
             {{ t('findings.action.baseline') }}
@@ -183,42 +185,42 @@ const SEVERITY_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
                 (change)="toggle(f.id)"
               />
               <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span [style.color]="severityColor(f.severity)">⚠</span>
-                <span class="font-semibold">{{ f.ruleId }}</span>
-                <span
-                  class="rounded-full border px-2 text-xs"
-                  [style.color]="severityColor(f.severity)"
-                  [style.borderColor]="severityColor(f.severity)"
-                  >{{ f.severity }}</span
-                >
-              </div>
-              <p class="mt-1 text-xs text-muted">
-                {{ statusLabel(f.triageStatus) }} ·
-                {{ t('findings.row.detectedBy', { detector: f.detectorId }) }}
-                <span class="font-mono">{{ f.file }}:{{ f.line }}</span>
-                · <span class="font-mono">{{ f.redactedMatch }}</span>
-              </p>
-              <div class="mt-1 space-x-3 text-xs">
-                <button (click)="triage(f, 'BASELINE')" class="text-accent hover:underline">
-                  {{ t('findings.action.baseline') }}
-                </button>
-                <button (click)="triage(f, 'FALSE_POSITIVE')" class="text-accent hover:underline">
-                  {{ t('findings.action.fp') }}
-                </button>
-                <button (click)="triage(f, 'SUPPRESSED')" class="text-accent hover:underline">
-                  {{ t('findings.action.suppress') }}
-                </button>
-                @if (canRemediate(f)) {
-                  <button
-                    (click)="remediate(f)"
-                    [title]="t('findings.action.fixPr.tooltip')"
-                    class="text-accent hover:underline"
+                <div class="flex items-center gap-2">
+                  <span [style.color]="severityColor(f.severity)">⚠</span>
+                  <span class="font-semibold">{{ f.ruleId }}</span>
+                  <span
+                    class="rounded-full border px-2 text-xs"
+                    [style.color]="severityColor(f.severity)"
+                    [style.borderColor]="severityColor(f.severity)"
+                    >{{ f.severity }}</span
                   >
-                    {{ t('findings.action.fixPr') }}
+                </div>
+                <p class="mt-1 text-xs text-muted">
+                  {{ statusLabel(f.triageStatus) }} ·
+                  {{ t('findings.row.detectedBy', { detector: f.detectorId }) }}
+                  <span class="font-mono">{{ f.file }}:{{ f.line }}</span>
+                  · <span class="font-mono">{{ f.redactedMatch }}</span>
+                </p>
+                <div class="mt-1 space-x-3 text-xs">
+                  <button (click)="triage(f, 'BASELINE')" class="text-accent hover:underline">
+                    {{ t('findings.action.baseline') }}
                   </button>
-                }
-              </div>
+                  <button (click)="triage(f, 'FALSE_POSITIVE')" class="text-accent hover:underline">
+                    {{ t('findings.action.fp') }}
+                  </button>
+                  <button (click)="triage(f, 'SUPPRESSED')" class="text-accent hover:underline">
+                    {{ t('findings.action.suppress') }}
+                  </button>
+                  @if (canRemediate(f)) {
+                    <button
+                      (click)="remediate(f)"
+                      [title]="t('findings.action.fixPr.tooltip')"
+                      class="text-accent hover:underline"
+                    >
+                      {{ t('findings.action.fixPr') }}
+                    </button>
+                  }
+                </div>
               </div>
             </div>
             <span class="shrink-0 rounded bg-canvas px-2 py-0.5 text-xs text-muted">{{
@@ -327,7 +329,9 @@ export class FindingsPage {
   }
 
   protected toggleSelectAll(): void {
-    this.selected.set(this.allSelected() ? new Set() : new Set(this.visibleFindings().map((f) => f.id)));
+    this.selected.set(
+      this.allSelected() ? new Set() : new Set(this.visibleFindings().map((f) => f.id)),
+    );
   }
 
   protected clearSelection(): void {

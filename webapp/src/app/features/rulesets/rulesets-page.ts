@@ -50,10 +50,16 @@ interface RuleRow {
       @if (view() === 'list') {
         <p class="mb-4 text-sm text-muted">{{ t('rulesets.intro') }}</p>
         @if (selected().size > 0) {
-          <div class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm">
+          <div
+            class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm"
+          >
             <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
-            <button (click)="bulkDelete()" class="text-sev-high hover:underline">{{ t('common.delete') }}</button>
-            <button (click)="clearSelection()" class="text-muted hover:underline">{{ t('bulk.clear') }}</button>
+            <button (click)="bulkDelete()" class="text-sev-high hover:underline">
+              {{ t('common.delete') }}
+            </button>
+            <button (click)="clearSelection()" class="text-muted hover:underline">
+              {{ t('bulk.clear') }}
+            </button>
           </div>
         }
         <ul class="divide-y divide-default border-t border-default">
@@ -66,20 +72,25 @@ interface RuleRow {
           @for (r of rulesets(); track r.id) {
             <li class="flex items-start justify-between gap-4 py-3">
               <div class="flex min-w-0 items-start gap-2">
-                <input type="checkbox" class="mt-1" [checked]="selected().has(r.id!)" (change)="toggle(r.id!)" />
+                <input
+                  type="checkbox"
+                  class="mt-1"
+                  [checked]="selected().has(r.id!)"
+                  (change)="toggle(r.id!)"
+                />
                 <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                  <button (click)="edit(r)" class="font-semibold text-accent hover:underline">
-                    {{ r.name }}
-                  </button>
-                  <span class="rounded-full border border-default px-2 text-xs text-muted">
-                    {{ t('rulesets.enforcement.' + r.enforcement) }}
-                  </span>
-                </div>
-                <p class="mt-1 text-xs text-muted">
-                  {{ r.global ? t('rulesets.scope.global') : t('rulesets.scope.repos') }} ·
-                  {{ r.rules.length }} {{ t('rulesets.col.rules') }}
-                </p>
+                  <div class="flex items-center gap-2">
+                    <button (click)="edit(r)" class="font-semibold text-accent hover:underline">
+                      {{ r.name }}
+                    </button>
+                    <span class="rounded-full border border-default px-2 text-xs text-muted">
+                      {{ t('rulesets.enforcement.' + r.enforcement) }}
+                    </span>
+                  </div>
+                  <p class="mt-1 text-xs text-muted">
+                    {{ r.global ? t('rulesets.scope.global') : t('rulesets.scope.repos') }} ·
+                    {{ r.rules.length }} {{ t('rulesets.col.rules') }}
+                  </p>
                 </div>
               </div>
               <button (click)="remove(r)" class="shrink-0 text-sm text-sev-high hover:underline">
@@ -128,7 +139,11 @@ interface RuleRow {
               <div class="mt-1 flex flex-wrap gap-3 rounded border border-default p-2">
                 @for (s of sources(); track s.id) {
                   <label class="flex items-center gap-1 text-xs">
-                    <input type="checkbox" [checked]="repoSelected(s.name)" (change)="toggleRepo(s.name)" />
+                    <input
+                      type="checkbox"
+                      [checked]="repoSelected(s.name)"
+                      (change)="toggleRepo(s.name)"
+                    />
                     {{ s.name }}
                   </label>
                 }
@@ -187,7 +202,9 @@ interface RuleRow {
           </div>
 
           @if (message()) {
-            <p class="rounded border border-default px-3 py-2 text-sm text-muted">{{ message() }}</p>
+            <p class="rounded border border-default px-3 py-2 text-sm text-muted">
+              {{ message() }}
+            </p>
           }
 
           <div class="flex gap-2 border-t border-default pt-4">
@@ -297,7 +314,13 @@ export class RulesetsPage {
     if (this.allSelected()) {
       this.selected.set(new Set());
     } else {
-      this.selected.set(new Set(this.rulesets().map((r) => r.id!).filter((id) => !!id)));
+      this.selected.set(
+        new Set(
+          this.rulesets()
+            .map((r) => r.id!)
+            .filter((id) => !!id),
+        ),
+      );
     }
   }
 
@@ -354,7 +377,9 @@ export class RulesetsPage {
         this.reload();
       },
       error: (err) =>
-        this.message.set(this.t('rulesets.msg.failed', { error: err?.error?.error ?? this.t('common.error') })),
+        this.message.set(
+          this.t('rulesets.msg.failed', { error: err?.error?.error ?? this.t('common.error') }),
+        ),
     });
   }
 

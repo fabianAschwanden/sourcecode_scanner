@@ -297,7 +297,8 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.wizard.key.mode.store': 'Store key (AES-encrypted in DB), referenced automatically',
     'repos.wizard.key.mode.reference': 'Only reference an environment variable (env:NAME)',
     'repos.wizard.key.value': 'Access key',
-    'repos.wizard.key.value.help': 'Pasted once, stored encrypted at rest; never shown again (WR-32).',
+    'repos.wizard.key.value.help':
+      'Pasted once, stored encrypted at rest; never shown again (WR-32).',
     'repos.wizard.key.ref.help': 'Secret reference only (env:/vault:), never a cleartext token.',
     'repos.wizard.review.title': 'Review and create',
     'repos.wizard.back': 'Back',
@@ -631,10 +632,12 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.wizard.key.mode.none': 'Ohne Key — öffentlicher / anonymer Zugriff',
     'repos.wizard.key.none.help':
       'Für öffentliche Repositories ist kein Token nötig. Private Repositories lassen sich ohne Token nicht klonen.',
-    'repos.wizard.key.mode.store': 'Key speichern (AES-verschlüsselt in DB), automatisch referenziert',
+    'repos.wizard.key.mode.store':
+      'Key speichern (AES-verschlüsselt in DB), automatisch referenziert',
     'repos.wizard.key.mode.reference': 'Nur eine Umgebungsvariable referenzieren (env:NAME)',
     'repos.wizard.key.value': 'Zugriffs-Key',
-    'repos.wizard.key.value.help': 'Einmal eingefügt, verschlüsselt gespeichert; wird nie wieder angezeigt (WR-32).',
+    'repos.wizard.key.value.help':
+      'Einmal eingefügt, verschlüsselt gespeichert; wird nie wieder angezeigt (WR-32).',
     'repos.wizard.key.ref.help': 'Nur Secret-Referenz (env:/vault:), nie ein Klartext-Token.',
     'repos.wizard.review.title': 'Prüfen und anlegen',
     'repos.wizard.back': 'Zurück',

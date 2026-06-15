@@ -176,10 +176,16 @@ import { I18nService } from '../../core/i18n/i18n.service';
       }
 
       @if (selected().size > 0) {
-        <div class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm">
+        <div
+          class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm"
+        >
           <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
-          <button (click)="bulkDelete()" class="text-sev-high hover:underline">{{ t('common.delete') }}</button>
-          <button (click)="clearSelection()" class="text-muted hover:underline">{{ t('bulk.clear') }}</button>
+          <button (click)="bulkDelete()" class="text-sev-high hover:underline">
+            {{ t('common.delete') }}
+          </button>
+          <button (click)="clearSelection()" class="text-muted hover:underline">
+            {{ t('bulk.clear') }}
+          </button>
         </div>
       }
 
@@ -412,7 +418,13 @@ export class DataSourcesPage {
     if (this.allSelected()) {
       this.selected.set(new Set());
     } else {
-      this.selected.set(new Set(this.sources().map((s) => s.id!).filter((id) => !!id)));
+      this.selected.set(
+        new Set(
+          this.sources()
+            .map((s) => s.id!)
+            .filter((id) => !!id),
+        ),
+      );
     }
   }
 

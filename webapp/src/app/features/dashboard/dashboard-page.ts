@@ -42,7 +42,12 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
                 </span>
               </div>
               <p class="mt-1 text-xs text-muted">
-                {{ t('dashboard.row.meta', { findings: s.findingCount, when: relativeTime(s.startedAt) }) }}
+                {{
+                  t('dashboard.row.meta', {
+                    findings: s.findingCount,
+                    when: relativeTime(s.startedAt),
+                  })
+                }}
               </p>
             </div>
             <button

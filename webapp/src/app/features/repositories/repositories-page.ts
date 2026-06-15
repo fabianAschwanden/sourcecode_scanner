@@ -82,17 +82,25 @@ import { I18nService } from '../../core/i18n/i18n.service';
 
         <!-- Sammelaktions-Leiste (WR-67) -->
         @if (selected().size > 0) {
-          <div class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm">
+          <div
+            class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm"
+          >
             <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
-            <button (click)="bulkScan()" class="text-accent hover:underline">{{ t('bulk.scan') }}</button>
+            <button (click)="bulkScan()" class="text-accent hover:underline">
+              {{ t('bulk.scan') }}
+            </button>
             <button (click)="bulkRemediation(true)" class="text-accent hover:underline">
               {{ t('bulk.remediationOn') }}
             </button>
             <button (click)="bulkRemediation(false)" class="text-accent hover:underline">
               {{ t('bulk.remediationOff') }}
             </button>
-            <button (click)="bulkDelete()" class="text-sev-high hover:underline">{{ t('common.delete') }}</button>
-            <button (click)="clearSelection()" class="text-muted hover:underline">{{ t('bulk.clear') }}</button>
+            <button (click)="bulkDelete()" class="text-sev-high hover:underline">
+              {{ t('common.delete') }}
+            </button>
+            <button (click)="clearSelection()" class="text-muted hover:underline">
+              {{ t('bulk.clear') }}
+            </button>
           </div>
         }
 
@@ -114,39 +122,38 @@ import { I18nService } from '../../core/i18n/i18n.service';
                   (change)="toggle(c.id)"
                 />
                 <div class="min-w-0">
-                <div class="flex items-center gap-2">
-                  <button
-                    (click)="openInsights(c)"
-                    class="font-semibold text-accent hover:underline"
-                  >
-                    {{ c.name }}
-                  </button>
-                  <span class="rounded-full border border-default px-2 text-xs text-muted">
-                    {{ c.visibility }} · {{ c.type }}
-                  </span>
-                </div>
-                @if (c.lastStatus === 'FAILED') {
-                  <p class="mt-1 text-sm font-medium" [style.color]="'var(--color-sev-high)'">
-                    {{ t('repos.card.lastScanFailed') }}<span class="font-normal">
-                      — {{ c.lastError || t('common.error') }}</span
+                  <div class="flex items-center gap-2">
+                    <button
+                      (click)="openInsights(c)"
+                      class="font-semibold text-accent hover:underline"
                     >
-                  </p>
-                }
-                @if (c.description) {
-                  <p class="mt-1 text-sm text-muted">{{ c.description }}</p>
-                }
-                <div class="mt-1 flex items-center gap-3 text-xs text-muted">
-                  @if (c.language) {
-                    <span class="flex items-center gap-1">
-                      <span
-                        class="inline-block h-3 w-3 rounded-full"
-                        [style.background]="languageColor(c.language)"
-                      ></span>
-                      {{ c.language }}
+                      {{ c.name }}
+                    </button>
+                    <span class="rounded-full border border-default px-2 text-xs text-muted">
+                      {{ c.visibility }} · {{ c.type }}
                     </span>
+                  </div>
+                  @if (c.lastStatus === 'FAILED') {
+                    <p class="mt-1 text-sm font-medium" [style.color]="'var(--color-sev-high)'">
+                      {{ t('repos.card.lastScanFailed')
+                      }}<span class="font-normal"> — {{ c.lastError || t('common.error') }}</span>
+                    </p>
                   }
-                  <span>{{ t('repos.updated', { when: relativeTime(c.lastScanAt) }) }}</span>
-                </div>
+                  @if (c.description) {
+                    <p class="mt-1 text-sm text-muted">{{ c.description }}</p>
+                  }
+                  <div class="mt-1 flex items-center gap-3 text-xs text-muted">
+                    @if (c.language) {
+                      <span class="flex items-center gap-1">
+                        <span
+                          class="inline-block h-3 w-3 rounded-full"
+                          [style.background]="languageColor(c.language)"
+                        ></span>
+                        {{ c.language }}
+                      </span>
+                    }
+                    <span>{{ t('repos.updated', { when: relativeTime(c.lastScanAt) }) }}</span>
+                  </div>
                 </div>
               </div>
               <div class="flex shrink-0 items-center gap-2">
@@ -195,7 +202,9 @@ import { I18nService } from '../../core/i18n/i18n.service';
         </ul>
 
         @if (message()) {
-          <p class="mt-3 rounded border border-default px-3 py-2 text-sm text-muted">{{ message() }}</p>
+          <p class="mt-3 rounded border border-default px-3 py-2 text-sm text-muted">
+            {{ message() }}
+          </p>
         }
       } @else if (view() === 'wizard') {
         <!-- Mini-Wizard: Provider wählen → Defaults → Repo + Key (mit Hilfe) → Übersicht/Anlegen -->
@@ -237,7 +246,9 @@ import { I18nService } from '../../core/i18n/i18n.service';
               <p class="mt-1 mb-4 text-sm text-muted">{{ t('repos.wizard.details.intro') }}</p>
 
               <div class="mb-4 grid gap-1">
-                <label class="text-sm font-medium" for="wzLocation">{{ t('repos.location') }}</label>
+                <label class="text-sm font-medium" for="wzLocation">{{
+                  t('repos.location')
+                }}</label>
                 <input
                   id="wzLocation"
                   [(ngModel)]="location"
@@ -273,7 +284,8 @@ import { I18nService } from '../../core/i18n/i18n.service';
                     {{ t('repos.wizard.key.openDocs') }} ↗
                   </a>
                   <p class="mt-2 text-xs text-muted">
-                    {{ t('repos.wizard.key.scopes') }}: <span class="font-mono">{{ providerDef().scopes }}</span>
+                    {{ t('repos.wizard.key.scopes') }}:
+                    <span class="font-mono">{{ providerDef().scopes }}</span>
                   </p>
                   @if (providerDef().notes.length > 0) {
                     <ul class="mt-2 list-disc space-y-1 pl-4 text-xs text-muted">
@@ -306,7 +318,9 @@ import { I18nService } from '../../core/i18n/i18n.service';
                   </p>
                 } @else if (keyMode === 'store') {
                   <div class="grid gap-1">
-                    <label class="text-sm font-medium" for="wzKey">{{ t('repos.wizard.key.value') }}</label>
+                    <label class="text-sm font-medium" for="wzKey">{{
+                      t('repos.wizard.key.value')
+                    }}</label>
                     <input
                       id="wzKey"
                       [(ngModel)]="keyValue"
@@ -343,7 +357,9 @@ import { I18nService } from '../../core/i18n/i18n.service';
                 <dd class="font-mono">{{ wizardTokenSummary() }}</dd>
               </dl>
               @if (message()) {
-                <p class="mt-3 rounded border border-default px-3 py-2 text-sm text-muted">{{ message() }}</p>
+                <p class="mt-3 rounded border border-default px-3 py-2 text-sm text-muted">
+                  {{ message() }}
+                </p>
               }
             }
 
@@ -420,7 +436,9 @@ import { I18nService } from '../../core/i18n/i18n.service';
             </div>
 
             <div class="mb-4 grid gap-1">
-              <label class="text-sm font-medium" for="repoLocation">{{ t('repos.location') }}</label>
+              <label class="text-sm font-medium" for="repoLocation">{{
+                t('repos.location')
+              }}</label>
               <input
                 id="repoLocation"
                 [(ngModel)]="location"
@@ -552,7 +570,9 @@ import { I18nService } from '../../core/i18n/i18n.service';
                     [class.text-accent]="s.remediationEnabled"
                     [class.text-muted]="!s.remediationEnabled"
                   >
-                    {{ s.remediationEnabled ? t('repos.remediation.on') : t('repos.remediation.off') }}
+                    {{
+                      s.remediationEnabled ? t('repos.remediation.on') : t('repos.remediation.off')
+                    }}
                   </button>
                 </td>
                 <td class="space-x-2">
@@ -738,7 +758,10 @@ export class RepositoriesPage {
     if (this.name.trim()) {
       return;
     }
-    const cleaned = this.location.trim().replace(/\.git$/, '').replace(/\/$/, '');
+    const cleaned = this.location
+      .trim()
+      .replace(/\.git$/, '')
+      .replace(/\/$/, '');
     const parts = cleaned.split('/').filter((p) => p.length > 0);
     if (parts.length >= 2) {
       this.name = parts.slice(-2).join('/');
@@ -776,7 +799,7 @@ export class RepositoriesPage {
       return;
     }
     this.message.set('');
-    this.wizardStep.update((s) => ((s - 1) as 1 | 2 | 3));
+    this.wizardStep.update((s) => (s - 1) as 1 | 2 | 3);
   }
 
   /** Vorschau der tokenRef in der Übersicht (gespeicherter Key wird zu secret:<name>). */
@@ -789,7 +812,10 @@ export class RepositoriesPage {
 
   /** Eindeutiger Secret-Name aus dem Repo-Namen (für den DB-verschlüsselten Schlüssel). */
   private secretName(): string {
-    const slug = this.name.trim().replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^-+|-+$/g, '');
+    const slug = this.name
+      .trim()
+      .replace(/[^A-Za-z0-9._-]+/g, '-')
+      .replace(/^-+|-+$/g, '');
     return `repo-${slug || 'token'}`;
   }
 
@@ -821,9 +847,11 @@ export class RepositoriesPage {
       next: () => this.createFromWizard(`secret:${this.secretName()}`),
       error: (err) => {
         this.wizardBusy.set(false);
-        this.message.set(this.t('repos.wizard.msg.secretFailed', {
-          error: err?.error?.error ?? this.t('common.error'),
-        }));
+        this.message.set(
+          this.t('repos.wizard.msg.secretFailed', {
+            error: err?.error?.error ?? this.t('common.error'),
+          }),
+        );
       },
     });
   }

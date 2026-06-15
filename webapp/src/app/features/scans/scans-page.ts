@@ -51,10 +51,16 @@ import { I18nService } from '../../core/i18n/i18n.service';
       </div>
 
       @if (selected().size > 0) {
-        <div class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm">
+        <div
+          class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm"
+        >
           <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
-          <button (click)="bulkCancel()" class="text-sev-high hover:underline">{{ t('scans.cancel') }}</button>
-          <button (click)="clearSelection()" class="text-muted hover:underline">{{ t('bulk.clear') }}</button>
+          <button (click)="bulkCancel()" class="text-sev-high hover:underline">
+            {{ t('scans.cancel') }}
+          </button>
+          <button (click)="clearSelection()" class="text-muted hover:underline">
+            {{ t('bulk.clear') }}
+          </button>
         </div>
       }
 
@@ -68,34 +74,42 @@ import { I18nService } from '../../core/i18n/i18n.service';
         @for (s of scans(); track s.id) {
           <li class="flex items-start justify-between gap-4 py-3">
             <div class="flex min-w-0 flex-1 items-start gap-2">
-              <input type="checkbox" class="mt-1" [checked]="selected().has(s.id)" (change)="toggle(s.id)" />
+              <input
+                type="checkbox"
+                class="mt-1"
+                [checked]="selected().has(s.id)"
+                (change)="toggle(s.id)"
+              />
               <div class="min-w-0 flex-1">
-              <div class="flex items-center gap-2">
-                <button (click)="openInsights(s)" class="font-semibold text-accent hover:underline">
-                  {{ s.repoId }}
-                </button>
-                <span class="rounded-full border border-default px-2 text-xs text-muted">
-                  {{ liveStatus(s) }}
-                </span>
-                <span
-                  class="rounded-full border border-default px-2 text-xs text-muted"
-                  [title]="ciTooltip(s)"
-                >
-                  {{ s.trigger === 'CI' ? t('scans.origin.ci') : t('scans.origin.server') }}
-                </span>
-              </div>
-              <p class="mt-1 text-xs text-muted">
-                {{ t('scans.row.meta', { mode: s.mode, findings: liveFindings(s) }) }}
-              </p>
-              <div class="mt-2 flex items-center gap-2">
-                <div class="h-2 w-48 overflow-hidden rounded bg-canvas">
-                  <div
-                    class="h-full rounded bg-accent transition-all"
-                    [style.width.%]="livePercent(s)"
-                  ></div>
+                <div class="flex items-center gap-2">
+                  <button
+                    (click)="openInsights(s)"
+                    class="font-semibold text-accent hover:underline"
+                  >
+                    {{ s.repoId }}
+                  </button>
+                  <span class="rounded-full border border-default px-2 text-xs text-muted">
+                    {{ liveStatus(s) }}
+                  </span>
+                  <span
+                    class="rounded-full border border-default px-2 text-xs text-muted"
+                    [title]="ciTooltip(s)"
+                  >
+                    {{ s.trigger === 'CI' ? t('scans.origin.ci') : t('scans.origin.server') }}
+                  </span>
                 </div>
-                <span class="text-xs tabular-nums text-muted">{{ livePercent(s) }}%</span>
-              </div>
+                <p class="mt-1 text-xs text-muted">
+                  {{ t('scans.row.meta', { mode: s.mode, findings: liveFindings(s) }) }}
+                </p>
+                <div class="mt-2 flex items-center gap-2">
+                  <div class="h-2 w-48 overflow-hidden rounded bg-canvas">
+                    <div
+                      class="h-full rounded bg-accent transition-all"
+                      [style.width.%]="livePercent(s)"
+                    ></div>
+                  </div>
+                  <span class="text-xs tabular-nums text-muted">{{ livePercent(s) }}%</span>
+                </div>
               </div>
             </div>
             <div class="flex shrink-0 items-center gap-2">
