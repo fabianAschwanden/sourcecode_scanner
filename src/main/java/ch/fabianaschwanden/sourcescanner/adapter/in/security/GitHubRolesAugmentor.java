@@ -1,5 +1,6 @@
 package ch.fabianaschwanden.sourcescanner.adapter.in.security;
 
+import io.quarkus.oidc.AccessTokenCredential;
 import io.quarkus.security.identity.AuthenticationRequestContext;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.quarkus.security.identity.SecurityIdentityAugmentor;
@@ -55,14 +56,23 @@ public class GitHubRolesAugmentor implements SecurityIdentityAugmentor {
         }
         // Org-Check (HTTP) im blockierenden Executor, da augment() reaktiv aufgerufen wird.
         return context.runBlocking(() -> {
-            String role = resolveRole(login(identity));
+            String role = resolveRole(login(identity), accessToken(identity));
             return QuarkusSecurityIdentity.builder(identity).addRole(role).build();
         });
     }
 
-    private String resolveRole(String login) {
-        boolean isOrgMember = org != null && login != null && membership.isPublicMember(org, login);
+    private String resolveRole(String login, String accessToken) {
+        if (login != null && adminLogins.contains(login.toLowerCase(Locale.ROOT))) {
+            return "admin";
+        }
+        boolean isOrgMember = org != null && membership.isActiveMember(org, accessToken);
         return roleFor(login, adminLogins, org != null, isOrgMember);
+    }
+
+    /** OIDC-Access-Token des eingeloggten Nutzers (für den Org-API-Call); {@code null}, wenn keins. */
+    private static String accessToken(SecurityIdentity identity) {
+        AccessTokenCredential cred = identity.getCredential(AccessTokenCredential.class);
+        return cred == null ? null : cred.getToken();
     }
 
     /**

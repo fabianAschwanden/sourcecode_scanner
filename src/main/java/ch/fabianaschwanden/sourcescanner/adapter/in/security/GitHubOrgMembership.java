@@ -10,13 +10,12 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.jboss.logging.Logger;
 
 /**
- * Prüft die <b>öffentliche</b> Mitgliedschaft eines GitHub-Nutzers in einer Organisation über
- * {@code GET /orgs/{org}/members/{login}} (204 = Mitglied, 404 = nicht/privat; ohne Token). Wird vom
- * {@link GitHubRolesAugmentor} genutzt, um Org-Mitgliedern die {@code operator}-Rolle zu geben.
- *
- * <p>Nur öffentliche Mitgliedschaften sind so sichtbar — private Mitgliedschaften müssten über
- * {@code read:org} + User-Token geprüft werden (bewusst nicht gewählt). Fehler/Timeout ⇒ kein
- * Mitglied (fail-closed Richtung niedrigere Rolle).
+ * Prüft die Mitgliedschaft des eingeloggten GitHub-Nutzers in einer Organisation über
+ * {@code GET /user/memberships/orgs/{org}} mit dessen Access-Token (Scope {@code read:org}). Erkennt
+ * auch <b>private</b> Mitgliedschaften. 200 + {@code "state":"active"} ⇒ Mitglied; 403/404/Fehler ⇒
+ * kein Mitglied (fail-closed Richtung niedrigere Rolle). Genutzt vom {@link GitHubRolesAugmentor}, um
+ * Org-Mitgliedern die {@code operator}-Rolle zu geben. Das Token verlässt diese Klasse nie/wird nie
+ * geloggt.
  */
 @ApplicationScoped
 public class GitHubOrgMembership {
@@ -35,23 +34,28 @@ public class GitHubOrgMembership {
         this.apiBaseUrl = apiBaseUrl.endsWith("/") ? apiBaseUrl.substring(0, apiBaseUrl.length() - 1) : apiBaseUrl;
     }
 
-    /** {@code true}, wenn {@code login} öffentlich sichtbares Mitglied von {@code org} ist. */
-    public boolean isPublicMember(String org, String login) {
-        if (org == null || org.isBlank() || login == null || login.isBlank()) {
+    /**
+     * {@code true}, wenn der Inhaber von {@code accessToken} aktives (auch privates) Mitglied von
+     * {@code org} ist. Ohne Token nicht prüfbar ⇒ {@code false}.
+     */
+    public boolean isActiveMember(String org, String accessToken) {
+        if (org == null || org.isBlank() || accessToken == null || accessToken.isBlank()) {
             return false;
         }
         try {
             HttpRequest req = HttpRequest.newBuilder()
-                    .uri(URI.create(apiBaseUrl + "/orgs/" + org + "/members/" + login))
+                    .uri(URI.create(apiBaseUrl + "/user/memberships/orgs/" + org))
                     .header("Accept", "application/vnd.github+json")
+                    .header("Authorization", "Bearer " + accessToken)
                     .header("User-Agent", "sourcecode-scanner")
                     .timeout(Duration.ofSeconds(5))
                     .GET()
                     .build();
-            int status = http.send(req, HttpResponse.BodyHandlers.discarding()).statusCode();
-            return status == 204;
+            HttpResponse<String> res = http.send(req, HttpResponse.BodyHandlers.ofString());
+            // 200 mit aktivem Status = Mitglied; pending/Block/404/403 = nein.
+            return res.statusCode() == 200 && res.body() != null && res.body().contains("\"state\":\"active\"");
         } catch (Exception e) {
-            LOG.warnf("org membership check failed for %s/%s: %s", org, login, e.getMessage());
+            LOG.warnf("org membership check failed for %s: %s", org, e.getMessage());
             return false;
         }
     }
