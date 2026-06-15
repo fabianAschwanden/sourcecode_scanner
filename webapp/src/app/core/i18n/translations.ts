@@ -17,6 +17,10 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'nav.policies': 'Policies',
     'nav.settings': 'Settings',
     'lang.label': 'Language',
+    'login.intro': 'Sign in to access the scanner.',
+    'login.github': 'Sign in with GitHub',
+    'login.note': 'Access is granted via your organisation’s GitHub account.',
+    'auth.logout': 'Sign out',
     'lang.en': 'English',
     'lang.de': 'Deutsch',
 
@@ -363,6 +367,10 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'nav.policies': 'Policies',
     'nav.settings': 'Einstellungen',
     'lang.label': 'Sprache',
+    'login.intro': 'Melde dich an, um den Scanner zu nutzen.',
+    'login.github': 'Mit GitHub anmelden',
+    'login.note': 'Der Zugang erfolgt über deinen GitHub-Account der Organisation.',
+    'auth.logout': 'Abmelden',
     'lang.en': 'English',
     'lang.de': 'Deutsch',
 

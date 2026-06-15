@@ -3,15 +3,16 @@ import { FormsModule } from '@angular/forms';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { ManagedSecret, SecretStorageMode, Settings, Severity } from '../../core/models/scanner';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { PageTitle } from '../../shared/page-title';
 
 /** Systemweite Einstellungen (WR-15..18): allgemeine E-Mail, Defaults, Secret-Referenz-Status. */
 @Component({
   selector: 'app-settings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, PageTitle],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">{{ t('settings.title') }}</h2>
+      <app-page-title>{{ t('settings.title') }}</app-page-title>
 
       @if (settings(); as s) {
         <form (ngSubmit)="save()" class="mb-6 grid max-w-xl gap-3">

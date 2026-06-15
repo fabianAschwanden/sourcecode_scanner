@@ -5,6 +5,7 @@ import { ScannerApi } from '../../core/services/scanner-api';
 import { Finding, Severity, TriageStatus } from '../../core/models/scanner';
 import { severityColor } from '../../core/severity-color';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { PageTitle } from '../../shared/page-title';
 
 type SortKey = 'severity' | 'lastSeen' | 'firstSeen';
 const SEVERITY_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
@@ -17,10 +18,10 @@ const SEVERITY_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
 @Component({
   selector: 'app-findings-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, PageTitle],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">{{ t('findings.title') }}</h2>
+      <app-page-title>{{ t('findings.title') }}</app-page-title>
 
       <!-- Tool-Status-Banner (WR-60/61) -->
       <div

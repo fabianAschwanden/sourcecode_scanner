@@ -1,30 +1,43 @@
-<header class="border-b border-default bg-surface px-6 py-4">
-  <div class="flex items-center justify-between">
-    <h1 class="text-lg font-semibold text-fg">{{ t('app.title') }}</h1>
-    <label class="flex items-center gap-1 text-sm text-muted" [title]="t('lang.label')">
-      {{ t('lang.label') }}
-      <select
-        [value]="i18n.lang()"
-        (change)="switchLang($any($event.target).value)"
-        class="rounded border border-default bg-canvas px-2 py-1 text-fg"
-      >
-        @for (l of i18n.available; track l) {
-          <option [value]="l">{{ t('lang.' + l) }}</option>
+@if (!onLoginPage()) {
+  <header class="border-b border-default bg-surface px-6 py-4">
+    <div class="flex items-center justify-between">
+      <a [routerLink]="'/dashboard'" class="flex items-center gap-2 text-fg hover:text-accent">
+        <app-brand-logo [size]="24" />
+        <h1 class="text-lg font-semibold">{{ t('app.title') }}</h1>
+      </a>
+      <div class="flex items-center gap-4">
+        @if (auth.user(); as u) {
+          <span class="flex items-center gap-2 text-sm text-muted">
+            <span class="font-medium text-fg">{{ u.login }}</span>
+            <a href="/q/oidc/logout" class="text-muted hover:text-accent">{{ t('auth.logout') }}</a>
+          </span>
         }
-      </select>
-    </label>
-  </div>
-  <nav class="mt-2 flex gap-4 text-sm">
-    @for (link of links; track link.path) {
-      <a
-        [routerLink]="link.path"
-        routerLinkActive="font-semibold text-accent"
-        class="text-muted hover:text-accent"
-        >{{ t(link.key) }}</a
-      >
-    }
-  </nav>
-</header>
+        <label class="flex items-center gap-1 text-sm text-muted" [title]="t('lang.label')">
+          {{ t('lang.label') }}
+          <select
+            [value]="i18n.lang()"
+            (change)="switchLang($any($event.target).value)"
+            class="rounded border border-default bg-canvas px-2 py-1 text-fg"
+          >
+            @for (l of i18n.available; track l) {
+              <option [value]="l">{{ t('lang.' + l) }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    </div>
+    <nav class="mt-2 flex gap-4 text-sm">
+      @for (link of links; track link.path) {
+        <a
+          [routerLink]="link.path"
+          routerLinkActive="font-semibold text-accent"
+          class="text-muted hover:text-accent"
+          >{{ t(link.key) }}</a
+        >
+      }
+    </nav>
+  </header>
+}
 <main class="min-h-screen bg-canvas text-fg">
   <router-outlet />
 </main>

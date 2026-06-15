@@ -6,6 +6,7 @@ import { filter } from 'rxjs';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { ManagedSecret, RepositoryCard, RepositorySource } from '../../core/models/scanner';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { BrandLogo } from '../../shared/brand-logo';
 
 /**
  * Repository-Quellen (WR-02). Standard ist die Repo-Übersicht im GitHub-Stil (Karten + Suche/Filter/
@@ -15,11 +16,14 @@ import { I18nService } from '../../core/i18n/i18n.service';
 @Component({
   selector: 'app-repositories-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, BrandLogo],
   template: `
     <section class="p-6">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-xl font-semibold">{{ t('repos.title') }}</h2>
+        <div class="flex items-center gap-2">
+          <app-brand-logo [size]="22" />
+          <h2 class="text-xl font-semibold">{{ t('repos.title') }}</h2>
+        </div>
         <button (click)="toggleView()" class="text-sm text-muted hover:text-accent">
           {{ view() === 'cards' ? t('repos.toggleList') : t('repos.toggleCards') }}
         </button>

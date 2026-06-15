@@ -63,7 +63,9 @@ Alle aus dem `%server`-Profil referenzierten Variablen (siehe `application.prope
 |---|---|---|
 | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | ja | Neon-PostgreSQL als JDBC-URL (`jdbc:postgresql://…?sslmode=require`) |
 | `DB_POOL_MAX_SIZE` / `DB_POOL_MIN_SIZE` / `DB_ACQUISITION_TIMEOUT` | nein | Pool-Tuning für Neon (Defaults 10 / 0 / 10s) |
-| `OIDC_AUTH_SERVER_URL` | nur server | OIDC-Issuer-URL (im staging-Profil nicht nötig) |
+| `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` | nur ghauth | GitHub OAuth App (Login via GitHub) |
+| `GITHUB_ADMIN_LOGINS` | nur ghauth | Kommaseparierte GitHub-Logins → Rolle `admin`; alle anderen → `viewer` |
+| `OIDC_AUTH_SERVER_URL` | nur server | OIDC-Issuer-URL (klassisches OIDC, z. B. Keycloak) |
 | `OIDC_CLIENT_ID` | nur server | OIDC-Client (Default `sourcecode-scanner`) |
 | `OIDC_CLIENT_SECRET` | nur server | OIDC-Client-Secret |
 | `SCANNER_SECRETS_KEY` | empfohlen | AES-Schlüssel für DB-verschlüsselte Secrets (NFR-30). Ohne ihn ist der Modus „Key speichern" inaktiv; `secret:`-Referenzen lassen sich nicht auflösen. 32 Byte, Base64. |
@@ -84,17 +86,43 @@ Repo-Zugriffs-Tokens (GitHub/GitLab/Bitbucket) werden **nicht** hier gesetzt, so
 verwaltete Secrets (DB-verschlüsselt) oder als `env:NAME`-Referenz. Für `env:`-Referenzen die
 jeweilige Variable zusätzlich als Fly-Secret setzen.
 
-## 4. Profil: staging (ohne OIDC) vs. server (mit OIDC)
+## 4. Profil: staging / ghauth / server
 
-Standardmässig deployt diese Konfiguration mit `QUARKUS_PROFILE=prod,staging` (in `fly.toml` gesetzt):
+Standardmässig deployt diese Konfiguration mit `QUARKUS_PROFILE=prod,staging` (in `fly.toml`):
 
-- **staging:** OIDC aus, permissive HTTP-Policy, ein nur in diesem Profil aktiver Augmentor
-  (`StagingAllRolesAugmentor`) vergibt alle App-Rollen. So ist die App **ohne Login** bedienbar —
-  nur zum Hochfahren/DB-Test. **Keine Zugriffskontrolle; nicht produktiv, nicht öffentlich ohne
-  vorgelagerten Schutz betreiben.** Es werden **keine** `OIDC_*`-Variablen gebraucht.
-- **server (produktiv):** in `fly.toml` `QUARKUS_PROFILE = "prod,server"` setzen und die `OIDC_*`-
-  Secrets bereitstellen (siehe unten). Rollen kommen dann aus dem OIDC-Token (Keycloak: aus
-  `resource_access/<client>/roles`).
+- **staging:** OIDC aus, permissive HTTP-Policy, `StagingAllRolesAugmentor` vergibt alle Rollen. App
+  **ohne Login** bedienbar — nur zum Hochfahren/DB-Test. **Keine Zugriffskontrolle; nicht produktiv.**
+- **ghauth (empfohlen für privaten Betrieb):** **GitHub als IdP** (OAuth2). Login über GitHub; Rollen
+  per Allowlist — siehe „GitHub-Login" unten. Profil in `fly.toml` auf `prod,ghauth`.
+- **server:** klassisches OIDC (z. B. Keycloak), Rollen aus dem Token
+  (`resource_access/<client>/roles`). Profil `prod,server` + `OIDC_*`-Secrets.
+
+### GitHub-Login (ghauth)
+
+1. **GitHub OAuth App** anlegen: GitHub → Settings → Developer settings → **OAuth Apps** → New.
+   - Homepage URL: `https://<deine-app>.fly.dev`
+   - **Authorization callback URL:** `https://<deine-app>.fly.dev/q/oidc/github` *(Quarkus-GitHub-
+     Provider-Callback; bei „redirect_uri mismatch" den Wert aus der Fehlermeldung exakt übernehmen)*
+   - Es entstehen **Client ID** und (unter „Generate a new client secret") **Client Secret**.
+2. Secrets + Admin-Allowlist setzen und Profil umstellen:
+
+```bash
+fly secrets set --app <deine-app> \
+  GITHUB_CLIENT_ID="<client-id>" \
+  GITHUB_CLIENT_SECRET="<client-secret>" \
+  GITHUB_ADMIN_LOGINS="fabianAschwanden"
+
+# Profil in deploy/fly/fly.toml auf "prod,ghauth" setzen, dann deployen (oder Push auf main).
+```
+
+- `GITHUB_ADMIN_LOGINS` = kommaseparierte GitHub-Logins, die **admin** werden (case-insensitiv). Jeder
+  andere erfolgreich per GitHub authentifizierte Nutzer erhält **viewer** (nur lesend).
+- **Login-UX:** Im `ghauth`-Profil zeigt die App eine eigene Login-Landing-Seite (GitHub-Dark-Stil) mit
+  „Sign in with GitHub". Der Button löst über `/login` den OIDC-Redirect aus; nach dem Login erscheinen
+  im Header der GitHub-Login + „Abmelden" (`/q/oidc/logout`). Landing + statische Assets sind öffentlich,
+  `/api/*` ist geschützt.
+- Möchtest du, dass **niemand ausser den Admins** rein darf, leite das später über eine zusätzliche
+  Allowlist; aktuell ist „andere = viewer" gewählt.
 
 ## 5. Deploy
 

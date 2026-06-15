@@ -5,6 +5,7 @@ import { ScannerApi } from '../../core/services/scanner-api';
 import { Finding, Scan, Severity } from '../../core/models/scanner';
 import { severityColor } from '../../core/severity-color';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { PageTitle } from '../../shared/page-title';
 
 const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 
@@ -12,9 +13,10 @@ const SEVERITIES: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO'];
 @Component({
   selector: 'app-dashboard-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [PageTitle],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">{{ t('dashboard.title') }}</h2>
+      <app-page-title>{{ t('dashboard.title') }}</app-page-title>
 
       <div class="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-5">
         @for (sev of severities; track sev) {

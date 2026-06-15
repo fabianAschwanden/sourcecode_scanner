@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128" role="img">
+  <title>SourceScan app icon</title>
+  <desc>Rounded dark tile with an off-white shield, dark code brackets and a green scan slash.</desc>
+  <rect width="128" height="128" rx="28" fill="#1F2328"/>
+  <g transform="translate(14,14)">
+    <path d="M30 18 H70 A8 8 0 0 1 78 26 V46 C78 64 66 78 50 84 C34 78 22 64 22 46 V26 A8 8 0 0 1 30 18 Z" fill="#F6F8FA"/>
+    <path d="M45 38 L37 50 L45 62" fill="none" stroke="#1F2328" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M55 38 L63 50 L55 62" fill="none" stroke="#1F2328" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M53 37 L47 63" fill="none" stroke="#2DA44E" stroke-width="5.5" stroke-linecap="round"/>
+  </g>
+</svg>

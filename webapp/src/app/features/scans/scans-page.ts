@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { ScannerApi } from '../../core/services/scanner-api';
 import { RepositorySource, Scan, ScanEvent } from '../../core/models/scanner';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { PageTitle } from '../../shared/page-title';
 
 /**
  * Scan-Steuerung (WR-03): starten/abbrechen + Verlauf. Live-Fortschritt als Prozentbalken (WR-04a)
@@ -12,10 +13,10 @@ import { I18nService } from '../../core/i18n/i18n.service';
 @Component({
   selector: 'app-scans-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, PageTitle],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">{{ t('scans.title') }}</h2>
+      <app-page-title>{{ t('scans.title') }}</app-page-title>
 
       <div class="mb-4 flex items-end gap-2">
         <label class="text-sm text-muted">

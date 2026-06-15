@@ -14,6 +14,7 @@ import {
   Severity,
 } from '../../core/models/scanner';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { BrandLogo } from '../../shared/brand-logo';
 
 interface RuleRow {
   ruleId: string;
@@ -32,11 +33,14 @@ interface RuleRow {
 @Component({
   selector: 'app-rulesets-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, BrandLogo],
   template: `
     <section class="p-6">
       <div class="mb-4 flex items-center justify-between">
-        <h2 class="text-xl font-semibold">{{ t('rulesets.title') }}</h2>
+        <div class="flex items-center gap-2">
+          <app-brand-logo [size]="22" />
+          <h2 class="text-xl font-semibold">{{ t('rulesets.title') }}</h2>
+        </div>
         @if (view() === 'list') {
           <button
             (click)="startNew()"
