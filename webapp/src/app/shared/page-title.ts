@@ -12,7 +12,7 @@ import { BrandLogo } from './brand-logo';
   imports: [BrandLogo],
   template: `
     <div class="mb-4 flex items-center gap-2">
-      <app-brand-logo [size]="22" />
+      <app-brand-logo [size]="28" />
       <h2 class="text-xl font-semibold"><ng-content /></h2>
     </div>
   `,

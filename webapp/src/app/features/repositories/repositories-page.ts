@@ -21,7 +21,7 @@ import { BrandLogo } from '../../shared/brand-logo';
     <section class="p-6">
       <div class="mb-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <app-brand-logo [size]="22" />
+          <app-brand-logo [size]="28" />
           <h2 class="text-xl font-semibold">{{ t('repos.title') }}</h2>
         </div>
         <button (click)="toggleView()" class="text-sm text-muted hover:text-accent">

@@ -38,7 +38,7 @@ interface RuleRow {
     <section class="p-6">
       <div class="mb-4 flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <app-brand-logo [size]="22" />
+          <app-brand-logo [size]="28" />
           <h2 class="text-xl font-semibold">{{ t('rulesets.title') }}</h2>
         </div>
         @if (view() === 'list') {
