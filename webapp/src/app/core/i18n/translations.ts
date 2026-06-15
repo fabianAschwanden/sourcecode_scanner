@@ -21,6 +21,35 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'login.github': 'Sign in with GitHub',
     'login.note': 'Access is granted via your organisation’s GitHub account.',
     'auth.logout': 'Sign out',
+    'login.signin': 'Sign in',
+    'login.badge': 'Enterprise Source Code Security Scanner',
+    'login.hero.title': 'Find secrets and customer data before they ship.',
+    'login.hero.subtitle':
+      'Scan your repositories for hard-coded secrets, PII and misconfigurations — with fine-grained rulesets, a CI/CD gate and a GitHub-style findings view.',
+    'login.features.title': 'What the scanner does',
+    'login.features.subtitle':
+      'From detection to remediation — one platform for repositories, scans, findings and policies.',
+    'login.feature.secrets.title': 'Secret detection',
+    'login.feature.secrets.text':
+      'Regex rulesets plus high-entropy heuristics catch hard-coded tokens, keys and credentials across code and Git history.',
+    'login.feature.pii.title': 'PII & customer data',
+    'login.feature.pii.text':
+      'Detect emails, IBANs, credit cards and values from your own data sources — matches stay redacted, never stored in clear text.',
+    'login.feature.rulesets.title': 'Fine-grained rulesets',
+    'login.feature.rulesets.text':
+      'Enable rules per repo, override severities, choose match modes — globally or per repository, fully audited.',
+    'login.feature.cicd.title': 'CI/CD gate',
+    'login.feature.cicd.text':
+      'Break the build on blocking findings, ingest CI scans centrally and report results as SARIF.',
+    'login.feature.remediation.title': 'Auto remediation',
+    'login.feature.remediation.text':
+      'Propose fixes as pull requests and orchestrate history scrubbing — opt-in per repo, safe by default.',
+    'login.feature.insights.title': 'Dashboards & insights',
+    'login.feature.insights.text':
+      'Findings by severity, scan history and a GitHub-style code-scanning view with search and filters.',
+    'login.cta.title': 'Ready to scan?',
+    'login.cta.text': 'Sign in with your GitHub account to get started.',
+    'login.footer': 'Sign in required · access via GitHub',
     'lang.en': 'English',
     'lang.de': 'Deutsch',
 
@@ -371,6 +400,35 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'login.github': 'Mit GitHub anmelden',
     'login.note': 'Der Zugang erfolgt über deinen GitHub-Account der Organisation.',
     'auth.logout': 'Abmelden',
+    'login.signin': 'Anmelden',
+    'login.badge': 'Enterprise Source Code Security Scanner',
+    'login.hero.title': 'Secrets und Kundendaten finden, bevor sie ausgeliefert werden.',
+    'login.hero.subtitle':
+      'Durchsuche deine Repositories nach hartkodierten Secrets, PII und Fehlkonfigurationen — mit feingranularen Rulesets, einem CI/CD-Gate und einer Funde-Ansicht im GitHub-Stil.',
+    'login.features.title': 'Was der Scanner kann',
+    'login.features.subtitle':
+      'Von der Erkennung bis zur Behebung — eine Plattform für Repositories, Scans, Funde und Policies.',
+    'login.feature.secrets.title': 'Secret-Erkennung',
+    'login.feature.secrets.text':
+      'Regex-Rulesets plus High-Entropy-Heuristik finden hartkodierte Tokens, Keys und Zugangsdaten in Code und Git-Historie.',
+    'login.feature.pii.title': 'PII & Kundendaten',
+    'login.feature.pii.text':
+      'Erkennt E-Mails, IBANs, Kreditkarten und Werte aus eigenen Datenquellen — Treffer bleiben redigiert, nie im Klartext gespeichert.',
+    'login.feature.rulesets.title': 'Feingranulare Rulesets',
+    'login.feature.rulesets.text':
+      'Regeln pro Repo aktivieren, Severities überschreiben, Abgleichsmodi wählen — global oder pro Repository, voll auditiert.',
+    'login.feature.cicd.title': 'CI/CD-Gate',
+    'login.feature.cicd.text':
+      'Build bei blockierenden Funden brechen, CI-Scans zentral einspielen und Ergebnisse als SARIF melden.',
+    'login.feature.remediation.title': 'Auto-Remediation',
+    'login.feature.remediation.text':
+      'Fixes als Pull Requests vorschlagen und History-Scrub orchestrieren — Opt-in pro Repo, standardmässig sicher.',
+    'login.feature.insights.title': 'Dashboards & Insights',
+    'login.feature.insights.text':
+      'Funde nach Severity, Scan-Verlauf und eine Code-Scanning-Ansicht im GitHub-Stil mit Suche und Filtern.',
+    'login.cta.title': 'Bereit zum Scannen?',
+    'login.cta.text': 'Melde dich mit deinem GitHub-Account an, um loszulegen.',
+    'login.footer': 'Anmeldung erforderlich · Zugang über GitHub',
     'lang.en': 'English',
     'lang.de': 'Deutsch',
 
