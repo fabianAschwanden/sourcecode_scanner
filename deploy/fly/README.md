@@ -63,46 +63,61 @@ Alle aus dem `%server`-Profil referenzierten Variablen (siehe `application.prope
 |---|---|---|
 | `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | ja | Neon-PostgreSQL als JDBC-URL (`jdbc:postgresql://…?sslmode=require`) |
 | `DB_POOL_MAX_SIZE` / `DB_POOL_MIN_SIZE` / `DB_ACQUISITION_TIMEOUT` | nein | Pool-Tuning für Neon (Defaults 10 / 0 / 10s) |
-| `OIDC_AUTH_SERVER_URL` | ja* | OIDC-Issuer-URL |
-| `OIDC_CLIENT_ID` | ja* | OIDC-Client (Default `sourcecode-scanner`) |
-| `OIDC_CLIENT_SECRET` | ja* | OIDC-Client-Secret |
+| `OIDC_AUTH_SERVER_URL` | nur server | OIDC-Issuer-URL (im staging-Profil nicht nötig) |
+| `OIDC_CLIENT_ID` | nur server | OIDC-Client (Default `sourcecode-scanner`) |
+| `OIDC_CLIENT_SECRET` | nur server | OIDC-Client-Secret |
 | `SCANNER_SECRETS_KEY` | empfohlen | AES-Schlüssel für DB-verschlüsselte Secrets (NFR-30). Ohne ihn ist der Modus „Key speichern" inaktiv; `secret:`-Referenzen lassen sich nicht auflösen. 32 Byte, Base64. |
 | `DATASOURCE_HASH_PEPPER` | empfohlen | Pepper für Datenquellen-Hashes (NFR-23) |
 
-`*` Auth siehe unten — ohne OIDC startet das `%server`-Profil nicht sinnvoll.
+Für den ersten Deploy im **staging**-Profil reichen die DB-Variablen + die empfohlenen Keys:
 
 ```bash
 fly secrets set --app <deine-app> \
-  OIDC_AUTH_SERVER_URL="https://<issuer>/realms/<realm>" \
-  OIDC_CLIENT_ID="sourcecode-scanner" \
-  OIDC_CLIENT_SECRET="<secret>" \
   SCANNER_SECRETS_KEY="$(openssl rand -base64 32)" \
   DATASOURCE_HASH_PEPPER="$(openssl rand -base64 24)"
 ```
+
+Für **server** (produktiv) zusätzlich die `OIDC_*`-Secrets setzen und in `fly.toml`
+`QUARKUS_PROFILE = "prod,server"`.
 
 Repo-Zugriffs-Tokens (GitHub/GitLab/Bitbucket) werden **nicht** hier gesetzt, sondern in der UI als
 verwaltete Secrets (DB-verschlüsselt) oder als `env:NAME`-Referenz. Für `env:`-Referenzen die
 jeweilige Variable zusätzlich als Fly-Secret setzen.
 
-## 4. Deploy
+## 4. Profil: staging (ohne OIDC) vs. server (mit OIDC)
+
+Standardmässig deployt diese Konfiguration mit `QUARKUS_PROFILE=prod,staging` (in `fly.toml` gesetzt):
+
+- **staging:** OIDC aus, permissive HTTP-Policy, ein nur in diesem Profil aktiver Augmentor
+  (`StagingAllRolesAugmentor`) vergibt alle App-Rollen. So ist die App **ohne Login** bedienbar —
+  nur zum Hochfahren/DB-Test. **Keine Zugriffskontrolle; nicht produktiv, nicht öffentlich ohne
+  vorgelagerten Schutz betreiben.** Es werden **keine** `OIDC_*`-Variablen gebraucht.
+- **server (produktiv):** in `fly.toml` `QUARKUS_PROFILE = "prod,server"` setzen und die `OIDC_*`-
+  Secrets bereitstellen (siehe unten). Rollen kommen dann aus dem OIDC-Token (Keycloak: aus
+  `resource_access/<client>/roles`).
+
+## 5. Deploy
+
+### Variante A — automatisch via GitHub Actions (Push auf `main`)
+
+Der Workflow `.github/workflows/fly-deploy.yml` deployt bei jedem Push auf `main` (Fly baut das Image
+remote). Einmalig nötig:
+
+1. Deploy-Token erzeugen: `fly tokens create deploy -x 999999h` (oder im Dashboard).
+2. Im GitHub-Repo unter **Settings → Secrets and variables → Actions** das Secret **`FLY_API_TOKEN`**
+   mit diesem Wert anlegen.
+3. App + `fly secrets` müssen vorab existieren (Schritte 1–3 oben, `fly launch --no-deploy` + DB-Secrets).
+
+Danach genügt ein Push auf `main`; den Lauf siehst du im Actions-Tab. Manuell auslösbar über
+„Run workflow" (`workflow_dispatch`).
+
+### Variante B — manuell vom Rechner
 
 ```bash
 fly deploy --config deploy/fly/fly.toml --dockerfile deploy/fly/Dockerfile
 ```
 
-Health-Check läuft gegen `/q/health/ready` (in `%server` ohne Auth erlaubt).
-
-## Authentifizierung (OIDC)
-
-Das `%server`-Profil schützt alle Pfade ausser `/q/health*` und erwartet einen OIDC-Provider
-(z. B. Keycloak). Du brauchst also einen erreichbaren Issuer + Client. Optionen:
-
-- **Mit OIDC:** Provider bereitstellen (eigenes Keycloak, Auth0, Entra ID …), Client anlegen,
-  obige `OIDC_*`-Secrets setzen. Empfohlen für echten Betrieb.
-- **Ohne OIDC (nur zum Ausprobieren):** ein eigenes Profil/Override nötig, das
-  `quarkus.oidc.enabled=false` und eine permissive HTTP-Policy setzt. Das ist **nicht** für
-  produktiven Einsatz gedacht (keine Zugriffskontrolle) — bei Bedarf richte ich ein separates
-  `staging`-Profil ein.
+Health-Check läuft gegen `/q/health/ready` (ohne Auth erlaubt).
 
 ## Hinweise / Grenzen
 

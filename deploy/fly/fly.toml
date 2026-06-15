@@ -7,7 +7,9 @@ primary_region = "fra"   # Frankfurt; an Bedarf anpassen (z. B. zur DB-Region)
   dockerfile = "Dockerfile"
 
 [env]
-  QUARKUS_PROFILE = "prod,server"
+  # staging: ohne OIDC (nur zum Hochfahren/DB-Test). Für produktiven Betrieb auf "prod,server"
+  # umstellen und die OIDC_*-Secrets setzen.
+  QUARKUS_PROFILE = "prod,staging"
   # Quarkus lauscht in fast-jar standardmässig auf 8080; Host wird im Dockerfile auf 0.0.0.0 gesetzt.
 
 [http_service]

@@ -29,7 +29,7 @@ FROM eclipse-temurin:25-jre AS runtime
 
 ENV LANG=C.UTF-8 \
     JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0" \
-    QUARKUS_PROFILE=prod,server
+    QUARKUS_PROFILE=prod,staging
 
 WORKDIR /app
 
