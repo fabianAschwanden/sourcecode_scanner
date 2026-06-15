@@ -1,7 +1,10 @@
 @if (!onLoginPage()) {
   <header class="border-b border-default bg-surface px-6 py-4">
     <div class="flex items-center justify-between">
-      <h1 class="text-lg font-semibold text-fg">{{ t('app.title') }}</h1>
+      <a [routerLink]="'/dashboard'" class="flex items-center gap-2 text-fg hover:text-accent">
+        <app-brand-logo [size]="24" />
+        <h1 class="text-lg font-semibold">{{ t('app.title') }}</h1>
+      </a>
       <div class="flex items-center gap-4">
         @if (auth.user(); as u) {
           <span class="flex items-center gap-2 text-sm text-muted">

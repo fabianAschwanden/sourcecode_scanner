@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100" role="img">
+  <title>SourceScan mark</title>
+  <desc>Shield with knocked-out code brackets. Single colour via currentColor.</desc>
+  <defs>
+    <mask id="sc-knockout">
+      <rect width="100" height="100" fill="black"/>
+      <path d="M30 18 H70 A8 8 0 0 1 78 26 V46 C78 64 66 78 50 84 C34 78 22 64 22 46 V26 A8 8 0 0 1 30 18 Z" fill="white"/>
+      <g fill="none" stroke="black" stroke-width="6.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M45 38 L37 50 L45 62"/>
+        <path d="M55 38 L63 50 L55 62"/>
+        <path d="M53 37 L47 63"/>
+      </g>
+    </mask>
+  </defs>
+  <rect width="100" height="100" fill="currentColor" mask="url(#sc-knockout)"/>
+</svg>

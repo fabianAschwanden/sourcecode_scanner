@@ -4,15 +4,16 @@ import { ScannerApi } from '../../core/services/scanner-api';
 import { Policy, Severity } from '../../core/models/scanner';
 import { severityColor } from '../../core/severity-color';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { PageTitle } from '../../shared/page-title';
 
 /** Governance-Policies verwalten (FR-20): zentrale Gate-/Detektor-Vorgaben pro Org-Einheit. */
 @Component({
   selector: 'app-policies-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, PageTitle],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">{{ t('policies.title') }}</h2>
+      <app-page-title>{{ t('policies.title') }}</app-page-title>
 
       <form (ngSubmit)="create()" class="mb-6 flex flex-wrap items-end gap-2">
         <input

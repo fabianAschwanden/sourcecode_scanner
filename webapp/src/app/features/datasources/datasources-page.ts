@@ -13,6 +13,7 @@ import {
   Severity,
 } from '../../core/models/scanner';
 import { I18nService } from '../../core/i18n/i18n.service';
+import { PageTitle } from '../../shared/page-title';
 
 /**
  * Externe Datenquellen für Kundendaten-Erkennung verwalten (WR-50..54): anlegen, testweise abrufen
@@ -22,10 +23,10 @@ import { I18nService } from '../../core/i18n/i18n.service';
 @Component({
   selector: 'app-datasources-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, PageTitle],
   template: `
     <section class="p-6">
-      <h2 class="mb-4 text-xl font-semibold">{{ t('ds.title') }}</h2>
+      <app-page-title>{{ t('ds.title') }}</app-page-title>
       <p class="mb-4 text-sm text-muted">{{ t('ds.intro') }}</p>
 
       <form (ngSubmit)="create()" class="mb-6 flex flex-wrap items-end gap-2">

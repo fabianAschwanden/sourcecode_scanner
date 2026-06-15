@@ -4,10 +4,11 @@ import { filter } from 'rxjs';
 import { I18nService } from './core/i18n/i18n.service';
 import { Lang } from './core/i18n/translations';
 import { AuthService } from './core/services/auth.service';
+import { BrandLogo } from './shared/brand-logo';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, RouterLink, RouterLinkActive],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive, BrandLogo],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.html',
   styleUrl: './app.css',
