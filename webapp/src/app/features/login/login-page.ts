@@ -37,12 +37,7 @@ import { BrandLogo } from '../../shared/brand-logo';
             radial-gradient(40rem 24rem at 80% 0, rgba(47,129,247,.25), transparent 60%);"
         ></div>
         <div class="relative mx-auto max-w-3xl px-6 py-20 text-center sm:py-28">
-          <span
-            class="inline-block rounded-full border border-default bg-surface/60 px-3 py-1 text-xs text-muted"
-          >
-            {{ t('login.badge') }}
-          </span>
-          <h1 class="mt-6 text-4xl font-bold tracking-tight sm:text-6xl">
+          <h1 class="text-4xl font-bold tracking-tight sm:text-6xl">
             {{ t('login.hero.title') }}
           </h1>
           <p class="mx-auto mt-5 max-w-2xl text-lg text-muted">{{ t('login.hero.subtitle') }}</p>

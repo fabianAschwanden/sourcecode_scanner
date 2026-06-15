@@ -22,7 +22,6 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'login.note': 'Access is granted via your organisation’s GitHub account.',
     'auth.logout': 'Sign out',
     'login.signin': 'Sign in',
-    'login.badge': 'Enterprise Source Code Security Scanner',
     'login.hero.title': 'Find secrets and customer data before they ship.',
     'login.hero.subtitle':
       'Scan your repositories for hard-coded secrets, PII and misconfigurations — with fine-grained rulesets, a CI/CD gate and a GitHub-style findings view.',
@@ -401,7 +400,6 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'login.note': 'Der Zugang erfolgt über deinen GitHub-Account der Organisation.',
     'auth.logout': 'Abmelden',
     'login.signin': 'Anmelden',
-    'login.badge': 'Enterprise Source Code Security Scanner',
     'login.hero.title': 'Secrets und Kundendaten finden, bevor sie ausgeliefert werden.',
     'login.hero.subtitle':
       'Durchsuche deine Repositories nach hartkodierten Secrets, PII und Fehlkonfigurationen — mit feingranularen Rulesets, einem CI/CD-Gate und einer Funde-Ansicht im GitHub-Stil.',
