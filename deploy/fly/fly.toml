@@ -19,7 +19,11 @@ primary_region = "fra"   # Frankfurt; an Bedarf anpassen (z. B. zur DB-Region)
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 0   # für „immer an" auf 1 setzen (Scans laufen serverseitig)
+  min_machines_running = 1   # 1 Maschine: der OIDC-Login-State (Cookie) ist nicht über mehrere
+                             # Maschinen geteilt — bei 2+ landet der Callback evtl. auf einer anderen
+                             # Maschine und der Login schlägt fehl. Für HA bräuchte es geteilten State.
+  # Verhindert, dass Fly bei Deploys automatisch eine zweite Maschine für HA anlegt.
+  max_machines_running = 1
 
   [[http_service.checks]]
     method = "GET"
