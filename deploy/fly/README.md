@@ -8,8 +8,8 @@ nicht.
 ## Voraussetzungen
 
 - `flyctl` installiert und eingeloggt (`fly auth login`).
-- Eine erreichbare PostgreSQL-Datenbank (Fly Postgres oder extern). Liquibase migriert beim Start
-  selbst (`%server.quarkus.liquibase.migrate-at-start=true`) — kein manuelles Schema nötig.
+- Ein **Neon**-Projekt (serverless PostgreSQL). Liquibase migriert beim Start selbst
+  (`%server.quarkus.liquibase.migrate-at-start=true`) — kein manuelles Schema nötig.
 - Ein OIDC-Provider (siehe „Authentifizierung").
 
 ## 1. App anlegen
@@ -27,24 +27,33 @@ fly launch --no-deploy \
 (`fly launch` ohne diese Flags würde ein eigenes Setup raten — die mitgelieferte `fly.toml` ist die
 Referenz; App-Name darin anpassen.)
 
-## 2. PostgreSQL
+## 2. PostgreSQL (Neon)
 
-Variante Fly Postgres:
-
-```bash
-fly postgres create --name <deine-app>-db --region fra
-fly postgres attach <deine-app>-db --app <deine-app>
-```
-
-`attach` setzt `DATABASE_URL`. Diese App erwartet jedoch **`DB_URL`** im JDBC-Format. Beispiel-Mapping
-(extern oder Fly):
+1. In der Neon-Console ein Projekt anlegen (Region nahe der Fly-`primary_region`, z. B. EU → `fra`).
+2. Den Connection-String der Datenbank kopieren. Neon zeigt etwas wie:
+   `postgresql://<user>:<pass>@<endpoint>.<region>.aws.neon.tech/<db>?sslmode=require`
+   - Den **gepoolten** Endpoint verwenden (Host enthält `-pooler`) — passt zu Neons Autosuspend und
+     vielen kurzen Verbindungen.
+3. Daraus die App-Variablen ableiten. Wichtig: diese App erwartet eine **JDBC-URL** in `DB_URL`,
+   Benutzer/Passwort getrennt. Aus dem Neon-String wird:
+   - `DB_URL = jdbc:postgresql://<endpoint-pooler>.<region>.aws.neon.tech/<db>?sslmode=require`
+   - `DB_USERNAME = <user>`
+   - `DB_PASSWORD = <pass>`
 
 ```bash
 fly secrets set --app <deine-app> \
-  DB_URL="jdbc:postgresql://<host>:5432/<db>" \
-  DB_USERNAME="<user>" \
-  DB_PASSWORD="<pass>"
+  DB_URL="jdbc:postgresql://<endpoint-pooler>.eu-central-1.aws.neon.tech/<db>?sslmode=require" \
+  DB_USERNAME="<neon-user>" \
+  DB_PASSWORD="<neon-pass>"
 ```
+
+Hinweise:
+- **`sslmode=require` ist Pflicht** — Neon akzeptiert nur TLS. Ohne den Parameter scheitert der
+  Verbindungsaufbau.
+- **Autosuspend:** Ein inaktiver Neon-Endpoint schläft ein und braucht beim ersten Zugriff ~1–2 s zum
+  Aufwachen. Die App ist dafür konfiguriert (`%server`: `min-size=0`, `acquisition-timeout=10s`) — bei
+  Bedarf via `DB_POOL_MAX_SIZE` / `DB_POOL_MIN_SIZE` / `DB_ACQUISITION_TIMEOUT` justieren.
+- Liquibase migriert beim ersten Start automatisch in die leere Neon-DB.
 
 ## 3. Secrets / Env-Vars
 
@@ -52,7 +61,8 @@ Alle aus dem `%server`-Profil referenzierten Variablen (siehe `application.prope
 
 | Variable | Pflicht | Zweck |
 |---|---|---|
-| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | ja | PostgreSQL (JDBC-URL) |
+| `DB_URL` / `DB_USERNAME` / `DB_PASSWORD` | ja | Neon-PostgreSQL als JDBC-URL (`jdbc:postgresql://…?sslmode=require`) |
+| `DB_POOL_MAX_SIZE` / `DB_POOL_MIN_SIZE` / `DB_ACQUISITION_TIMEOUT` | nein | Pool-Tuning für Neon (Defaults 10 / 0 / 10s) |
 | `OIDC_AUTH_SERVER_URL` | ja* | OIDC-Issuer-URL |
 | `OIDC_CLIENT_ID` | ja* | OIDC-Client (Default `sourcecode-scanner`) |
 | `OIDC_CLIENT_SECRET` | ja* | OIDC-Client-Secret |
