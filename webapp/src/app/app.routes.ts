@@ -2,7 +2,12 @@ import { Routes } from '@angular/router';
 
 // Management-UI (Roadmap-Phase 4, docs/06): Dashboard, Repositories, Scans, Findings.
 export const routes: Routes = [
-  { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
+  // Öffentliche Info-/Landing-Seite zuerst (kein Login-Zwang); Login startet von dort (WR-30).
+  {
+    path: '',
+    pathMatch: 'full',
+    loadComponent: () => import('./features/login/login-page').then((m) => m.LoginPage),
+  },
   {
     path: 'login',
     loadComponent: () => import('./features/login/login-page').then((m) => m.LoginPage),

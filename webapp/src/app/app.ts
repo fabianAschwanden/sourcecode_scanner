@@ -32,10 +32,16 @@ export class App {
   constructor() {
     this.auth.load();
     const router = inject(Router);
-    this.onLoginPage.set(router.url.startsWith('/login'));
+    this.onLoginPage.set(App.isPublicPage(router.url));
     router.events
       .pipe(filter((e): e is NavigationEnd => e instanceof NavigationEnd))
-      .subscribe((e) => this.onLoginPage.set(e.urlAfterRedirects.startsWith('/login')));
+      .subscribe((e) => this.onLoginPage.set(App.isPublicPage(e.urlAfterRedirects)));
+  }
+
+  /** Öffentliche Seiten ohne App-Header/Nav: Landing (/) und Login. */
+  private static isPublicPage(url: string): boolean {
+    const path = url.split('?')[0];
+    return path === '/' || path.startsWith('/login');
   }
 
   protected t(key: string): string {

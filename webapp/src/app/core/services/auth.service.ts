@@ -8,8 +8,9 @@ export interface CurrentUser {
 /**
  * Authentifizierungs-Zustand der UI (WR-30/31). Prüft beim Start {@code /api/me}: liefert es den
  * Nutzer (200), ist man eingeloggt; jede andere Antwort (401/403 oder ein 302-Redirect des IdP, der
- * per {@code redirect: 'manual'} als opaque-redirect ankommt) bedeutet „nicht eingeloggt" und leitet
- * — ausserhalb der öffentlichen Login-Seite — auf {@code /login}. Logout via Vollseiten-Navigation.
+ * per {@code redirect: 'manual'} als opaque-redirect ankommt) bedeutet „nicht eingeloggt". Auf den
+ * öffentlichen Seiten (Landing {@code /} und {@code /login}) bleibt man dann dort (kein Login-Zwang);
+ * auf geschützten Seiten wird auf die Landing/Login geleitet. Logout via Vollseiten-Navigation.
  */
 @Injectable({ providedIn: 'root' })
 export class AuthService {
@@ -43,8 +44,10 @@ export class AuthService {
   }
 
   private redirectToLogin(): void {
-    if (!location.pathname.startsWith('/login')) {
-      location.assign('/login');
+    // Auf den öffentlichen Seiten (Landing / und /login) NICHT umleiten — kein Login-Zwang.
+    const path = location.pathname;
+    if (path !== '/' && !path.startsWith('/login')) {
+      location.assign('/');
     }
   }
 }
