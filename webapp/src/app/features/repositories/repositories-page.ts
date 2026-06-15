@@ -851,9 +851,15 @@ export class RepositoriesPage {
       next: () => this.createFromWizard(`secret:${this.secretName()}`),
       error: (err) => {
         this.wizardBusy.set(false);
+        // Diagnose: vollständige Fehlerinfo (Status + Body) sichtbar machen, um die Ursache zu finden.
+        const detail =
+          err?.error?.error ??
+          (typeof err?.error === 'string' ? err.error : null) ??
+          err?.message ??
+          this.t('common.error');
         this.message.set(
           this.t('repos.wizard.msg.secretFailed', {
-            error: err?.error?.error ?? this.t('common.error'),
+            error: `[${err?.status ?? '?'}] ${detail}`,
           }),
         );
       },
