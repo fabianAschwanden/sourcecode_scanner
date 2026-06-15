@@ -144,6 +144,7 @@ Die Web-UI ist mehrsprachig (FR-26, NFR-27/28). Mitgeliefert: Englisch (Default)
 | WR-30 | M | Die UI MUSS Authentifizierung über den Unternehmens-IdP erzwingen (OIDC/SSO gemäß Blueprint; SAML nur, falls der Blueprint es aufnimmt — TR-13). |
 | WR-31 | M | Die UI MUSS rollenbasierte Autorisierung (Viewer/Operator/Admin) durchsetzen. |
 | WR-31a | S | Als IdP-Variante KANN GitHub (OAuth2) genutzt werden (Profil `ghauth`, `quarkus.oidc.provider=github`). Da GitHub keine Rollen liefert, leitet ein Augmentor die Rolle aus dem Login ab: Logins in der Allowlist (`scanner.auth.github.admin-logins`) → `admin`, jeder andere authentifizierte Nutzer → `viewer`. |
+| WR-30a | S | Die UI SOLL eine eigene Login-Landing-Seite (App-Stil) mit „Sign in"-Aktion bereitstellen, statt direkt zum IdP zu springen; Landing + statische Assets sind öffentlich, geschützte Endpunkte erfordern Login. Nach dem Login zeigt der Header den angemeldeten Nutzer und eine Abmelde-Aktion. |
 | WR-32 | M | Credentials DÜRFEN in der UI nur als Secret-Store-Referenz eingegeben werden; Klartext wird nie zurückgegeben. |
 | WR-33 | M | Treffer MÜSSEN serverseitig redigiert werden; Klartext-Secrets verlassen das Backend nie. |
 | WR-34 | S | Jede steuernde Aktion (Scan-Start, Suppression, Konfig-Änderung) SOLL auditierbar protokolliert werden. |

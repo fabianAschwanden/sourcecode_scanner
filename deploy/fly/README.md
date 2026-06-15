@@ -117,6 +117,10 @@ fly secrets set --app <deine-app> \
 
 - `GITHUB_ADMIN_LOGINS` = kommaseparierte GitHub-Logins, die **admin** werden (case-insensitiv). Jeder
   andere erfolgreich per GitHub authentifizierte Nutzer erhält **viewer** (nur lesend).
+- **Login-UX:** Im `ghauth`-Profil zeigt die App eine eigene Login-Landing-Seite (GitHub-Dark-Stil) mit
+  „Sign in with GitHub". Der Button löst über `/login` den OIDC-Redirect aus; nach dem Login erscheinen
+  im Header der GitHub-Login + „Abmelden" (`/q/oidc/logout`). Landing + statische Assets sind öffentlich,
+  `/api/*` ist geschützt.
 - Möchtest du, dass **niemand ausser den Admins** rein darf, leite das später über eine zusätzliche
   Allowlist; aktuell ist „andere = viewer" gewählt.
 
