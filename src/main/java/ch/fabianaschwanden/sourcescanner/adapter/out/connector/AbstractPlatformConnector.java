@@ -63,7 +63,24 @@ abstract class AbstractPlatformConnector implements RepositoryConnectorPort {
             return clone.call();
         } catch (Exception e) {
             deleteRecursively(workDir);
-            throw new IllegalStateException("failed to clone " + ref.id() + ": " + e.getMessage(), e);
+            String msg = e.getMessage() == null ? "" : e.getMessage();
+            String low = msg.toLowerCase(java.util.Locale.ROOT);
+            // Token akzeptiert, aber kein Lesezugriff auf genau dieses Repo (GitHub: "git-upload-pack
+            // not permitted") — andere Ursache als eine reine Auth-Ablehnung, daher eigener Hinweis.
+            if (low.contains("not permitted") || low.contains("upload-pack")) {
+                throw new IllegalStateException("not authorized to clone " + ref.id()
+                        + ": token authenticated but lacks read access to this repository — grant the token "
+                        + "access to " + ref.id() + " (fine-grained: add the repo + Contents:Read; classic: "
+                        + "repo scope + SSO authorisation), or verify the repository path exists", e);
+            }
+            if (low.contains("not authorized") || msg.contains("401") || msg.contains("403")) {
+                String hint = token.isPresent()
+                        ? "token rejected — check the token is valid, not expired, and has read access to "
+                                + ref.id() + " (private/org repos need an authorized token)"
+                        : "repository requires authentication — add an access token for " + ref.id();
+                throw new IllegalStateException("not authorized to clone " + ref.id() + ": " + hint, e);
+            }
+            throw new IllegalStateException("failed to clone " + ref.id() + ": " + msg, e);
         }
     }
 

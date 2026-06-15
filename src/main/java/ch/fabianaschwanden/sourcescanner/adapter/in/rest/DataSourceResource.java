@@ -1,5 +1,6 @@
 package ch.fabianaschwanden.sourcescanner.adapter.in.rest;
 
+import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.BulkResultDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.DataSourceDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.DataSourceSchemaDto;
 import ch.fabianaschwanden.sourcescanner.domain.model.KeyValuePair;
@@ -59,6 +60,31 @@ public class DataSourceResource {
     @RolesAllowed({"operator", "admin"})
     public void delete(@PathParam("id") UUID id) {
         dataSources.delete(id, actor());
+    }
+
+    /** Sammel-Löschen mehrerer Datenquellen (WR-67/23); je ID einzeln + auditiert. */
+    @POST
+    @Path("/bulk/delete")
+    @RolesAllowed({"operator", "admin"})
+    public BulkResultDto bulkDelete(BulkIdsRequest request) {
+        String who = actor();
+        BulkResultDto.Builder result = new BulkResultDto.Builder();
+        for (UUID id : request.ids()) {
+            try {
+                dataSources.delete(id, who);
+                result.success();
+            } catch (RuntimeException e) {
+                result.failure(id.toString(), e.getMessage());
+            }
+        }
+        return result.build();
+    }
+
+    /** Batch-Anfrage nur mit IDs. */
+    public record BulkIdsRequest(List<UUID> ids) {
+        public BulkIdsRequest {
+            ids = ids == null ? List.of() : List.copyOf(ids);
+        }
     }
 
     /** Probe-Abruf gegen die übergebene Definition; liefert redigiertes Attribut-Schema (IR-63). */

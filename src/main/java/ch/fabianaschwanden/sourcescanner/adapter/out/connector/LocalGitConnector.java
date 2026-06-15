@@ -46,13 +46,24 @@ public class LocalGitConnector implements RepositoryConnectorPort {
     }
 
     private Repository open(RepositoryRef ref) {
+        java.io.File path = new java.io.File(ref.location());
+        if (!path.exists()) {
+            throw new IllegalArgumentException("local path does not exist: " + ref.location()
+                    + " (the server process must be able to read this path)");
+        }
+        FileRepositoryBuilder builder = new FileRepositoryBuilder()
+                .findGitDir(path)
+                .setMustExist(true);
+        if (builder.getGitDir() == null) {
+            // findGitDir hat von hier aufwärts kein .git gefunden ⇒ klarer Fehler statt
+            // JGits kryptischem "One of setGitDir or setWorkTree must be called.".
+            throw new IllegalArgumentException("no git repository found at or above: " + ref.location()
+                    + " (expected a .git directory; for localGit point to the working tree or its .git)");
+        }
         try {
-            return new FileRepositoryBuilder()
-                    .findGitDir(new java.io.File(ref.location()))
-                    .setMustExist(true)
-                    .build();
+            return builder.build();
         } catch (IOException e) {
-            throw new UncheckedIOException("no git repository at " + ref.location(), e);
+            throw new UncheckedIOException("failed to open git repository at " + ref.location(), e);
         }
     }
 }

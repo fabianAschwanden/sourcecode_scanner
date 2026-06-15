@@ -77,6 +77,8 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'scans.col.actions': 'Actions',
     'scans.cancel': 'Cancel',
     'scans.empty': 'No scans yet.',
+    'scans.row.meta': '{mode} · {findings} findings',
+    'scans.viewFindings': 'View findings',
 
     // Settings + secrets
     'settings.title': 'Settings',
@@ -98,15 +100,129 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'secrets.msg.saved': 'Secret saved.',
     'secrets.msg.failed': 'Save failed: {error}',
 
+    // Rulesets
+    'nav.rulesets': 'Rulesets',
+    'rulesets.title': 'Rulesets',
+    'rulesets.intro':
+      'Define which rules apply, with which severity, and for which repositories. Active rulesets affect future scans.',
+    'rulesets.new': 'New ruleset',
+    'rulesets.empty': "You haven't created any rulesets.",
+    'rulesets.name': 'Ruleset name',
+    'rulesets.enforcement': 'Enforcement status',
+    'rulesets.enforcement.DISABLED': 'Disabled',
+    'rulesets.enforcement.ACTIVE': 'Active',
+    'rulesets.scope': 'Scope',
+    'rulesets.scope.global': 'All repositories',
+    'rulesets.scope.repos': 'Selected repositories',
+    'rulesets.rules': 'Rules',
+    'rulesets.rules.intro': 'Which rules should be applied?',
+    'rulesets.rule.severity': 'Severity',
+    'rulesets.rule.mode': 'Match mode',
+    'rulesets.mode.ALWAYS': 'Always',
+    'rulesets.mode.LIST': 'Against list',
+    'rulesets.mode.API': 'Against API',
+    'rulesets.mode.dataSource': 'Data source',
+    'rulesets.save': 'Create',
+    'rulesets.col.enforcement': 'Enforcement',
+    'rulesets.col.scope': 'Scope',
+    'rulesets.col.rules': 'Rules',
+    'rulesets.msg.saved': 'Ruleset saved.',
+    'rulesets.msg.failed': 'Save failed: {error}',
+
+    // Bulk actions
+    'bulk.selected': '{count} selected',
+    'bulk.selectAll': 'Select all',
+    'bulk.clear': 'Clear',
+    'bulk.done': '{succeeded}/{total} done',
+    'bulk.scan': 'Scan',
+    'bulk.remediationOn': 'Remediation on',
+    'bulk.remediationOff': 'Remediation off',
+
     // Generic
     'common.error': 'Error',
     'common.delete': 'Delete',
     'common.save': 'Save',
     'common.test': 'Test',
+    'common.edit': 'Edit',
     'common.create': 'Create',
     'common.yes': 'yes',
     'common.no': 'no',
     'common.none': '—',
+    'common.saved': 'saved ✓',
+
+    // Dashboard
+    'dashboard.title': 'Dashboard',
+    'dashboard.recentScans': 'Recent scans',
+    'dashboard.col.repository': 'Repository',
+    'dashboard.col.status': 'Status',
+    'dashboard.col.findings': 'Findings',
+    'dashboard.col.started': 'Started',
+    'dashboard.empty': 'No scans yet.',
+    'dashboard.row.meta': '{findings} findings · started {when}',
+    'dashboard.findingsBadge': '{count} findings',
+
+    // Policies
+    'policies.title': 'Policies',
+    'policies.orgUnit': 'Org unit (empty = default)',
+    'policies.orgUnit.tooltip':
+      'Organisational unit the policy applies to, e.g. team-a or team-a/payments — empty = default policy for all',
+    'policies.failOn.tooltip': 'Minimum severity that breaks the gate (turns it red), e.g. HIGH',
+    'policies.failOnNewOnly.tooltip':
+      'Only new findings (not accepted in the baseline) break the gate',
+    'policies.groups': 'Detector groups (secrets,pii)',
+    'policies.groups.tooltip':
+      'Comma-separated enabled detector groups, e.g. secrets,pii (available: secrets, pii, license, iac)',
+    'policies.col.orgUnit': 'Org unit',
+    'policies.col.newOnly': 'NewOnly',
+    'policies.col.groups': 'Groups',
+    'policies.col.actions': 'Actions',
+    'policies.defaultOrgUnit': '(default)',
+    'policies.empty': 'No policies — default gate applies.',
+    'policies.row.meta': 'failOn {failOn} · new only: {newOnly} · groups: {groups}',
+
+    // Settings (general form)
+    'settings.email': 'General notification e-mail',
+    'settings.email.placeholder': 'security-team@company.com',
+    'settings.email.tooltip':
+      'Address for system-wide messages/digests, e.g. security-team@company.com',
+    'settings.defaultFailOn': 'Default gate severity',
+    'settings.defaultFailOn.tooltip':
+      'Minimum severity that turns the gate red when no policy applies',
+    'settings.defaultScanMode': 'Default scan mode',
+    'settings.scanMode.tooltip': 'full = entire history; incremental = only new commits',
+    'settings.retentionDays': 'Retention (days)',
+    'settings.retentionDays.tooltip': 'Retention period for scan results in days, e.g. 365',
+
+    // Field placeholders / tooltips (repositories, data sources)
+    'repos.name.tooltip': 'Unique source name, e.g. wm-tippspiel or team-a/payment-service',
+    'repos.type.tooltip':
+      'Source type: localGit (local path) or a platform (github/gitlab/bitbucket)',
+    'repos.location.tooltip':
+      'localGit: local path, e.g. /Users/me/git/project — platform: clone URL, e.g. https://github.com/org/repo.git',
+    'repos.tokenRef.tooltip':
+      'Secret reference, never a cleartext token — e.g. env:GITHUB_TOKEN or vault:secret/scanner#token',
+    'repos.reportEmails.tooltip':
+      'Recipients of the report after scans of this repo, e.g. team@company.com, secops@company.com',
+    'repos.remediation.tooltip':
+      'Enables auto-fix via PR and history scrub for this repo (opt-in, RMR-02). Off by default.',
+    'repos.scrubPreview.tooltip':
+      'Shows redacted which secrets would be removed from git history — without changes (RMR-22).',
+    'repos.remediation.toggleOn': 'Remediation enabled — click to disable',
+    'repos.remediation.toggleOff': 'Remediation disabled — click to enable (opt-in, RMR-02)',
+    'ds.name.tooltip': 'Unique data source name, e.g. crm-partners',
+    'ds.kind.tooltip':
+      'REST API: values loaded live. Upload: key-value list (CSV/JSON), only hashes stored.',
+    'ds.baseUrl': 'Base URL',
+    'ds.baseUrl.tooltip': 'Base URL of the REST API, e.g. https://crm.intern/api/v1',
+    'ds.path': 'Path',
+    'ds.path.tooltip': 'Relative path to the data list, e.g. /partners',
+    'ds.recordsPath': 'Records path',
+    'ds.recordsPath.tooltip': 'JSONPath to the records, e.g. $.data[*] or $[*]',
+    'ds.auth.tooltip': 'Authentication against the API',
+    'ds.tokenRef.tooltip': 'Secret reference, no cleartext — e.g. env:CRM_API_TOKEN',
+    'ds.probe.tooltip':
+      'Fetches the data source for a test and shows the available attributes (redacted).',
+    'ds.uploadAction.tooltip': 'Upload CSV or JSON (key,value). Only hashes are stored.',
 
     // Repositories
     'repos.title': 'Repositories',
@@ -124,6 +240,89 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.empty': 'No sources.',
     'repos.remediation.on': 'on',
     'repos.remediation.off': 'off',
+    'repos.description': 'Description',
+    'repos.visibility': 'Visibility',
+    'repos.search': 'Find a repository…',
+    'repos.new': 'New',
+    'repos.filter.type': 'Type',
+    'repos.filter.type.all': 'All types',
+    'repos.filter.language': 'Language',
+    'repos.filter.language.all': 'All languages',
+    'repos.sort': 'Sort',
+    'repos.sort.name': 'Name',
+    'repos.sort.updated': 'Last updated',
+    'repos.updated': 'Updated {when}',
+    'repos.neverScanned': 'never scanned',
+    'repos.cards.empty': 'No repositories — add one with “New”.',
+    'repos.toggleList': 'Manage (table)',
+    'repos.toggleCards': 'Overview (cards)',
+    'repos.create.title': 'Create a new repository source',
+    'repos.edit.title': 'Edit repository source',
+    'repos.wizard.start': 'Add via wizard',
+    'repos.wizard.step.provider': 'Provider',
+    'repos.wizard.step.details': 'Repository & key',
+    'repos.wizard.step.review': 'Review',
+    'repos.wizard.provider.title': 'Choose a provider',
+    'repos.wizard.provider.intro':
+      'Pick the hosting platform — sensible defaults are pre-filled; you only add the repository and the access key.',
+    'repos.wizard.details.title': 'Repository & access key',
+    'repos.wizard.details.intro':
+      'Enter the clone URL; the name is derived automatically. For hosted providers add a read access token.',
+    'repos.wizard.location.help': 'Clone URL (or local path for Local Git).',
+    'repos.wizard.key.title': 'Access key',
+    'repos.wizard.key.help.github':
+      'GitHub: Settings → Developer settings → Personal access tokens. A fine-grained or classic token with read access to the repo contents is enough.',
+    'repos.wizard.key.help.gitlab':
+      'GitLab: User settings → Access tokens. Create a personal access token with read_api and read_repository scope.',
+    'repos.wizard.key.help.bitbucket':
+      'Bitbucket: Personal settings → App passwords. Create an app password with repository read permission.',
+    'repos.wizard.key.note.github.finegrained':
+      'Fine-grained token: set the resource owner to the org/user that owns the repo and grant this repository "Contents: Read".',
+    'repos.wizard.key.note.github.classic':
+      'Classic token: the "repo" scope is required for private repositories.',
+    'repos.wizard.key.note.github.sso':
+      'If the organisation uses SAML/SSO, authorise the token for that org ("Configure SSO" on the token page) — otherwise cloning fails with "not authorized".',
+    'repos.wizard.key.note.github.expiry':
+      'Make sure the token is not expired and pasted without extra spaces or line breaks.',
+    'repos.wizard.key.note.gitlab.group':
+      'For group/sub-group repos the token owner needs at least Reporter access to that project.',
+    'repos.wizard.key.note.bitbucket.workspace':
+      'The app password belongs to a user who must be a member of the workspace with repository read access.',
+    'repos.wizard.key.openDocs': 'Where to create the token',
+    'repos.wizard.key.scopes': 'Recommended scopes',
+    'repos.wizard.key.mode': 'How to handle the key',
+    'repos.wizard.key.mode.none': 'No key — public / anonymous access',
+    'repos.wizard.key.none.help':
+      'For public repositories no token is needed. Private repositories will fail to clone without one.',
+    'repos.wizard.key.mode.store': 'Store key (AES-encrypted in DB), referenced automatically',
+    'repos.wizard.key.mode.reference': 'Only reference an environment variable (env:NAME)',
+    'repos.wizard.key.value': 'Access key',
+    'repos.wizard.key.value.help':
+      'Pasted once, stored encrypted at rest; never shown again (WR-32).',
+    'repos.wizard.key.ref.help': 'Secret reference only (env:/vault:), never a cleartext token.',
+    'repos.wizard.review.title': 'Review and create',
+    'repos.wizard.back': 'Back',
+    'repos.wizard.next': 'Next',
+    'repos.wizard.finish': 'Create repository',
+    'repos.wizard.creating': 'Creating…',
+    'repos.wizard.msg.secretFailed': 'Could not store the key: {error}',
+    'repos.create.intro':
+      'A repository source tells the scanner where to find code. Credentials are stored only as a reference.',
+    'repos.create.section.basics': 'Basics',
+    'repos.create.section.access': 'Access & options',
+    'repos.name.help': 'A unique name for this source.',
+    'repos.location.help': 'Local path or clone URL — depending on the type.',
+    'repos.description.help': 'Optional. Shown on the repository card.',
+    'repos.visibility.help': 'How the source is labelled in the overview.',
+    'repos.tokenRef.help': 'Secret reference only (env:/vault:), never a cleartext token.',
+    'repos.reportEmails.help': 'Optional recipients for the report after a scan of this repo.',
+    'repos.cancel': 'Cancel',
+    'repos.manage.title': 'Manage repository sources',
+    'repos.card.scan': 'Scan',
+    'repos.card.scanning': 'Scanning…',
+    'repos.card.insights': 'View findings',
+    'repos.card.scanStarted': 'Scan started for {name}',
+    'repos.card.lastScanFailed': 'Last scan failed',
 
     // Data sources
     'ds.title': 'External data sources',
@@ -222,6 +421,8 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'scans.col.actions': 'Aktionen',
     'scans.cancel': 'Abbrechen',
     'scans.empty': 'Noch keine Scans.',
+    'scans.row.meta': '{mode} · {findings} Funde',
+    'scans.viewFindings': 'Funde anzeigen',
 
     'settings.title': 'Einstellungen',
     'settings.secrets.title': 'Secrets',
@@ -242,14 +443,125 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'secrets.msg.saved': 'Secret gespeichert.',
     'secrets.msg.failed': 'Speichern fehlgeschlagen: {error}',
 
+    'nav.rulesets': 'Rulesets',
+    'rulesets.title': 'Rulesets',
+    'rulesets.intro':
+      'Lege fest, welche Regeln mit welcher Severity und für welche Repositories gelten. Aktive Rulesets wirken auf künftige Scans.',
+    'rulesets.new': 'Neues Ruleset',
+    'rulesets.empty': 'Du hast noch keine Rulesets erstellt.',
+    'rulesets.name': 'Ruleset-Name',
+    'rulesets.enforcement': 'Enforcement-Status',
+    'rulesets.enforcement.DISABLED': 'Deaktiviert',
+    'rulesets.enforcement.ACTIVE': 'Aktiv',
+    'rulesets.scope': 'Geltungsbereich',
+    'rulesets.scope.global': 'Alle Repositories',
+    'rulesets.scope.repos': 'Ausgewählte Repositories',
+    'rulesets.rules': 'Regeln',
+    'rulesets.rules.intro': 'Welche Regeln sollen angewendet werden?',
+    'rulesets.rule.severity': 'Severity',
+    'rulesets.rule.mode': 'Abgleichsmodus',
+    'rulesets.mode.ALWAYS': 'Immer',
+    'rulesets.mode.LIST': 'Gegen Liste',
+    'rulesets.mode.API': 'Gegen API',
+    'rulesets.mode.dataSource': 'Datenquelle',
+    'rulesets.save': 'Erstellen',
+    'rulesets.col.enforcement': 'Enforcement',
+    'rulesets.col.scope': 'Geltungsbereich',
+    'rulesets.col.rules': 'Regeln',
+    'rulesets.msg.saved': 'Ruleset gespeichert.',
+    'rulesets.msg.failed': 'Speichern fehlgeschlagen: {error}',
+
+    'bulk.selected': '{count} ausgewählt',
+    'bulk.selectAll': 'Alle auswählen',
+    'bulk.clear': 'Aufheben',
+    'bulk.done': '{succeeded}/{total} erledigt',
+    'bulk.scan': 'Scannen',
+    'bulk.remediationOn': 'Remediation an',
+    'bulk.remediationOff': 'Remediation aus',
+
     'common.error': 'Fehler',
     'common.delete': 'Löschen',
     'common.save': 'Speichern',
     'common.test': 'Testen',
+    'common.edit': 'Bearbeiten',
     'common.create': 'Anlegen',
     'common.yes': 'ja',
     'common.no': 'nein',
     'common.none': '—',
+    'common.saved': 'gespeichert ✓',
+
+    'dashboard.title': 'Dashboard',
+    'dashboard.recentScans': 'Letzte Scans',
+    'dashboard.col.repository': 'Repository',
+    'dashboard.col.status': 'Status',
+    'dashboard.col.findings': 'Funde',
+    'dashboard.col.started': 'Gestartet',
+    'dashboard.empty': 'Noch keine Scans.',
+    'dashboard.row.meta': '{findings} Funde · gestartet {when}',
+    'dashboard.findingsBadge': '{count} Funde',
+
+    'policies.title': 'Policies',
+    'policies.orgUnit': 'Org-Unit (leer = Default)',
+    'policies.orgUnit.tooltip':
+      'Organisationseinheit, auf die die Policy greift, z. B. team-a oder team-a/payments — leer = Default-Policy für alle',
+    'policies.failOn.tooltip': 'Mindest-Severity, die das Gate verletzt (rot macht), z. B. HIGH',
+    'policies.failOnNewOnly.tooltip':
+      'Nur neue (nicht in der Baseline akzeptierte) Funde brechen das Gate',
+    'policies.groups': 'Detektor-Gruppen (secrets,pii)',
+    'policies.groups.tooltip':
+      'Komma-getrennte aktivierte Detektor-Gruppen, z. B. secrets,pii (verfügbar: secrets, pii, license, iac)',
+    'policies.col.orgUnit': 'Org-Unit',
+    'policies.col.newOnly': 'NewOnly',
+    'policies.col.groups': 'Gruppen',
+    'policies.col.actions': 'Aktionen',
+    'policies.defaultOrgUnit': '(default)',
+    'policies.empty': 'Keine Policies — Default-Gate gilt.',
+    'policies.row.meta': 'failOn {failOn} · nur neue: {newOnly} · Gruppen: {groups}',
+
+    'settings.email': 'Allgemeine Benachrichtigungs-E-Mail',
+    'settings.email.placeholder': 'security-team@firma.ch',
+    'settings.email.tooltip':
+      'Adresse für systemweite Meldungen/Sammelreports, z. B. security-team@firma.ch',
+    'settings.defaultFailOn': 'Standard-Gate-Severity',
+    'settings.defaultFailOn.tooltip':
+      'Mindest-Severity, ab der das Gate rot wird, wenn keine Policy greift',
+    'settings.defaultScanMode': 'Standard-Scan-Modus',
+    'settings.scanMode.tooltip': 'full = gesamte Historie; incremental = nur neue Commits',
+    'settings.retentionDays': 'Aufbewahrung (Tage)',
+    'settings.retentionDays.tooltip': 'Aufbewahrungsfrist für Scan-Ergebnisse in Tagen, z. B. 365',
+
+    'repos.name.tooltip':
+      'Eindeutiger Name der Quelle, z. B. wm-tippspiel oder team-a/payment-service',
+    'repos.type.tooltip':
+      'Quellentyp: localGit (lokaler Pfad) oder eine Plattform (github/gitlab/bitbucket)',
+    'repos.location.tooltip':
+      'localGit: lokaler Pfad, z. B. /Users/me/git/projekt — Plattform: Clone-URL, z. B. https://github.com/org/repo.git',
+    'repos.tokenRef.tooltip':
+      'Secret-Referenz, kein Klartext-Token — z. B. env:GITHUB_TOKEN oder vault:secret/scanner#token',
+    'repos.reportEmails.tooltip':
+      'Empfänger für den Report nach Scans dieses Repos, z. B. team@firma.ch, secops@firma.ch',
+    'repos.remediation.tooltip':
+      'Aktiviert Auto-Fix per PR und History-Scrub für dieses Repo (opt-in, RMR-02). Standardmässig aus.',
+    'repos.scrubPreview.tooltip':
+      'Zeigt redigiert, welche Secrets aus der Git-Historie entfernt würden — ohne Änderung (RMR-22).',
+    'repos.remediation.toggleOn': 'Remediation aktiv — klicken zum Deaktivieren',
+    'repos.remediation.toggleOff':
+      'Remediation deaktiviert — klicken zum Aktivieren (opt-in, RMR-02)',
+    'ds.name.tooltip': 'Eindeutiger Name der Datenquelle, z. B. crm-partners',
+    'ds.kind.tooltip':
+      'REST-API: Werte werden live geladen. Upload: Key-Value-Liste (CSV/JSON), nur Hashes gespeichert.',
+    'ds.baseUrl': 'Basis-URL',
+    'ds.baseUrl.tooltip': 'Basis-URL der REST-API, z. B. https://crm.intern/api/v1',
+    'ds.path': 'Pfad',
+    'ds.path.tooltip': 'Relativer Pfad zur Datenliste, z. B. /partners',
+    'ds.recordsPath': 'Datensatz-Pfad',
+    'ds.recordsPath.tooltip': 'JSONPath auf die Datensätze, z. B. $.data[*] oder $[*]',
+    'ds.auth.tooltip': 'Authentifizierung gegen die API',
+    'ds.tokenRef.tooltip': 'Secret-Referenz, kein Klartext — z. B. env:CRM_API_TOKEN',
+    'ds.probe.tooltip':
+      'Ruft die Datenquelle testweise ab und zeigt die verfügbaren Attribute (redigiert).',
+    'ds.uploadAction.tooltip':
+      'CSV oder JSON hochladen (key,value). Es werden nur Hashes gespeichert.',
 
     'repos.title': 'Repositories',
     'repos.name': 'Name',
@@ -266,6 +578,90 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.empty': 'Keine Quellen.',
     'repos.remediation.on': 'aktiv',
     'repos.remediation.off': 'aus',
+    'repos.description': 'Beschreibung',
+    'repos.visibility': 'Sichtbarkeit',
+    'repos.search': 'Repository suchen…',
+    'repos.new': 'Neu',
+    'repos.filter.type': 'Typ',
+    'repos.filter.type.all': 'Alle Typen',
+    'repos.filter.language': 'Sprache',
+    'repos.filter.language.all': 'Alle Sprachen',
+    'repos.sort': 'Sortieren',
+    'repos.sort.name': 'Name',
+    'repos.sort.updated': 'Zuletzt aktualisiert',
+    'repos.updated': 'Aktualisiert {when}',
+    'repos.neverScanned': 'nie gescannt',
+    'repos.cards.empty': 'Keine Repositories — über „Neu" anlegen.',
+    'repos.toggleList': 'Verwalten (Tabelle)',
+    'repos.toggleCards': 'Übersicht (Karten)',
+    'repos.create.title': 'Neue Repository-Quelle anlegen',
+    'repos.edit.title': 'Repository-Quelle bearbeiten',
+    'repos.wizard.start': 'Per Assistent hinzufügen',
+    'repos.wizard.step.provider': 'Anbieter',
+    'repos.wizard.step.details': 'Repository & Key',
+    'repos.wizard.step.review': 'Übersicht',
+    'repos.wizard.provider.title': 'Anbieter wählen',
+    'repos.wizard.provider.intro':
+      'Wähle die Hosting-Plattform — sinnvolle Defaults werden vorbelegt; du ergänzt nur Repository und Zugriffs-Key.',
+    'repos.wizard.details.title': 'Repository & Zugriffs-Key',
+    'repos.wizard.details.intro':
+      'Clone-URL eingeben; der Name wird automatisch abgeleitet. Für gehostete Anbieter einen Lese-Token ergänzen.',
+    'repos.wizard.location.help': 'Clone-URL (oder lokaler Pfad bei Local Git).',
+    'repos.wizard.key.title': 'Zugriffs-Key',
+    'repos.wizard.key.help.github':
+      'GitHub: Settings → Developer settings → Personal access tokens. Ein fine-grained oder klassischer Token mit Lesezugriff auf den Repo-Inhalt genügt.',
+    'repos.wizard.key.help.gitlab':
+      'GitLab: Benutzereinstellungen → Access Tokens. Personal Access Token mit Scope read_api und read_repository anlegen.',
+    'repos.wizard.key.help.bitbucket':
+      'Bitbucket: Persönliche Einstellungen → App-Passwörter. App-Passwort mit Repository-Leserecht anlegen.',
+    'repos.wizard.key.note.github.finegrained':
+      'Fine-grained Token: Resource owner auf die Org/den Nutzer setzen, dem das Repo gehört, und diesem Repository „Contents: Read" geben.',
+    'repos.wizard.key.note.github.classic':
+      'Klassischer Token: Für private Repositories ist der Scope „repo" nötig.',
+    'repos.wizard.key.note.github.sso':
+      'Nutzt die Organisation SAML/SSO, muss der Token für diese Org autorisiert werden („Configure SSO" auf der Token-Seite) — sonst schlägt das Klonen mit „not authorized" fehl.',
+    'repos.wizard.key.note.github.expiry':
+      'Sicherstellen, dass der Token nicht abgelaufen und ohne zusätzliche Leerzeichen/Zeilenumbrüche eingefügt ist.',
+    'repos.wizard.key.note.gitlab.group':
+      'Bei Gruppen-/Untergruppen-Repos braucht der Token-Inhaber mindestens Reporter-Zugriff auf das Projekt.',
+    'repos.wizard.key.note.bitbucket.workspace':
+      'Das App-Passwort gehört zu einem Nutzer, der Mitglied des Workspace mit Repository-Leserecht sein muss.',
+    'repos.wizard.key.openDocs': 'Wo der Token zu erstellen ist',
+    'repos.wizard.key.scopes': 'Empfohlene Scopes',
+    'repos.wizard.key.mode': 'Wie der Key behandelt wird',
+    'repos.wizard.key.mode.none': 'Ohne Key — öffentlicher / anonymer Zugriff',
+    'repos.wizard.key.none.help':
+      'Für öffentliche Repositories ist kein Token nötig. Private Repositories lassen sich ohne Token nicht klonen.',
+    'repos.wizard.key.mode.store':
+      'Key speichern (AES-verschlüsselt in DB), automatisch referenziert',
+    'repos.wizard.key.mode.reference': 'Nur eine Umgebungsvariable referenzieren (env:NAME)',
+    'repos.wizard.key.value': 'Zugriffs-Key',
+    'repos.wizard.key.value.help':
+      'Einmal eingefügt, verschlüsselt gespeichert; wird nie wieder angezeigt (WR-32).',
+    'repos.wizard.key.ref.help': 'Nur Secret-Referenz (env:/vault:), nie ein Klartext-Token.',
+    'repos.wizard.review.title': 'Prüfen und anlegen',
+    'repos.wizard.back': 'Zurück',
+    'repos.wizard.next': 'Weiter',
+    'repos.wizard.finish': 'Repository anlegen',
+    'repos.wizard.creating': 'Wird angelegt…',
+    'repos.wizard.msg.secretFailed': 'Key konnte nicht gespeichert werden: {error}',
+    'repos.create.intro':
+      'Eine Repository-Quelle sagt dem Scanner, wo der Code liegt. Credentials werden nur als Referenz gespeichert.',
+    'repos.create.section.basics': 'Grunddaten',
+    'repos.create.section.access': 'Zugriff & Optionen',
+    'repos.name.help': 'Ein eindeutiger Name für diese Quelle.',
+    'repos.location.help': 'Lokaler Pfad oder Clone-URL — je nach Typ.',
+    'repos.description.help': 'Optional. Wird auf der Repo-Karte angezeigt.',
+    'repos.visibility.help': 'Wie die Quelle in der Übersicht gekennzeichnet wird.',
+    'repos.tokenRef.help': 'Nur Secret-Referenz (env:/vault:), nie ein Klartext-Token.',
+    'repos.reportEmails.help': 'Optionale Empfänger für den Report nach einem Scan dieses Repos.',
+    'repos.cancel': 'Abbrechen',
+    'repos.manage.title': 'Repository-Quellen verwalten',
+    'repos.card.scan': 'Scannen',
+    'repos.card.scanning': 'Scannt…',
+    'repos.card.insights': 'Funde anzeigen',
+    'repos.card.scanStarted': 'Scan gestartet für {name}',
+    'repos.card.lastScanFailed': 'Letzter Scan fehlgeschlagen',
 
     'ds.title': 'Externe Datenquellen',
     'ds.intro':

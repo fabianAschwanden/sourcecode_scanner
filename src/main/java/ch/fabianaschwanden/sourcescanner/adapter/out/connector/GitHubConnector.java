@@ -65,4 +65,13 @@ public class GitHubConnector extends AbstractPlatformConnector {
         }
         return repos;
     }
+
+    /**
+     * GitHub-Konvention für HTTPS-Klonen mit Token: Username {@code x-access-token}, Passwort = Token.
+     * Zuverlässiger als „Token als Username" — funktioniert mit klassischen wie fine-grained PATs.
+     */
+    @Override
+    protected org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider credentialsFor(String token) {
+        return new org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider("x-access-token", token);
+    }
 }

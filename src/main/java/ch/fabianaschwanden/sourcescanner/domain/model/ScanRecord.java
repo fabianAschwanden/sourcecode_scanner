@@ -17,7 +17,8 @@ public record ScanRecord(
         Instant startedAt,
         Instant finishedAt,
         ScanTrigger trigger,
-        CiMetadata ci) {
+        CiMetadata ci,
+        String errorMessage) {
 
     public ScanRecord {
         if (id == null) {
@@ -36,11 +37,18 @@ public record ScanRecord(
         ci = ci == null ? CiMetadata.NONE : ci;
     }
 
-    /** Bequemer Konstruktor für server-getriebene Läufe (Abwärtskompatibilität). */
+    /** Bequemer Konstruktor ohne Trigger/CI/Fehler (Abwärtskompatibilität). */
     public ScanRecord(UUID id, String repoId, String mode, ScanStatus status, int progress,
                       int findingCount, Instant startedAt, Instant finishedAt) {
         this(id, repoId, mode, status, progress, findingCount, startedAt, finishedAt,
-                ScanTrigger.SERVER, CiMetadata.NONE);
+                ScanTrigger.SERVER, CiMetadata.NONE, null);
+    }
+
+    /** Bequemer Konstruktor ohne Fehlermeldung (Abwärtskompatibilität). */
+    public ScanRecord(UUID id, String repoId, String mode, ScanStatus status, int progress,
+                      int findingCount, Instant startedAt, Instant finishedAt, ScanTrigger trigger,
+                      CiMetadata ci) {
+        this(id, repoId, mode, status, progress, findingCount, startedAt, finishedAt, trigger, ci, null);
     }
 
     /** Neuer server-getriebener Lauf im Status RUNNING. */
@@ -52,26 +60,31 @@ public record ScanRecord(
     public static ScanRecord ingested(UUID id, String repoId, String mode, ScanStatus status,
                                       int findingCount, CiMetadata ci) {
         return new ScanRecord(id, repoId, mode, status, 100, findingCount, Instant.now(), Instant.now(),
-                ScanTrigger.CI, ci);
+                ScanTrigger.CI, ci, null);
     }
 
     public ScanRecord withProgress(int newProgress) {
         return new ScanRecord(id, repoId, mode, status, newProgress, findingCount, startedAt, finishedAt,
-                trigger, ci);
+                trigger, ci, errorMessage);
     }
 
     public ScanRecord completed(int findings) {
         return new ScanRecord(id, repoId, mode, ScanStatus.COMPLETED, 100, findings, startedAt, Instant.now(),
-                trigger, ci);
+                trigger, ci, null);
     }
 
     public ScanRecord failed() {
+        return failed(null);
+    }
+
+    /** Fehlgeschlagener Lauf mit (redigierter) Fehlermeldung für die Anzeige je Repo (WR-82). */
+    public ScanRecord failed(String reason) {
         return new ScanRecord(id, repoId, mode, ScanStatus.FAILED, progress, findingCount, startedAt,
-                Instant.now(), trigger, ci);
+                Instant.now(), trigger, ci, reason);
     }
 
     public ScanRecord cancelled() {
         return new ScanRecord(id, repoId, mode, ScanStatus.CANCELLED, progress, findingCount, startedAt,
-                Instant.now(), trigger, ci);
+                Instant.now(), trigger, ci, errorMessage);
     }
 }

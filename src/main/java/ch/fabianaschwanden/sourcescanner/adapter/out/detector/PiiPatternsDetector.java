@@ -12,6 +12,7 @@ import jakarta.enterprise.context.ApplicationScoped;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -31,24 +32,28 @@ public class PiiPatternsDetector implements DetectorPort {
 
     private enum Rule {
         IBAN("iban", Pattern.compile("\\b[A-Z]{2}\\d{2}(?:[ ]?[A-Z0-9]{4}){3,7}(?:[ ]?[A-Z0-9]{1,3})?\\b"),
-                Severity.HIGH, PiiPatternsDetector::isValidIban),
+                Severity.HIGH, PiiPatternsDetector::isValidIban, true),
         CREDITCARD("creditcard", Pattern.compile("\\b(?:\\d[ -]?){13,19}\\b"),
-                Severity.HIGH, m -> Luhn.isValid(m)),
+                Severity.HIGH, PiiPatternsDetector::looksLikeCreditCard, true),
         EMAIL("email", Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b"),
-                Severity.MEDIUM, m -> true),
+                Severity.MEDIUM, m -> true, true),
+        // Telefon: standardmässig AUS (DR-50) — die Heuristik ist zu rauschanfällig (Versionen,
+        // IDs, Beträge). Nur aktiv, wenn explizit in patterns gelistet oder per Ruleset aktiviert.
         PHONE("phone", Pattern.compile("(?<![\\w.])\\+?\\d[\\d ()/-]{7,16}\\d(?![\\w.])"),
-                Severity.MEDIUM, m -> digitCount(m) >= 8 && digitCount(m) <= 15);
+                Severity.MEDIUM, m -> digitCount(m) >= 8 && digitCount(m) <= 15, false);
 
         final String key;
         final Pattern pattern;
         final Severity severity;
         final Predicate<String> validator;
+        final boolean defaultOn;
 
-        Rule(String key, Pattern pattern, Severity severity, Predicate<String> validator) {
+        Rule(String key, Pattern pattern, Severity severity, Predicate<String> validator, boolean defaultOn) {
             this.key = key;
             this.pattern = pattern;
             this.severity = severity;
             this.validator = validator;
+            this.defaultOn = defaultOn;
         }
     }
 
@@ -73,7 +78,9 @@ public class PiiPatternsDetector implements DetectorPort {
         if (!config.enabled()) {
             return List.of();
         }
-        Set<String> enabled = enabledPatterns(config);
+        Map<String, Map<String, Object>> overrides = ruleOverrides(config);
+        Set<String> enabled = enabledPatterns(config, overrides);
+        TestEmailFilter testEmails = TestEmailFilter.from(config, overrides.get(Rule.EMAIL.key));
         List<Finding> findings = new ArrayList<>();
         String[] lines = unit.content().split("\n", -1);
         for (int i = 0; i < lines.length; i++) {
@@ -86,13 +93,36 @@ public class PiiPatternsDetector implements DetectorPort {
                 if (!enabled.contains(rule.key)) {
                     continue;
                 }
+                Map<String, Object> ov = overrides.get(rule.key);
+                // Ruleset-Override: Regel deaktiviert (DR-50) ⇒ überspringen.
+                if (ov != null && Boolean.FALSE.equals(ov.get("enabled"))) {
+                    continue;
+                }
+                // Abgleichsmodus (DR-52): bei list/api wird die Muster-Erkennung übersprungen —
+                // die wertbasierte Erkennung übernimmt der Datenquellen-Detektor (pii.customer-data-api).
+                if (ov != null && isValueMode(ov.get("matchMode"))) {
+                    continue;
+                }
+                Severity severity = severityOf(rule, ov);
                 Matcher m = rule.pattern.matcher(safe);
                 while (m.find()) {
                     String match = m.group();
                     if (!rule.validator.test(match)) {
                         continue;
                     }
-                    findings.add(new Finding(ID, DetectorCategory.PII, rule.severity, rule.key,
+                    // Datums-/Zeitstempel-Treffer sind nie PII (z. B. 2024-01-15, 15.01.2024,
+                    // 2024-01-15T12:30:45) und werden ausgefiltert — sie sind immer unbedenklich.
+                    if (looksLikeDate(match)) {
+                        continue;
+                    }
+                    // Offensichtliche Test-/Dummy-/Platzhalter-E-Mails sind keine echten Nutzerdaten
+                    // (reservierte Beispiel-/Test-Domains, bekannte Fixture-/Docs-Adressen) und werden
+                    // ausgefiltert — sie sind immer unbedenklich (DR-57). Die Listen sind über die
+                    // params erweiterbar/abschaltbar (TestEmailFilter).
+                    if (rule == Rule.EMAIL && testEmails.matches(match)) {
+                        continue;
+                    }
+                    findings.add(new Finding(ID, DetectorCategory.PII, severity, rule.key,
                             unit.path(), i + 1, Redaction.redact(match), unit.commitId(), false));
                 }
             }
@@ -104,25 +134,201 @@ public class PiiPatternsDetector implements DetectorPort {
     public List<DetectorRule> rules() {
         List<DetectorRule> rules = new ArrayList<>();
         for (Rule rule : Rule.values()) {
-            rules.add(new DetectorRule(rule.key, rule.key, "PII pattern: " + rule.key, rule.severity));
+            rules.add(new DetectorRule(rule.key, rule.key, "PII pattern: " + rule.key, rule.severity,
+                    rule.defaultOn));
         }
         return rules;
     }
 
-    private Set<String> enabledPatterns(DetectorConfig config) {
+    /** Ruleset-Overrides aus den params (ruleId → {enabled, severity, matchMode, dataSourceName}). */
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> ruleOverrides(DetectorConfig config) {
+        Object raw = config.params().get("ruleOverrides");
+        if (raw instanceof Map<?, ?> map) {
+            return (Map<String, Map<String, Object>>) map;
+        }
+        return Map.of();
+    }
+
+    /** Effektive Severity einer Regel: Override aus dem Ruleset, sonst die Default-Severity (DR-51). */
+    private Severity severityOf(Rule rule, Map<String, Object> override) {
+        if (override != null && override.get("severity") instanceof String s && !s.isBlank()) {
+            try {
+                return Severity.valueOf(s.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException ignored) {
+                // ungültige Severity ⇒ Default
+            }
+        }
+        return rule.severity;
+    }
+
+    /** {@code true}, wenn der Modus LIST/API ist (wertbasiert statt Muster, DR-52). */
+    private boolean isValueMode(Object matchMode) {
+        return "LIST".equals(matchMode) || "API".equals(matchMode);
+    }
+
+    /**
+     * Effektiv aktive Muster: explizite {@code patterns}-Liste, falls gesetzt; sonst alle Regeln mit
+     * {@code defaultOn} (DR-50). Eine Regel, die im Ruleset ausdrücklich {@code enabled=true} trägt,
+     * wird zusätzlich aktiviert — so lässt sich z. B. {@code phone} (standardmässig aus) gezielt
+     * wieder einschalten.
+     */
+    private Set<String> enabledPatterns(DetectorConfig config, Map<String, Map<String, Object>> overrides) {
         Object raw = config.params().get("patterns");
+        Set<String> result;
         if (raw instanceof List<?> list && !list.isEmpty()) {
-            return list.stream().map(o -> String.valueOf(o).toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
+            result = list.stream().map(o -> String.valueOf(o).toLowerCase(Locale.ROOT))
+                    .collect(Collectors.toCollection(java.util.HashSet::new));
+        } else {
+            result = new java.util.HashSet<>();
+            for (Rule r : Rule.values()) {
+                if (r.defaultOn) {
+                    result.add(r.key);
+                }
+            }
         }
-        Set<String> all = new java.util.HashSet<>();
-        for (Rule r : Rule.values()) {
-            all.add(r.key);
-        }
-        return all;
+        // Im Ruleset ausdrücklich aktivierte Regeln ergänzen (DR-50), auch wenn defaultOn=false.
+        overrides.forEach((ruleId, ov) -> {
+            if (Boolean.TRUE.equals(ov.get("enabled"))) {
+                result.add(ruleId);
+            }
+        });
+        return result;
     }
 
     private static int digitCount(String s) {
         return (int) s.chars().filter(Character::isDigit).count();
+    }
+
+    /**
+     * Kreditkarten-Plausibilität: Luhn-gültig (DR-22) und keine triviale Ziffernfolge. Verwirft
+     * lauter gleiche Ziffern (z. B. {@code 0000…0000} aus einer Null-UUID/Default-ID, die Luhn rein
+     * zufällig besteht) — solche Werte sind nie echte Kartennummern. Echte Testnummern wie
+     * {@code 4111111111111111} (zwei verschiedene Ziffern) bleiben erkannt (FP-Reduktion).
+     */
+    private static boolean looksLikeCreditCard(String match) {
+        if (!Luhn.isValid(match)) {
+            return false;
+        }
+        String digits = match.replaceAll("[\\s-]", "");
+        return digits.chars().distinct().count() > 1;
+    }
+
+    /**
+     * Datums-/Zeitstempel-Muster, die nie PII sind und immer ausgefiltert werden (z. B. von der
+     * Telefon-/Kreditkarten-Heuristik als Falsch-Positiv erfasst). Abgedeckt: ISO {@code 2024-01-15},
+     * mit Zeit {@code 2024-01-15T12:30:45} / {@code 2024-01-15 12:30}, sowie {@code 15.01.2024} /
+     * {@code 15/01/2024} (DD.MM.YYYY / DD/MM/YYYY) und reine Uhrzeiten {@code 12:30:45}.
+     */
+    private static final List<Pattern> DATE_PATTERNS = List.of(
+            // ISO-Datum, optional gefolgt von (auch unvollständiger) Uhrzeit: 2024-01-15, 2024-01-15 12,
+            // 2024-01-15T12:30, 2024-01-15 12:30:45
+            Pattern.compile("^\\d{4}-\\d{2}-\\d{2}(?:[T ]\\d{1,2}(?::\\d{2}(?::\\d{2})?)?)?$"),
+            // DD.MM.YYYY / DD/MM/YYYY, optional mit Uhrzeit-Anhang
+            Pattern.compile("^\\d{1,2}[./]\\d{1,2}[./]\\d{2,4}(?:[T ]\\d{1,2}(?::\\d{2}(?::\\d{2})?)?)?$"),
+            // reine Uhrzeit
+            Pattern.compile("^\\d{1,2}:\\d{2}(?::\\d{2})?$"));
+
+    /** {@code true}, wenn der Treffer (getrimmt) ein Datum/Zeitstempel ist — dann nie als Fund melden. */
+    private static boolean looksLikeDate(String match) {
+        String trimmed = match.trim();
+        for (Pattern p : DATE_PATTERNS) {
+            if (p.matcher(trimmed).matches()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Default-Listen reservierter Beispiel-/Test-Domains und -TLDs, die nie echte Personen adressieren
+     * (RFC 2606/6761 {@code example.*}, {@code .test}, {@code .invalid}, {@code .localhost}; private/
+     * interne Namen {@code .internal}, {@code .local}; deutscher Platzhalter {@code beispiel.*}) sowie
+     * bekannte Fixture-/Docs-Adressen.
+     */
+    private static final Set<String> DEFAULT_TEST_TLDS = Set.of("test", "invalid", "localhost",
+            "example", "internal", "local");
+    private static final Set<String> DEFAULT_TEST_SLDS = Set.of("example", "beispiel");
+    private static final Set<String> DEFAULT_TEST_DOMAINS = Set.of(
+            "googletest.com", "resend.dev", "mailinator.com", "test.com");
+
+    /**
+     * Konfigurierbarer Test-/Dummy-/Platzhalter-E-Mail-Filter (DR-57). Erkennt Adressen, die nie echte
+     * Nutzerdaten sind (z. B. {@code fabian@example.com}, {@code bot@wm-tippspiel.internal},
+     * {@code onboarding@resend.dev}), und meldet dafür keinen Fund. Die Default-Listen werden additiv
+     * um die in den params konfigurierten Einträge ergänzt; mit {@code testEmailFilter: false} ist der
+     * Filter ganz aus. Params werden sowohl top-level (YAML/CLI-Scan-Konfig) als auch aus dem
+     * {@code email}-Ruleset-Override gelesen.
+     *
+     * <p>Beispiel-params:
+     * <pre>{@code testEmailFilter: true, testDomains: [acme-test.io], testTlds: [demo], testSlds: [sandbox]}</pre>
+     */
+    record TestEmailFilter(boolean enabled, Set<String> domains, Set<String> tlds, Set<String> slds) {
+
+        static TestEmailFilter from(DetectorConfig config, Map<String, Object> emailOverride) {
+            Map<String, Object> top = config.params();
+            if (Boolean.FALSE.equals(value(top, emailOverride, "testEmailFilter"))) {
+                return new TestEmailFilter(false, Set.of(), Set.of(), Set.of());
+            }
+            return new TestEmailFilter(true,
+                    merged(DEFAULT_TEST_DOMAINS, top, emailOverride, "testDomains"),
+                    merged(DEFAULT_TEST_TLDS, top, emailOverride, "testTlds"),
+                    merged(DEFAULT_TEST_SLDS, top, emailOverride, "testSlds"));
+        }
+
+        /** {@code true} für eine offensichtliche Test-/Platzhalter-Adresse (fall-insensitiv). */
+        boolean matches(String email) {
+            if (!enabled) {
+                return false;
+            }
+            int at = email.lastIndexOf('@');
+            if (at < 0 || at == email.length() - 1) {
+                return false;
+            }
+            String domain = email.substring(at + 1).toLowerCase(Locale.ROOT);
+            if (domains.contains(domain)) {
+                return true;
+            }
+            String[] labels = domain.split("\\.");
+            if (labels.length == 0) {
+                return false;
+            }
+            if (tlds.contains(labels[labels.length - 1])) {
+                return true;
+            }
+            // Second-Level-Domain (z. B. example.com / beispiel.de) als Platzhalter behandeln.
+            return labels.length >= 2 && slds.contains(labels[labels.length - 2]);
+        }
+
+        /** params-Wert: erst top-level, dann email-Override (Override gewinnt, falls beides gesetzt). */
+        private static Object value(Map<String, Object> top, Map<String, Object> override, String key) {
+            if (override != null && override.get(key) != null) {
+                return override.get(key);
+            }
+            return top.get(key);
+        }
+
+        /**
+         * Vereinigt die Default-Liste mit den (optional) konfigurierten, kleingeschriebenen Einträgen aus
+         * top-level params und email-Override (additiv, DR-57). Fehlen beide, gilt nur der Default.
+         */
+        private static Set<String> merged(Set<String> defaults, Map<String, Object> top,
+                Map<String, Object> override, String key) {
+            Set<String> result = null;
+            for (Object raw : new Object[] {top.get(key), override == null ? null : override.get(key)}) {
+                if (raw instanceof List<?> extra && !extra.isEmpty()) {
+                    if (result == null) {
+                        result = new java.util.HashSet<>(defaults);
+                    }
+                    for (Object o : extra) {
+                        if (o != null) {
+                            result.add(String.valueOf(o).trim().toLowerCase(Locale.ROOT));
+                        }
+                    }
+                }
+            }
+            return result == null ? defaults : result;
+        }
     }
 
     /** IBAN-Validierung per ISO-7064 Mod-97 (Prüfziffer == 1). */

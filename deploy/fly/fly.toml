@@ -1,0 +1,31 @@
+# Fly.io-Konfiguration für den Source Code Scanner (Quarkus JVM + Angular/Quinoa).
+# App-Name vor dem ersten Deploy anpassen bzw. via `fly launch` erzeugen lassen.
+app = "sourcecode-scanner"
+primary_region = "fra"   # Frankfurt; an Bedarf anpassen (z. B. zur DB-Region)
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  # staging: ohne OIDC (nur zum Hochfahren/DB-Test). Für produktiven Betrieb auf "prod,server"
+  # umstellen und die OIDC_*-Secrets setzen.
+  QUARKUS_PROFILE = "prod,staging"
+  # Quarkus lauscht in fast-jar standardmässig auf 8080; Host wird im Dockerfile auf 0.0.0.0 gesetzt.
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0   # für „immer an" auf 1 setzen (Scans laufen serverseitig)
+
+  [[http_service.checks]]
+    method = "GET"
+    path = "/q/health/ready"
+    interval = "15s"
+    timeout = "3s"
+    grace_period = "30s"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"   # JVM + Scans: bei grossen Repos eher 2gb

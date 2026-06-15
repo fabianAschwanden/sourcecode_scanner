@@ -50,6 +50,7 @@ public class ServerScanService implements ManageScansUseCase {
     private final ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics;
     private final ch.fabianaschwanden.sourcescanner.domain.port.in.ManagePoliciesUseCase policies;
     private final ch.fabianaschwanden.sourcescanner.domain.port.out.EmailNotificationPort email;
+    private final ch.fabianaschwanden.sourcescanner.domain.port.out.RulesetPort rulesets;
 
     /** Laufende Scans für die Abbruch-Anforderung (best effort). */
     private final ConcurrentHashMap<UUID, Boolean> cancelRequested = new ConcurrentHashMap<>();
@@ -61,7 +62,8 @@ public class ServerScanService implements ManageScansUseCase {
                              ServerScanPersistence persistence,
                              ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics,
                              ch.fabianaschwanden.sourcescanner.domain.port.in.ManagePoliciesUseCase policies,
-                             ch.fabianaschwanden.sourcescanner.domain.port.out.EmailNotificationPort email) {
+                             ch.fabianaschwanden.sourcescanner.domain.port.out.EmailNotificationPort email,
+                             ch.fabianaschwanden.sourcescanner.domain.port.out.RulesetPort rulesets) {
         this.sources = sources;
         this.orchestrator = orchestrator;
         this.scanRecords = scanRecords;
@@ -73,6 +75,7 @@ public class ServerScanService implements ManageScansUseCase {
         this.metrics = metrics;
         this.policies = policies;
         this.email = email;
+        this.rulesets = rulesets;
     }
 
     @Override
@@ -85,17 +88,22 @@ public class ServerScanService implements ManageScansUseCase {
         persistence.saveRecord(starting);
         audit.record(AuditEvent.of(actor, "scan.start", source.name(), "mode=" + historyMode));
 
-        // Policy im Request-Kontext auflösen (DB-Zugriff); der async Lauf macht keine Config-DB-Reads.
+        // Policy + Rulesets im Request-Kontext auflösen (DB-Zugriff); der async Lauf macht keine
+        // Config-DB-Reads. Die effektiven Regel-Overrides werden in die Detektor-Konfig eingespeist.
         Policy policy = policies.resolveFor(source.name());
-        executor.runAsync(() -> runScan(starting, source, historyMode, policy));
+        ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.Resolved resolvedRules =
+                ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.resolve(
+                        rulesets.all(), source.name());
+        executor.runAsync(() -> runScan(starting, source, historyMode, policy, resolvedRules));
         return starting;
     }
 
-    private void runScan(ScanRecord starting, RepositorySource source, HistoryMode mode, Policy policy) {
+    private void runScan(ScanRecord starting, RepositorySource source, HistoryMode mode, Policy policy,
+                         ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.Resolved resolvedRules) {
         UUID scanId = starting.id();
         broadcaster.publish(new ScanEvent(scanId, ScanStatus.RUNNING.name(), 10, 0));
         try {
-            ScanConfig config = configFor(source, mode, policy);
+            ScanConfig config = configFor(source, mode, policy, resolvedRules);
             // Granularer Fortschritt während des Laufs (WR-04b): jede Orchestrator-Meldung wird als
             // RUNNING-Event an die SSE-Abonnenten verteilt.
             List<ScanResult> results = orchestrator.scan(config,
@@ -115,10 +123,20 @@ public class ServerScanService implements ManageScansUseCase {
             sendReport(source, completed, stored);
         } catch (RuntimeException e) {
             LOG.errorf(e, "scan %s failed", scanId);
-            persistence.saveRecord(starting.failed());
+            persistence.saveRecord(starting.failed(shortReason(e)));
             broadcaster.publish(new ScanEvent(scanId, ScanStatus.FAILED.name(), 100, 0));
             broadcaster.complete(scanId);
         }
+    }
+
+    /** Kurze, anzeigetaugliche Fehlerursache (keine Stacktraces); nutzt die Message der Ursache. */
+    private String shortReason(RuntimeException e) {
+        Throwable cause = e.getCause() != null ? e.getCause() : e;
+        String msg = cause.getMessage();
+        if (msg == null || msg.isBlank()) {
+            msg = cause.getClass().getSimpleName();
+        }
+        return msg.length() > 500 ? msg.substring(0, 500) : msg;
     }
 
     private void finish(ScanRecord record, List<StoredFinding> stored) {
@@ -181,15 +199,35 @@ public class ServerScanService implements ManageScansUseCase {
      * (FR-20): Gate-Schwelle und aktivierte Detektor-Gruppen kommen aus der Governance, nicht mehr
      * hardkodiert. Ohne passende Policy gilt die Default-/Fallback-Policy.
      */
-    private ScanConfig configFor(RepositorySource source, HistoryMode mode, Policy policy) {
+    private ScanConfig configFor(RepositorySource source, HistoryMode mode, Policy policy,
+                                 ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.Resolved rules) {
         Map<String, DetectorConfig> detectors = new java.util.LinkedHashMap<>();
         for (String group : policy.enabledDetectorGroups()) {
-            detectors.put(group, new DetectorConfig(true, Map.of()));
+            // Effektive Regel-Overrides (an/aus, Severity, Modus) als params an die Detektoren der
+            // Gruppe durchreichen (DR-50..52); leer ⇒ Default-Verhalten der Detektoren.
+            Map<String, Object> params = rules.isEmpty() ? Map.of()
+                    : Map.of("ruleOverrides", ruleOverrideParams(rules));
+            detectors.put(group, new DetectorConfig(true, params));
         }
         return new ScanConfig(
                 List.of(source.toRef()), List.of(), mode,
                 Runtime.getRuntime().availableProcessors(), 30, detectors,
                 policy.gate(), OutputConfig.defaults(), null, List.of(), false, null);
+    }
+
+    /** Wandelt die effektiven Regel-Overrides in eine framework-neutrale params-Map (ruleId → Felder). */
+    private Map<String, Object> ruleOverrideParams(
+            ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.Resolved rules) {
+        Map<String, Object> out = new java.util.LinkedHashMap<>();
+        rules.byRule().forEach((ruleId, o) -> {
+            Map<String, Object> m = new java.util.LinkedHashMap<>();
+            m.put("enabled", o.enabled());
+            m.put("severity", o.severity() == null ? null : o.severity().name());
+            m.put("matchMode", o.matchMode().name());
+            m.put("dataSourceName", o.dataSourceName());
+            out.put(ruleId, m);
+        });
+        return out;
     }
 
     private HistoryMode parseMode(String mode) {

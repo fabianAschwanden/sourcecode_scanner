@@ -40,4 +40,12 @@ public class RepositorySourceEntity {
     /** Pro-Repo-Opt-in für Auto-Fix/Scrub; Default false (RMR-02). */
     @Column(name = "remediation_enabled", nullable = false)
     public boolean remediationEnabled;
+
+    /** Freitext-Beschreibung für die Repo-Übersicht (WR-82/83). */
+    @Column(name = "description", length = 1024)
+    public String description;
+
+    /** Sichtbarkeits-/Typ-Badge (z. B. public/private); Default private (WR-82). */
+    @Column(name = "visibility")
+    public String visibility;
 }

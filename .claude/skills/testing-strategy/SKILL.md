@@ -28,6 +28,16 @@ Focus on: business-critical paths, error handling, edge cases, security boundari
 
 Skip: trivial getters/setters, framework code, one-off scripts.
 
+## Testdaten-Konventionen
+
+Testdaten müssen synthetisch und eindeutig als solche erkennbar sein — damit PII-Scanner (z.B. gitleaks, eigener sourcecode-scanner) keine false positives erzeugen und keine echten Personendaten im Repo landen:
+
+- **E-Mail**: immer `@example.com`, `@example.org` oder `@test.invalid` (RFC 2606) — nie `@gmail.com` o.ä.
+- **Namen**: generisch (`user1`, `player-a`) statt echter Vornamen
+- **IDs / Kundennummern**: Präfix `TEST-` oder `DUMMY-` wenn das Format produktionsähnlich ist
+- **Passwörter / Tokens in Fixtures**: eindeutig fake (`not-a-real-token`, `scrypt:test:hash`)
+- **Systeminterne Adressen**: `.internal`-TLD oder klar synthetisches Muster
+
 ## Output
 
 Produce a test plan with: what to test, test type for each area, coverage targets, and example test cases. Identify gaps in existing coverage.

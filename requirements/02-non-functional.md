@@ -57,5 +57,6 @@
 |----|------|-------------|-------|
 | NFR-19 | S | Fehlermeldungen zur Konfiguration SOLLEN präzise auf Feld/Zeile verweisen. | CLI |
 | NFR-20 | C | Inline-Suppressions KÖNNEN eine Pflicht-Begründung erzwingen. | Aggregation |
-| NFR-27 | S | Sichtbare UI-Texte MÜSSEN über einen zentralen Übersetzungsmechanismus (Schlüssel→Text) lokalisierbar sein; kein im Markup hartkodierter Anzeigetext. Default-Sprache ist Englisch, Deutsch wird mitgeliefert (FR-26). | Web-UI |
+| NFR-27 | S | Sichtbare UI-Texte MÜSSEN über einen zentralen Übersetzungsmechanismus (Schlüssel→Text) lokalisierbar sein; **kein** im Markup hartkodierter Anzeigetext. Das umfasst **alle** sichtbaren Strings: Überschriften, Tabellen-Spalten, Buttons, Statusmeldungen sowie **`placeholder`- und `title`/Tooltip-Texte**. Default-Sprache ist Englisch, Deutsch wird mitgeliefert (FR-26). | Web-UI |
+| NFR-27a | S | Die Übersetzungs-Wörterbücher (`en`, `de`) MÜSSEN denselben Schlüsselsatz tragen (keine fehlende/leere Übersetzung); ein automatischer Paritäts-Test (`translations.spec.ts`) erzwingt dies im Build. | Web-UI |
 | NFR-28 | C | Die gewählte UI-Sprache KANN clientseitig persistiert werden (z. B. `localStorage`), sodass sie über Sitzungen erhalten bleibt; eine fehlende Übersetzung fällt nachvollziehbar auf den Schlüssel/die Default-Sprache zurück. | Web-UI |

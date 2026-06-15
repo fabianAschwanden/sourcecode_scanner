@@ -1,6 +1,7 @@
 package ch.fabianaschwanden.sourcescanner.adapter.out.connector;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import ch.fabianaschwanden.sourcescanner.domain.model.HistoryMode;
@@ -42,5 +43,21 @@ class LocalGitConnectorTest {
     void supports_nur_localGit() {
         assertTrue(connector.supports(new RepositoryRef("a", "localGit", ".", List.of())));
         assertTrue(connector.supports(new RepositoryRef("a", null, ".", List.of())));
+    }
+
+    @Test
+    void verzeichnis_ohne_git_liefert_klaren_fehler(@TempDir Path noGit) {
+        RepositoryRef ref = new RepositoryRef("self", "localGit", noGit.toString(), List.of());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> connector.walkHistory(ref, HistoryMode.FULL));
+        assertTrue(ex.getMessage().contains("no git repository"));
+    }
+
+    @Test
+    void nicht_existierender_pfad_liefert_klaren_fehler() {
+        RepositoryRef ref = new RepositoryRef("self", "localGit", "/does/not/exist-xyz", List.of());
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> connector.walkHistory(ref, HistoryMode.FULL));
+        assertTrue(ex.getMessage().contains("does not exist"));
     }
 }

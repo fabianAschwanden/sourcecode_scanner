@@ -38,6 +38,7 @@ public class ScanRecordRepository implements PanacheRepositoryBase<ScanRecordEnt
         entity.ciCommit = ci.commit();
         entity.ciBranch = ci.branch();
         entity.ciActor = ci.actor();
+        entity.errorMessage = record.errorMessage();
         persist(entity);
         return record;
     }
@@ -66,6 +67,6 @@ public class ScanRecordRepository implements PanacheRepositoryBase<ScanRecordEnt
     static ScanRecord toDomain(ScanRecordEntity e) {
         CiMetadata ci = new CiMetadata(e.ciRunRef, e.ciPipelineUrl, e.ciCommit, e.ciBranch, e.ciActor);
         return new ScanRecord(e.id, e.repoId, e.mode, e.status, e.progress, e.findingCount,
-                e.startedAt, e.finishedAt, e.triggerSource, ci);
+                e.startedAt, e.finishedAt, e.triggerSource, ci, e.errorMessage);
     }
 }

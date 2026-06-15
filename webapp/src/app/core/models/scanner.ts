@@ -59,6 +59,21 @@ export interface RepositorySource {
   readonly enabled: boolean;
   readonly reportEmails: string[];
   readonly remediationEnabled: boolean;
+  readonly description: string;
+  readonly visibility: string;
+}
+
+export interface RepositoryCard {
+  readonly id: string;
+  readonly name: string;
+  readonly type: string;
+  readonly visibility: string;
+  readonly description: string;
+  readonly enabled: boolean;
+  readonly language: string;
+  readonly lastScanAt: string | null;
+  readonly lastStatus: string | null;
+  readonly lastError: string | null;
 }
 
 export interface PrRef {
@@ -143,6 +158,42 @@ export interface DataSourceSchema {
   readonly sampleRecords: number;
   readonly attributes: { readonly field: string; readonly maskedExample: string }[];
   readonly message: string;
+}
+
+/** Ergebnis einer Sammelaktion (WR-23). */
+export interface BulkResult {
+  readonly total: number;
+  readonly succeeded: number;
+  readonly failed: { readonly id: string; readonly error: string }[];
+}
+
+export type EnforcementStatus = 'DISABLED' | 'ACTIVE';
+export type RuleMatchMode = 'ALWAYS' | 'LIST' | 'API';
+
+export interface RuleOverride {
+  readonly ruleId: string;
+  readonly enabled: boolean;
+  readonly severity: Severity | null;
+  readonly matchMode: RuleMatchMode;
+  readonly dataSourceName: string | null;
+}
+
+export interface Ruleset {
+  readonly id: string | null;
+  readonly name: string;
+  readonly enforcement: EnforcementStatus;
+  readonly global: boolean;
+  readonly repoNames: string[];
+  readonly rules: RuleOverride[];
+}
+
+/** Verfügbare Einzelregel für den Ruleset-Editor (von /api/detectors/rules). */
+export interface RuleInfo {
+  readonly id: string;
+  readonly title: string;
+  readonly category: string;
+  readonly defaultSeverity: Severity;
+  readonly defaultEnabled: string;
 }
 
 export interface Policy {

@@ -10,7 +10,9 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | ID | Prio | Anforderung |
 |----|------|-------------|
 | WR-01 | S | Die Web-UI SOLL die vollständige Steuerung ohne CLI ermöglichen (Quellen, Detektoren, Scans, Baseline, Gate). |
-| WR-02 | S | Die UI SOLL Repository-Quellen anlegen, bearbeiten, löschen und die Verbindung testen können. |
+| WR-02 | S | Die UI SOLL Repository-Quellen anlegen, bearbeiten, löschen und die Verbindung testen können; die Listendarstellung folgt der Repo-Übersicht (WR-80..85). |
+| WR-02a | S | Die UI SOLL einen **Anlege-Assistenten** bieten: Anbieter wählen (GitHub/GitLab/Bitbucket/Local Git) → anbieter-spezifische Defaults (Typ, URL-Platzhalter, env-Referenz-Vorschlag) vorbelegt → nur Repo-URL/Name und Zugriffs-Key ergänzen, mit Hilfetext + Link, wo der Token zu erstellen ist und welche Scopes nötig sind → Übersicht/Anlegen. |
+| WR-02b | S | Im Assistenten SOLL der Key wahlweise (a) **DB-verschlüsselt** als verwaltetes Secret abgelegt und automatisch als `secret:<name>` referenziert werden (WR-19c, Admin) oder (b) als reine **Umgebungs-Referenz** (`env:NAME`) hinterlegt werden; ein Klartext-Key wird nie ins `tokenRef`-Feld geschrieben (WR-32). |
 | WR-03 | S | Die UI SOLL Scans manuell starten (Repo, Branch, Modus) und abbrechen können. |
 | WR-04 | S | Die UI SOLL laufende Scans live mit Fortschritt anzeigen (WebSocket/SSE). |
 | WR-04a | S | Der Scan-Fortschritt MUSS als **Prozentwert (0–100 %)** dargestellt werden, ergänzt um eine visuelle **Fortschrittsleiste**; der Wert SOLL sich während des Laufs live aktualisieren (SSE-Stream je Scan-ID, WR-04), nicht erst am Ende. |
@@ -19,6 +21,38 @@ Schicht (`OR-`). Umsetzung primär in Roadmap-Phase 4–5.
 | WR-06 | S | Die UI SOLL Detektoren aktivieren/deaktivieren und deren Parameter pflegen, mit Validierung vor dem Speichern. |
 | WR-07 | C | Die UI KANN geladene Plugins mit ID, Kategorie und Version anzeigen. |
 | WR-08 | S | Die UI SOLL beim Anlegen/Bearbeiten einer Repository-Quelle optional eine oder mehrere Report-E-Mail-Adressen erfassen, an die nach Scans dieses Repos ein Report versendet wird (IR-53). |
+
+### Repo-Übersicht (GitHub-Stil)
+
+Die Repository-Liste SOLL im Aufbau der GitHub-Repository-Übersicht gestaltet sein
+(Referenz: GitHub „Your repositories"). Konkretisiert WR-02/WR-40. **Lizenz-Anzeige und
+Stern-/Star-Vergabe sind bewusst ausgenommen** (nicht relevant für den Scanner).
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-80 | S | Die Übersicht SOLL eine **Suchleiste** („Repository suchen…") sowie eine Aktion **„Neu"** (Repo-Quelle anlegen) bereitstellen. |
+| WR-81 | S | Die Übersicht SOLL **Filter-/Sortier-Dropdowns** bieten: `Typ` (localGit/github/gitlab/bitbucket), `Sprache` (dominanter Dateityp) und `Sortieren` (Name, zuletzt aktualisiert); Filter/Sortierung wirken **serverseitig** über `/api/sources` (Query-Parameter). |
+| WR-82 | S | Repos SOLLEN als **Karten** dargestellt werden mit: Name (Link zu Details/Scan), **Sichtbarkeits-/Typ-Badge** (z. B. `public`/`private`/`localGit`), optionaler **Beschreibung**, **Sprach-Indikator** (farbiger Punkt + Sprachname) und **„Aktualisiert <relative Zeit>"** (Zeitpunkt des letzten Scans). |
+| WR-83 | S | Die Felder **Beschreibung** und **Sichtbarkeit** SOLLEN beim Anlegen/Bearbeiten der Quelle erfassbar sein (eigene Felder, WR-02); **Sprache** und **Aktualisiert** werden serverseitig abgeleitet (dominanter Dateityp der letzten Funde bzw. letzter Scan-Zeitpunkt). |
+| WR-84 | S | Suche und Filter SOLLEN auf vorhandene Werte wirken (leere Liste/keine Treffer wird klar dargestellt); alle Texte lokalisiert (WR-70). |
+| WR-85 | C | Eine Karte KANN eine kompakte Aktivitäts-/Trend-Andeutung zeigen (z. B. Fund-Trend); Lizenz und Sterne werden nicht angezeigt. |
+
+### Rulesets (feingranulare Regelsteuerung, GitHub-Stil)
+
+Verwaltung benannter Regelsätze analog GitHubs „Rulesets" (FR-27, DR-50..55). Referenz:
+die hochgeladenen Screenshots (Übersicht mit „New ruleset", Editor mit Name/Enforcement/
+Bypass/Scope, Regel-Liste mit Checkboxen).
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| WR-90 | S | Die UI SOLL eine **Rulesets-Übersicht** zeigen (Liste benannter Rulesets, Enforcement-Status, Scope) mit Aktion **„Neues Ruleset"** und Leerzustand-Hinweis. |
+| WR-91 | S | Der Ruleset-Editor SOLL **Name** (Pflicht) und **Enforcement-Status** (`disabled` \| `active`) erfassen. |
+| WR-92 | S | Der Editor SOLL den **Geltungsbereich** wählbar machen: **alle Repos** oder eine **Repo-Auswahl** (Liste der verwalteten Quellen). |
+| WR-93 | S | Der Editor SOLL je **Regel** eine Checkbox (an/aus) mit Kurzbeschreibung und ein **Severity**-Dropdown anbieten (Liste der verfügbaren Regeln aus den aktiven Detektoren, z. B. `email`, `iban`, `creditcard`, `phone`, `secret.high-entropy`). |
+| WR-94 | S | Für wertbezogene Regeln (z. B. `email`) SOLL der Editor einen **Abgleichsmodus** anbieten: `immer` \| `gegen Liste` \| `gegen API`; bei `Liste`/`API` ist eine Datenquelle wählbar (WR-50/IR-67). |
+| WR-95 | S | Rulesets SOLLEN angelegt, bearbeitet und gelöscht werden können (nur Admin, WR-31); Änderungen wirken auf künftige Scans (DR-54) und werden auditiert (WR-34). |
+| WR-96 | C | Die UI KANN je Repository die zutreffenden/effektiven Rulesets anzeigen (welche Regel/Severity gilt) zur Nachvollziehbarkeit (DR-55). |
+| WR-97 | S | Die Rulesets-Übersicht SOLL das ab Start wirksame, automatisch angelegte Ruleset `default` (global, `active`) als regulären, editierbaren Eintrag zeigen (DR-56), damit sichtbar ist, welche Konfiguration ohne weiteres Zutun gilt. |
 
 ### Externe Datenquellen & Attribut-Mapping
 
@@ -45,6 +79,7 @@ welche Attribute im Code geprüft werden (FR-21/FR-22, IR-60..IR-66, DR-23..DR-2
 | WR-18 | C | Die UI KANN nicht-geheime Betriebsparameter pflegen (z. B. Standard-Gate-Severity, Aufbewahrungsfrist, Standard-Scan-Modus), mit Validierung vor dem Speichern. |
 | WR-19 | S | Die UI SOLL beim Anlegen eines Secrets je Eintrag einen **Modus** wählbar machen: (a) **Referenz** (`env:`/`vault:`, kein Wert im Backend, Default — WR-32-konform); (b) **Vault-Write** (Klartext entgegennehmen, an den Secret-Store schreiben, nur die Referenz behalten, Klartext sofort verwerfen, IR-30); (c) **DB-verschlüsselt** (Klartext at-rest verschlüsselt in der zentralen DB, NFR-29). Der Modus bestimmt Speicherung und Anzeige. |
 | WR-19a | M | In allen Modi DARF ein Klartext-Wert nie zurückgegeben, nie geloggt und in der Liste nur als Status/Referenz (bzw. maskiert) dargestellt werden (WR-33, NFR-09); Eingabefelder für Klartext sind maskiert. |
+| WR-19c | S | Ein **DB-verschlüsseltes** Secret SOLL als `secret:<name>` referenzierbar sein (z. B. als `tokenRef` einer Repo-Quelle); die Auflösung entschlüsselt den Wert transient zur Laufzeit (nur env/dev/server mit Encryption-Key, NFR-30) und gibt ihn nie zurück/loggt ihn nie. |
 | WR-19b | M | Secret-Verwaltung (alle Modi) ist nur der Rolle **Admin** zugänglich (WR-31) und jede Änderung wird auditiert (WR-34). |
 
 ### Finding-Workflow
@@ -72,7 +107,7 @@ Die Finding-Liste SOLL im Aufbau der GitHub-„Code scanning"-Ansicht gestaltet 
 | WR-65 | S | Jede **Ergebniszeile** SOLL enthalten: Status-/Severity-Icon, Regel-/Fundtitel, ein **Severity-Badge** (farbcodiert, WR-40), eine Metazeile `#<lfd-Nr.> <Status> <relative Zeit> • erkannt von <Detektor> in <Datei>:<Zeile>` und rechts ein **Branch-Badge**; Klick öffnet die Funddetails (WR-11). |
 | WR-66 | C | Funde KÖNNEN eine stabile, fortlaufende Anzeigenummer (`#N`) je Repository tragen und einen relativen Zeitstempel („vor 1 Minute") für Erst-/Letztsichtung zeigen. |
 | WR-69 | S | Die UI SOLL die **Herkunft** eines Laufs/Funds anzeigen (Server vs. CI/CD) und nach Herkunft filterbar machen; bei CI-Läufen SOLLEN die CI-Metadaten (Pipeline/Job-Link, Commit, Branch) einsehbar sein (IR-22/25). |
-| WR-67 | C | Die Ansicht KANN Mehrfachauswahl per Checkbox je Zeile und Kopfzeile bieten, um Funde gesammelt zu triagieren (Sammel-Baseline/-Suppress mit Pflichtbegründung, WR-12). |
+| WR-67 | S | Listen mit Zeilen-Aktionen (Funde, Repositories, Scans, Rulesets, Datenquellen) SOLLEN eine **Mehrfachauswahl** (Checkbox je Zeile + Kopfzeile „alle") und eine **Sammelaktions-Leiste** bieten, die genau die für die Liste sinnvollen Aktionen als Bulk anbietet (Funde: Baseline/False-Positive/Unterdrücken mit Pflichtbegründung + Fix-per-PR; Repositories: Scan starten/Remediation an-aus/löschen; Scans: abbrechen; Rulesets & Datenquellen: löschen). Die Auswahl wird nach der Aktion zurückgesetzt; Anzahl ausgewählter Elemente ist sichtbar. |
 | WR-68 | S | Treffer-Anzeige bleibt redigiert (WR-33); Branch-, Datei- und Detektorangaben enthalten nie Klartext-Geheimnisse. |
 
 ### Darstellung & Usability
@@ -100,6 +135,7 @@ Die Web-UI ist mehrsprachig (FR-26, NFR-27/28). Mitgeliefert: Englisch (Default)
 | WR-20 | M | Die UI MUSS ausschließlich über eine dokumentierte REST-API mit dem Backend kommunizieren. |
 | WR-21 | C | Die REST-API KANN per OpenAPI-Spezifikation versioniert und extern nutzbar sein. |
 | WR-22 | S | Die Finding-API SOLL die Code-Scanning-Ansicht (WR-60..68) bedienen: Filter nach Status offen/geschlossen inkl. Zähler, Facetten-Werte (vorkommende Detektoren/Regeln/Dateitypen) und eine Sortierung; die Such-Query (WR-62) wird serverseitig oder clientseitig auf diese Filter abgebildet. |
+| WR-23 | S | Die REST-API SOLL **Batch-Endpunkte** für Sammelaktionen (WR-67) bereitstellen (eine Anfrage, mehrere IDs): je Element wird die Aktion ausgeführt und auditiert; die Antwort meldet Erfolg/Fehler je ID. RBAC wie bei der jeweiligen Einzelaktion. |
 
 ### Sicherheit
 

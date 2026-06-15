@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  BulkResult,
   DataSource,
   DataSourceSchema,
   DetectorInfo,
@@ -9,6 +10,9 @@ import {
   ManagedSecret,
   Policy,
   PrRef,
+  RepositoryCard,
+  RuleInfo,
+  Ruleset,
   RepositorySource,
   Scan,
   ScrubDryRun,
@@ -53,12 +57,65 @@ export class ScannerApi {
     return this.http.post<Finding>(`/api/findings/${id}/triage`, { status, reason });
   }
 
+  // --- Sammelaktionen (WR-67/23): eine Anfrage, mehrere IDs ---
+
+  bulkTriage(ids: string[], status: TriageStatus, reason?: string): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/findings/bulk/triage', { ids, status, reason });
+  }
+
+  bulkRemediate(ids: string[]): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/findings/bulk/remediate', { ids });
+  }
+
+  bulkCancelScans(ids: string[]): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/scans/bulk/cancel', { ids });
+  }
+
+  bulkScanRepos(ids: string[], mode = 'full'): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/sources/bulk/scan', { ids, mode });
+  }
+
+  bulkRepoRemediation(ids: string[], enabled: boolean): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/sources/bulk/remediation', { ids, enabled });
+  }
+
+  bulkDeleteRepos(ids: string[]): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/sources/bulk/delete', { ids });
+  }
+
+  bulkDeleteRulesets(ids: string[]): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/rulesets/bulk/delete', { ids });
+  }
+
+  bulkDeleteDataSources(ids: string[]): Observable<BulkResult> {
+    return this.http.post<BulkResult>('/api/datasources/bulk/delete', { ids });
+  }
+
   sources(): Observable<RepositorySource[]> {
     return this.http.get<RepositorySource[]>('/api/sources');
   }
 
+  /** Repo-Übersicht im GitHub-Stil: serverseitige Suche/Filter/Sortierung + Karten (WR-80..84). */
+  repositoryCards(filter: {
+    q?: string;
+    type?: string;
+    language?: string;
+    sort?: string;
+  }): Observable<RepositoryCard[]> {
+    let params = new HttpParams();
+    if (filter.q) params = params.set('q', filter.q);
+    if (filter.type) params = params.set('type', filter.type);
+    if (filter.language) params = params.set('language', filter.language);
+    if (filter.sort) params = params.set('sort', filter.sort);
+    return this.http.get<RepositoryCard[]>('/api/sources/cards', { params });
+  }
+
   createSource(source: RepositorySource): Observable<RepositorySource> {
     return this.http.post<RepositorySource>('/api/sources', source);
+  }
+
+  updateSource(id: string, source: RepositorySource): Observable<RepositorySource> {
+    return this.http.put<RepositorySource>(`/api/sources/${id}`, source);
   }
 
   deleteSource(id: string): Observable<void> {
@@ -71,6 +128,23 @@ export class ScannerApi {
 
   detectors(): Observable<DetectorInfo[]> {
     return this.http.get<DetectorInfo[]>('/api/detectors');
+  }
+
+  /** Verfügbare Einzelregeln für den Ruleset-Editor (WR-93). */
+  detectorRules(): Observable<RuleInfo[]> {
+    return this.http.get<RuleInfo[]>('/api/detectors/rules');
+  }
+
+  rulesets(): Observable<Ruleset[]> {
+    return this.http.get<Ruleset[]>('/api/rulesets');
+  }
+
+  saveRuleset(ruleset: Ruleset): Observable<Ruleset> {
+    return this.http.post<Ruleset>('/api/rulesets', ruleset);
+  }
+
+  deleteRuleset(id: string): Observable<void> {
+    return this.http.delete<void>(`/api/rulesets/${id}`);
   }
 
   policies(): Observable<Policy[]> {

@@ -61,4 +61,8 @@ public class ScanRecordEntity {
 
     @Column(name = "ci_actor")
     public String ciActor;
+
+    /** Kurze Fehlerursache bei fehlgeschlagenem Lauf (für die Repo-Karte, WR-82). */
+    @Column(name = "error_message", length = 512)
+    public String errorMessage;
 }

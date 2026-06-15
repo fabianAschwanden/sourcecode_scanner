@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Kurze Fehlerursache eines fehlgeschlagenen Scans (für die Repo-Karte, WR-82). Additiv. -->
+    <changeSet id="0012-scan-error-message" author="scanner">
+        <addColumn tableName="scan_record">
+            <column name="error_message" type="VARCHAR(512)"/>
+        </addColumn>
+    </changeSet>
+
+</databaseChangeLog>

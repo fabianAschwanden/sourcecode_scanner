@@ -44,8 +44,20 @@ class PiiPatternsDetectorTest {
     }
 
     @Test
+    void triviale_ziffernfolgen_sind_keine_kreditkarte() {
+        // Null-UUID / Default-ID: nur Nullen bestehen Luhn zufällig, sind aber nie eine Kartennummer.
+        String content = String.join(
+                "\n",
+                "<column name=\"id\" value=\"00000000-0000-0000-0000-000000000000\"/>",
+                "zeros = 0000000000000000");
+        List<Finding> f = scan(content, allPatterns());
+        assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("creditcard")),
+                "lauter gleiche Ziffern dürfen keinen Kreditkarten-Fund erzeugen");
+    }
+
+    @Test
     void email_und_iban_werden_erkannt() {
-        List<Finding> f = scan("mail: john.doe@example.com\niban: DE89 3704 0044 0532 0130 00", allPatterns());
+        List<Finding> f = scan("mail: john.doe@firma.ch\niban: DE89 3704 0044 0532 0130 00", allPatterns());
         assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("email")));
         assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("iban")));
     }
@@ -66,5 +78,88 @@ class PiiPatternsDetectorTest {
     @Test
     void deaktiviert_scannt_nicht() {
         assertTrue(scan("a@b.com", new DetectorConfig(false, Map.of())).isEmpty());
+    }
+
+    @Test
+    void datums_und_zeitstempel_werden_nie_gemeldet() {
+        String content = String.join(
+                "\n",
+                "created = 2024-01-15",
+                "ts = 2024-01-15T12:30:45",
+                "when: 2024-01-15 12:30",
+                "dmy = 15.01.2024",
+                "dmy2 = 15/01/2024",
+                "time = 12:30:45");
+        List<Finding> f = scan(content, allPatterns());
+        assertTrue(f.isEmpty(), "Datums-/Zeitstempel sind immer unbedenklich und dürfen keinen Fund erzeugen");
+    }
+
+    @Test
+    void test_und_platzhalter_emails_werden_nie_gemeldet() {
+        // Reservierte Beispiel-/Test-Domains/-TLDs + bekannte Fixture-/Docs-Adressen (DR-57).
+        String content = String.join(
+                "\n",
+                "fabian@example.com",
+                "eva@example.org",
+                "koenigin@example.com",
+                "bot@wm-tippspiel.internal",
+                "fabian@googletest.com",
+                "eins@googletest.com",
+                "onboarding@resend.dev",
+                "du@beispiel.com",
+                "user@host.test",
+                "x@svc.local");
+        List<Finding> f = scan(content, allPatterns());
+        assertTrue(f.stream().noneMatch(x -> x.ruleId().equals("email")),
+                "Test-/Dummy-/Platzhalter-Adressen sind keine echten Nutzerdaten und dürfen keinen Fund erzeugen");
+    }
+
+    @Test
+    void echte_email_neben_test_domain_wird_weiterhin_erkannt() {
+        List<Finding> f = scan("real: anna@firma.de\ndummy: tester@example.com", allPatterns());
+        List<Finding> emails = f.stream().filter(x -> x.ruleId().equals("email")).toList();
+        assertTrue(emails.size() == 1, "nur die echte Adresse wird gemeldet, die Test-Adresse nicht");
+        assertFalse(emails.get(0).redactedMatch().contains("example.com"));
+    }
+
+    @Test
+    void test_email_filter_ist_per_params_erweiterbar() {
+        // Zusätzliche Projekt-Domain als Test-/Platzhalter-Domain markieren (additiv zu den Defaults).
+        DetectorConfig cfg = new DetectorConfig(true, Map.of("testDomains", List.of("acme-test.io")));
+        List<Finding> f = scan("a@acme-test.io\nb@firma.de", cfg);
+        List<Finding> emails = f.stream().filter(x -> x.ruleId().equals("email")).toList();
+        assertTrue(emails.size() == 1, "die konfigurierte Test-Domain wird gefiltert, die echte bleibt");
+        assertTrue(emails.get(0).redactedMatch().contains("firma") || !emails.get(0).redactedMatch().contains("acme"));
+    }
+
+    @Test
+    void test_email_filter_kann_per_params_abgeschaltet_werden() {
+        DetectorConfig cfg = new DetectorConfig(true, Map.of("testEmailFilter", false));
+        List<Finding> f = scan("fabian@example.com", cfg);
+        assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("email")),
+                "bei abgeschaltetem Filter wird auch eine example.com-Adresse gemeldet");
+    }
+
+    @Test
+    void telefon_ist_standardmaessig_aus_und_meldet_nichts() {
+        // phone ist defaultOn=false (DR-50) — ohne explizite Aktivierung kein Fund.
+        List<Finding> f = scan("phone: +41 44 123 45 67", allPatterns());
+        assertTrue(f.stream().noneMatch(x -> x.ruleId().equals("phone")),
+                "Telefon-Regel ist standardmässig deaktiviert und darf keinen Fund erzeugen");
+    }
+
+    @Test
+    void telefon_wird_erkannt_wenn_explizit_in_patterns_aktiviert() {
+        DetectorConfig cfg = new DetectorConfig(true, Map.of("patterns", List.of("phone")));
+        List<Finding> f = scan("phone: +41 44 123 45 67", cfg);
+        assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("phone")));
+    }
+
+    @Test
+    void telefon_wird_erkannt_wenn_per_ruleset_aktiviert() {
+        DetectorConfig cfg = new DetectorConfig(true, Map.of(
+                "ruleOverrides", Map.of("phone", Map.of("enabled", true, "matchMode", "ALWAYS"))));
+        List<Finding> f = scan("phone: +41 44 123 45 67", cfg);
+        assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("phone")));
     }
 }

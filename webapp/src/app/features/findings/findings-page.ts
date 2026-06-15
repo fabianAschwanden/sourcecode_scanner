@@ -141,46 +141,86 @@ const SEVERITY_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
         </p>
       }
 
+      <!-- Sammelaktions-Leiste (WR-67) -->
+      @if (selected().size > 0) {
+        <div
+          class="mb-2 flex flex-wrap items-center gap-2 rounded border border-default bg-surface px-3 py-2 text-sm"
+        >
+          <span class="font-medium">{{ t('bulk.selected', { count: selected().size }) }}</span>
+          <button (click)="bulkTriage('BASELINE')" class="text-accent hover:underline">
+            {{ t('findings.action.baseline') }}
+          </button>
+          <button (click)="bulkTriage('FALSE_POSITIVE')" class="text-accent hover:underline">
+            {{ t('findings.action.fp') }}
+          </button>
+          <button (click)="bulkTriage('SUPPRESSED')" class="text-accent hover:underline">
+            {{ t('findings.action.suppress') }}
+          </button>
+          @if (selectionHasRemediable()) {
+            <button (click)="bulkRemediate()" class="text-accent hover:underline">
+              {{ t('findings.action.fixPr') }}
+            </button>
+          }
+          <button (click)="clearSelection()" class="text-muted hover:underline">
+            {{ t('bulk.clear') }}
+          </button>
+        </div>
+      }
+
       <!-- Ergebniszeilen (WR-65) -->
       <ul class="divide-y divide-default border-t border-default">
+        @if (visibleFindings().length > 0) {
+          <li class="flex items-center gap-2 py-2 text-xs text-muted">
+            <input type="checkbox" [checked]="allSelected()" (change)="toggleSelectAll()" />
+            {{ t('bulk.selectAll') }}
+          </li>
+        }
         @for (f of visibleFindings(); track f.id) {
           <li class="flex items-start justify-between gap-4 py-3">
-            <div class="min-w-0">
-              <div class="flex items-center gap-2">
-                <span [style.color]="severityColor(f.severity)">⚠</span>
-                <span class="font-semibold">{{ f.ruleId }}</span>
-                <span
-                  class="rounded-full border px-2 text-xs"
-                  [style.color]="severityColor(f.severity)"
-                  [style.borderColor]="severityColor(f.severity)"
-                  >{{ f.severity }}</span
-                >
-              </div>
-              <p class="mt-1 text-xs text-muted">
-                {{ statusLabel(f.triageStatus) }} ·
-                {{ t('findings.row.detectedBy', { detector: f.detectorId }) }}
-                <span class="font-mono">{{ f.file }}:{{ f.line }}</span>
-                · <span class="font-mono">{{ f.redactedMatch }}</span>
-              </p>
-              <div class="mt-1 space-x-3 text-xs">
-                <button (click)="triage(f, 'BASELINE')" class="text-accent hover:underline">
-                  {{ t('findings.action.baseline') }}
-                </button>
-                <button (click)="triage(f, 'FALSE_POSITIVE')" class="text-accent hover:underline">
-                  {{ t('findings.action.fp') }}
-                </button>
-                <button (click)="triage(f, 'SUPPRESSED')" class="text-accent hover:underline">
-                  {{ t('findings.action.suppress') }}
-                </button>
-                @if (f.category === 'SECRET' && f.remediationStatus === 'OPEN') {
-                  <button
-                    (click)="remediate(f)"
-                    [title]="t('findings.action.fixPr.tooltip')"
-                    class="text-accent hover:underline"
+            <div class="flex min-w-0 items-start gap-2">
+              <input
+                type="checkbox"
+                class="mt-1"
+                [checked]="selected().has(f.id)"
+                (change)="toggle(f.id)"
+              />
+              <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                  <span [style.color]="severityColor(f.severity)">⚠</span>
+                  <span class="font-semibold">{{ f.ruleId }}</span>
+                  <span
+                    class="rounded-full border px-2 text-xs"
+                    [style.color]="severityColor(f.severity)"
+                    [style.borderColor]="severityColor(f.severity)"
+                    >{{ f.severity }}</span
                   >
-                    {{ t('findings.action.fixPr') }}
+                </div>
+                <p class="mt-1 text-xs text-muted">
+                  {{ statusLabel(f.triageStatus) }} ·
+                  {{ t('findings.row.detectedBy', { detector: f.detectorId }) }}
+                  <span class="font-mono">{{ f.file }}:{{ f.line }}</span>
+                  · <span class="font-mono">{{ f.redactedMatch }}</span>
+                </p>
+                <div class="mt-1 space-x-3 text-xs">
+                  <button (click)="triage(f, 'BASELINE')" class="text-accent hover:underline">
+                    {{ t('findings.action.baseline') }}
                   </button>
-                }
+                  <button (click)="triage(f, 'FALSE_POSITIVE')" class="text-accent hover:underline">
+                    {{ t('findings.action.fp') }}
+                  </button>
+                  <button (click)="triage(f, 'SUPPRESSED')" class="text-accent hover:underline">
+                    {{ t('findings.action.suppress') }}
+                  </button>
+                  @if (canRemediate(f)) {
+                    <button
+                      (click)="remediate(f)"
+                      [title]="t('findings.action.fixPr.tooltip')"
+                      class="text-accent hover:underline"
+                    >
+                      {{ t('findings.action.fixPr') }}
+                    </button>
+                  }
+                </div>
               </div>
             </div>
             <span class="shrink-0 rounded bg-canvas px-2 py-0.5 text-xs text-muted">{{
@@ -207,6 +247,9 @@ export class FindingsPage {
   protected readonly message = signal<string>('');
   protected readonly toolCount = signal<number>(0);
 
+  /** Mehrfachauswahl für Sammelaktionen (WR-67). */
+  protected readonly selected = signal<Set<string>>(new Set());
+
   // Aus der Query abgeleitete Filter (Query ist die Quelle der Wahrheit, WR-62).
   protected readonly statusTab = signal<'open' | 'closed'>('open');
   protected readonly facetSeverity = signal<string>('');
@@ -230,13 +273,18 @@ export class FindingsPage {
     () => this.findings().filter((f) => f.triageStatus !== 'OPEN').length,
   );
 
+  // Optionaler Repo-Vorfilter (aus dem ?repo=-Query-Param, z. B. von der Repo-Karte „Funde anzeigen").
+  protected readonly repoFilter = signal<string>('');
+
   protected readonly visibleFindings = computed(() => {
     const tab = this.statusTab();
     const sev = this.facetSeverity();
     const det = this.facetDetector();
     const rule = this.facetRule();
     const ft = this.facetFileType();
+    const repo = this.repoFilter();
     const list = this.findings().filter((f) => {
+      if (repo && f.repoId !== repo) return false;
       if (tab === 'open' && f.triageStatus !== 'OPEN') return false;
       if (tab === 'closed' && f.triageStatus === 'OPEN') return false;
       if (sev && f.severity.toLowerCase() !== sev) return false;
@@ -252,10 +300,71 @@ export class FindingsPage {
     this.reload();
     this.api.detectors().subscribe((d) => this.toolCount.set(d.length));
     this.onQueryChange();
+    // Repo-Vorfilter aus dem Query-Param übernehmen (Navigation von der Repo-Übersicht).
+    const repo = new URLSearchParams(window.location.search).get('repo');
+    if (repo) {
+      this.repoFilter.set(repo);
+    }
   }
 
   protected t(key: string, params?: Record<string, string | number>): string {
     return this.i18n.t(key, params);
+  }
+
+  // --- Mehrfachauswahl + Sammelaktionen (WR-67) ------------------------------------------------
+
+  protected toggle(id: string): void {
+    const next = new Set(this.selected());
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    this.selected.set(next);
+  }
+
+  protected allSelected(): boolean {
+    const visible = this.visibleFindings();
+    return visible.length > 0 && visible.every((f) => this.selected().has(f.id));
+  }
+
+  protected toggleSelectAll(): void {
+    this.selected.set(
+      this.allSelected() ? new Set() : new Set(this.visibleFindings().map((f) => f.id)),
+    );
+  }
+
+  protected clearSelection(): void {
+    this.selected.set(new Set());
+  }
+
+  protected bulkTriage(status: TriageStatus): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) {
+      return;
+    }
+    const needsReason = status === 'SUPPRESSED' || status === 'FALSE_POSITIVE';
+    const reason = needsReason ? (prompt(this.t('findings.reason.prompt')) ?? '') : undefined;
+    if (needsReason && !reason) {
+      return;
+    }
+    this.api.bulkTriage(ids, status, reason).subscribe((r) => {
+      this.message.set(this.t('bulk.done', { succeeded: r.succeeded, total: r.total }));
+      this.clearSelection();
+      this.reload();
+    });
+  }
+
+  protected bulkRemediate(): void {
+    const ids = [...this.selected()];
+    if (ids.length === 0) {
+      return;
+    }
+    this.api.bulkRemediate(ids).subscribe((r) => {
+      this.message.set(this.t('bulk.done', { succeeded: r.succeeded, total: r.total }));
+      this.clearSelection();
+      this.reload();
+    });
   }
 
   // --- Query <-> Facetten-Synchronisation (WR-62) ----------------------------------------------
@@ -297,6 +406,19 @@ export class FindingsPage {
   }
 
   // --- Aktionen ---------------------------------------------------------------------------------
+
+  /**
+   * Fix-per-PR ist nur für noch offene Secret-Funde anwendbar (nur dafür gibt es einen Vorschlag).
+   * Einheitliche Bedingung für die Zeilen-Aktion und die Sammelaktion, damit beides konsistent ist.
+   */
+  protected canRemediate(finding: Finding): boolean {
+    return finding.category === 'SECRET' && finding.remediationStatus === 'OPEN';
+  }
+
+  /** {@code true}, wenn die aktuelle Auswahl mindestens einen remediierbaren Fund enthält. */
+  protected selectionHasRemediable(): boolean {
+    return this.findings().some((f) => this.selected().has(f.id) && this.canRemediate(f));
+  }
 
   protected remediate(finding: Finding): void {
     this.message.set(this.t('findings.msg.creatingPr'));

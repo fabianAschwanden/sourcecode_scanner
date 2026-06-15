@@ -17,5 +17,8 @@
     <include file="db/changelog/changes/0008-data-source-upload.xml"/>
     <include file="db/changelog/changes/0009-scan-origin-ci.xml"/>
     <include file="db/changelog/changes/0010-create-managed-secret.xml"/>
+    <include file="db/changelog/changes/0011-source-description-visibility.xml"/>
+    <include file="db/changelog/changes/0012-scan-error-message.xml"/>
+    <include file="db/changelog/changes/0013-create-ruleset.xml"/>
 
 </databaseChangeLog>

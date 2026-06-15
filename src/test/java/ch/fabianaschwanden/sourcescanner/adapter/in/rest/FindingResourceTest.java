@@ -60,4 +60,23 @@ class FindingResourceTest {
         given().when().get("/api/findings/" + id).then().statusCode(200)
                 .body("redactedMatch", not(equalTo("AKIAIOSFODNN7EXAMPLE")));
     }
+
+    @Test
+    @TestSecurity(user = "viewer-user", roles = "viewer")
+    void viewer_darf_nicht_bulk_triagieren() {
+        given().contentType("application/json").body("{\"ids\":[],\"status\":\"BASELINE\"}")
+                .when().post("/api/findings/bulk/triage").then().statusCode(403);
+    }
+
+    @Test
+    @TestSecurity(user = "op", roles = "operator")
+    void operator_bulk_triagiert_mehrere_funde() {
+        UUID id1 = seedFinding();
+        UUID id2 = seedFinding();
+        given().contentType("application/json")
+                .body("{\"ids\":[\"%s\",\"%s\"],\"status\":\"BASELINE\"}".formatted(id1, id2))
+                .when().post("/api/findings/bulk/triage").then().statusCode(200)
+                .body("total", equalTo(2))
+                .body("succeeded", equalTo(2));
+    }
 }
