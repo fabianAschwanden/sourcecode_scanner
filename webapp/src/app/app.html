@@ -9,7 +9,7 @@
         @if (auth.user(); as u) {
           <span class="flex items-center gap-2 text-sm text-muted">
             <span class="font-medium text-fg">{{ u.login }}</span>
-            <a href="/q/oidc/logout" class="text-muted hover:text-accent">{{ t('auth.logout') }}</a>
+            <a href="/logout" class="text-muted hover:text-accent">{{ t('auth.logout') }}</a>
           </span>
         }
         <label class="flex items-center gap-1 text-sm text-muted" [title]="t('lang.label')">
