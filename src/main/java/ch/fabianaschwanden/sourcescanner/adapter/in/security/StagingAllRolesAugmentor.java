@@ -7,6 +7,7 @@ import io.quarkus.security.identity.SecurityIdentityAugmentor;
 import io.quarkus.security.runtime.QuarkusSecurityIdentity;
 import io.smallrye.mutiny.Uni;
 import jakarta.enterprise.context.ApplicationScoped;
+import java.security.Principal;
 
 /**
  * NUR im {@code staging}-Profil aktiv (OIDC aus, permissive Policy): stattet jede Identität — auch die
@@ -20,9 +21,16 @@ import jakarta.enterprise.context.ApplicationScoped;
 @IfBuildProfile("staging")
 public class StagingAllRolesAugmentor implements SecurityIdentityAugmentor {
 
+    private static final Principal STAGING_PRINCIPAL = () -> "staging";
+
     @Override
     public Uni<SecurityIdentity> augment(SecurityIdentity identity, AuthenticationRequestContext context) {
-        QuarkusSecurityIdentity augmented = QuarkusSecurityIdentity.builder(identity)
+        // Anonyme Identität zu einer authentifizierten „staging"-Identität mit allen Rollen aufwerten,
+        // sonst lehnt @RolesAllowed die anonyme Anfrage trotz permissiver HTTP-Policy mit 403 ab.
+        QuarkusSecurityIdentity.Builder builder = identity.isAnonymous()
+                ? QuarkusSecurityIdentity.builder().setPrincipal(STAGING_PRINCIPAL).setAnonymous(false)
+                : QuarkusSecurityIdentity.builder(identity);
+        SecurityIdentity augmented = builder
                 .addRole("admin")
                 .addRole("operator")
                 .addRole("viewer")
