@@ -37,14 +37,14 @@ public class PiiPatternsDetector implements DetectorPort {
     private final EmailMatcher emailMatcher;
 
     public PiiPatternsDetector() {
-        this(PiiAllowlist.fromConfiguredFile(), TestEmailDefaults.fromConfiguredFile());
+        this(PiiAllowlist.fromConfiguredFile(), EmailMatcher.Defaults.fromConfiguredFile());
     }
 
     PiiPatternsDetector(PiiAllowlist allowlist) {
-        this(allowlist, TestEmailDefaults.builtIn());
+        this(allowlist, EmailMatcher.Defaults.builtIn());
     }
 
-    PiiPatternsDetector(PiiAllowlist allowlist, TestEmailDefaults testEmails) {
+    PiiPatternsDetector(PiiAllowlist allowlist, EmailMatcher.Defaults testEmails) {
         this.emailMatcher = new EmailMatcher(testEmails);
         this.matchers = List.of(
                 new IbanMatcher(allowlist),
