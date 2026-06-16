@@ -143,7 +143,7 @@ Die Web-UI ist mehrsprachig (FR-26, NFR-27/28). Mitgeliefert: Englisch (Default)
 |----|------|-------------|
 | WR-30 | M | Die UI MUSS Authentifizierung über den Unternehmens-IdP erzwingen (OIDC/SSO gemäß Blueprint; SAML nur, falls der Blueprint es aufnimmt — TR-13). |
 | WR-31 | M | Die UI MUSS rollenbasierte Autorisierung (Viewer/Operator/Admin) durchsetzen. |
-| WR-31a | S | Als IdP-Variante KANN GitHub (OAuth2) genutzt werden (Profil `ghauth`, `quarkus.oidc.provider=github`). Da GitHub keine Rollen liefert, leitet ein Augmentor die Rolle aus dem Login ab: Allowlist (`scanner.auth.github.admin-logins`) → `admin`; sonst (auch privates) aktives Mitglied der konfigurierten Org (`scanner.auth.github.org`, geprüft mit dem User-Access-Token via `GET /user/memberships/orgs/{org}`, Scope `read:org`) → `operator`; sonst → `viewer`. |
+| WR-31a | S | Als IdP-Variante KANN GitHub (OAuth2) genutzt werden (Profil `ghauth`, `quarkus.oidc.provider=github`, Scope `read:user`). Da GitHub keine Rollen liefert, leitet ein Augmentor die Rolle aus dem Login über Allowlists ab: `scanner.auth.github.admin-logins` → `admin`; sonst `scanner.auth.github.operator-logins` → `operator`; sonst → `viewer`. |
 | WR-30a | S | Die UI SOLL eine eigene Login-Landing-Seite (App-Stil) mit „Sign in"-Aktion bereitstellen, statt direkt zum IdP zu springen; Landing + statische Assets sind öffentlich, geschützte Endpunkte erfordern Login. Nach dem Login zeigt der Header den angemeldeten Nutzer und eine Abmelde-Aktion. |
 | WR-32 | M | Credentials DÜRFEN in der UI nur als Secret-Store-Referenz eingegeben werden; Klartext wird nie zurückgegeben. |
 | WR-33 | M | Treffer MÜSSEN serverseitig redigiert werden; Klartext-Secrets verlassen das Backend nie. |
