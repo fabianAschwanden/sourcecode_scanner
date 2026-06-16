@@ -47,6 +47,11 @@ public class ServerScanService implements ManageScansUseCase {
     private final ch.fabianaschwanden.sourcescanner.domain.port.in.ManagePoliciesUseCase policies;
     private final ch.fabianaschwanden.sourcescanner.domain.port.out.EmailNotificationPort email;
     private final ch.fabianaschwanden.sourcescanner.domain.port.out.RulesetPort rulesets;
+    /** Stösst nach dem Einreihen den lokalen Worker sofort an (statt bis zum nächsten Poll-Tick zu warten). */
+    private final jakarta.enterprise.event.Event<ScanQueuedEvent> scanQueued;
+
+    /** Signal „ein Scan wurde eingereiht" — vom {@link ScanWorker} beobachtet (sofortiges Claimen). */
+    public record ScanQueuedEvent() {}
 
     /** Max. gleichzeitige Scans <b>pro Pod</b> (OOM-Schutz auf kleinen Instanzen); konfigurierbar. */
     @org.eclipse.microprofile.config.inject.ConfigProperty(
@@ -60,7 +65,8 @@ public class ServerScanService implements ManageScansUseCase {
                              ch.fabianaschwanden.sourcescanner.domain.port.out.MetricsPort metrics,
                              ch.fabianaschwanden.sourcescanner.domain.port.in.ManagePoliciesUseCase policies,
                              ch.fabianaschwanden.sourcescanner.domain.port.out.EmailNotificationPort email,
-                             ch.fabianaschwanden.sourcescanner.domain.port.out.RulesetPort rulesets) {
+                             ch.fabianaschwanden.sourcescanner.domain.port.out.RulesetPort rulesets,
+                             jakarta.enterprise.event.Event<ScanQueuedEvent> scanQueued) {
         this.sources = sources;
         this.orchestrator = orchestrator;
         this.scanRecords = scanRecords;
@@ -71,6 +77,7 @@ public class ServerScanService implements ManageScansUseCase {
         this.policies = policies;
         this.email = email;
         this.rulesets = rulesets;
+        this.scanQueued = scanQueued;
     }
 
     @Override
@@ -87,6 +94,10 @@ public class ServerScanService implements ManageScansUseCase {
         persistence.saveRecord(record);
         audit.record(AuditEvent.of(actor, "scan.start", source.name(),
                 "mode=" + historyMode + "; QUEUED"));
+        // Worker sofort anstossen (statt bis zum nächsten Poll-Tick zu warten): bei freiem Slot
+        // wechselt der Lauf so praktisch unmittelbar von QUEUED auf RUNNING. Async, damit die
+        // HTTP-Antwort nicht blockiert; der periodische Poll bleibt als Fallback/Cross-Pod-Sicherung.
+        scanQueued.fireAsync(new ScanQueuedEvent());
         return record;
     }
 
