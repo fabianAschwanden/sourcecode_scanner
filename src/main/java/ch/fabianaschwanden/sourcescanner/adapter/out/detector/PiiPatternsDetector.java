@@ -350,6 +350,21 @@ public class PiiPatternsDetector implements DetectorPort {
     private static final Set<String> DEFAULT_TEST_SLDS = Set.of("example", "beispiel");
     private static final Set<String> DEFAULT_TEST_DOMAINS = Set.of(
             "googletest.com", "resend.dev", "mailinator.com", "test.com");
+    /**
+     * Default-Tokens im Local-Part (Teil vor dem {@code @}), die eine Adresse als Test-/Dummy-Konto
+     * ausweisen — auch bei echten Domains (z. B. {@code thorsten.tester@css.ch},
+     * {@code erika.musterfrau@css.ch}, {@code healthcheck@example.com}). Abgeglichen wird tokenweise
+     * (an {@code . _ - +} getrennt), damit z. B. {@code tester} in {@code thorsten.tester} greift.
+     */
+    private static final Set<String> DEFAULT_TEST_LOCAL_PARTS = Set.of(
+            "test", "tester", "testuser", "testaccount", "testperson", "dummy", "example",
+            "mustermann", "musterfrau", "musterkunde", "healthcheck", "noreply", "no-reply",
+            "donotreply", "do-not-reply");
+    /**
+     * Bekannte vollständige Platzhalter-Adressen, deren Domain für sich genommen echt ist und daher
+     * nicht pauschal geblockt werden darf (z. B. {@code mail@mail.com}). Exakter Abgleich.
+     */
+    private static final Set<String> DEFAULT_TEST_ADDRESSES = Set.of("mail@mail.com");
 
     /**
      * Konfigurierbarer Test-/Dummy-/Platzhalter-E-Mail-Filter (DR-57). Erkennt Adressen, die nie echte
@@ -360,19 +375,23 @@ public class PiiPatternsDetector implements DetectorPort {
      * {@code email}-Ruleset-Override gelesen.
      *
      * <p>Beispiel-params:
-     * <pre>{@code testEmailFilter: true, testDomains: [acme-test.io], testTlds: [demo], testSlds: [sandbox]}</pre>
+     * <pre>{@code testEmailFilter: true, testDomains: [acme-test.io], testTlds: [demo],
+     * testSlds: [sandbox], testLocalParts: [robot, qa], testAddresses: [demo@firma.ch]}</pre>
      */
-    record TestEmailFilter(boolean enabled, Set<String> domains, Set<String> tlds, Set<String> slds) {
+    record TestEmailFilter(boolean enabled, Set<String> domains, Set<String> tlds, Set<String> slds,
+            Set<String> localParts, Set<String> addresses) {
 
         static TestEmailFilter from(DetectorConfig config, Map<String, Object> emailOverride) {
             Map<String, Object> top = config.params();
             if (Boolean.FALSE.equals(value(top, emailOverride, "testEmailFilter"))) {
-                return new TestEmailFilter(false, Set.of(), Set.of(), Set.of());
+                return new TestEmailFilter(false, Set.of(), Set.of(), Set.of(), Set.of(), Set.of());
             }
             return new TestEmailFilter(true,
                     merged(DEFAULT_TEST_DOMAINS, top, emailOverride, "testDomains"),
                     merged(DEFAULT_TEST_TLDS, top, emailOverride, "testTlds"),
-                    merged(DEFAULT_TEST_SLDS, top, emailOverride, "testSlds"));
+                    merged(DEFAULT_TEST_SLDS, top, emailOverride, "testSlds"),
+                    merged(DEFAULT_TEST_LOCAL_PARTS, top, emailOverride, "testLocalParts"),
+                    merged(DEFAULT_TEST_ADDRESSES, top, emailOverride, "testAddresses"));
         }
 
         /** {@code true} für eine offensichtliche Test-/Platzhalter-Adresse (fall-insensitiv). */
@@ -383,6 +402,18 @@ public class PiiPatternsDetector implements DetectorPort {
             int at = email.lastIndexOf('@');
             if (at < 0 || at == email.length() - 1) {
                 return false;
+            }
+            // Vollständige bekannte Platzhalter-Adresse (z. B. mail@mail.com) exakt abgleichen.
+            if (addresses.contains(email.toLowerCase(Locale.ROOT))) {
+                return true;
+            }
+            // Local-Part (vor dem @) tokenweise gegen bekannte Test-Namen prüfen — greift auch bei
+            // echten Domains (z. B. thorsten.tester@css.ch, erika.musterfrau@css.ch).
+            String local = email.substring(0, at).toLowerCase(Locale.ROOT);
+            for (String token : local.split("[._+-]")) {
+                if (localParts.contains(token)) {
+                    return true;
+                }
             }
             String domain = email.substring(at + 1).toLowerCase(Locale.ROOT);
             if (domains.contains(domain)) {

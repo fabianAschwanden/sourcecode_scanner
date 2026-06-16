@@ -185,6 +185,32 @@ class PiiPatternsDetectorTest {
     }
 
     @Test
+    void test_namen_im_local_part_werden_gefiltert_auch_bei_echter_domain() {
+        // Test-Namen vor dem @ (tester, musterfrau) markieren die Adresse als Dummy — auch bei css.ch.
+        List<Finding> f = scan("a: thorsten.tester@css.ch\nb: erika.musterfrau@css.ch\nc: healthcheck@example.com",
+                allPatterns());
+        assertTrue(f.stream().noneMatch(x -> x.ruleId().equals("email")),
+                "Adressen mit Test-Namen im Local-Part dürfen keinen Fund erzeugen");
+    }
+
+    @Test
+    void echte_person_auf_gleicher_domain_wird_weiterhin_erkannt() {
+        // Gegenprobe: eine echte css.ch-Adresse ohne Test-Token bleibt ein Fund.
+        List<Finding> f = scan("real: anna.meier@css.ch", allPatterns());
+        assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("email")),
+                "eine echte Adresse auf css.ch ohne Test-Token wird weiter gemeldet");
+    }
+
+    @Test
+    void bekannte_platzhalter_volladresse_wird_gefiltert() {
+        // mail@mail.com: Domain mail.com ist echt, daher nur die exakte Adresse filtern.
+        List<Finding> f = scan("x: mail@mail.com\ny: anna@mail.com", allPatterns());
+        List<Finding> emails = f.stream().filter(x -> x.ruleId().equals("email")).toList();
+        assertTrue(emails.size() == 1, "nur mail@mail.com wird gefiltert, anna@mail.com bleibt");
+        assertFalse(emails.get(0).redactedMatch().toLowerCase().startsWith("mail@"));
+    }
+
+    @Test
     void echte_email_neben_test_domain_wird_weiterhin_erkannt() {
         List<Finding> f = scan("real: anna@firma.de\ndummy: tester@example.com", allPatterns());
         List<Finding> emails = f.stream().filter(x -> x.ruleId().equals("email")).toList();
