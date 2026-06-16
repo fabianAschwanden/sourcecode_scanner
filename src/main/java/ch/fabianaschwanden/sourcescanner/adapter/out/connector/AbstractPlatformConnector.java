@@ -16,6 +16,7 @@ import java.util.stream.Stream;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.jboss.logging.Logger;
 
 /**
  * Gemeinsame Basis der Plattform-Connectoren (Bitbucket/GitHub/GitLab): klont das Repo per JGit mit
@@ -23,6 +24,10 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
  * über {@link GitHistoryWalker}. Discovery bleibt plattformspezifisch (Subklasse).
  */
 abstract class AbstractPlatformConnector implements RepositoryConnectorPort {
+
+    private static final Logger LOG = Logger.getLogger(AbstractPlatformConnector.class);
+    /** JGit-Transport-Timeout je Operation in Sekunden — verhindert ein endloses Hängen beim Clone. */
+    private static final int CLONE_TIMEOUT_SECONDS = 300;
 
     protected final CredentialResolver credentials;
 
@@ -56,11 +61,18 @@ abstract class AbstractPlatformConnector implements RepositoryConnectorPort {
     }
 
     private Git cloneRepo(RepositoryRef ref, Path workDir) {
-        var clone = Git.cloneRepository().setURI(ref.location()).setDirectory(workDir.toFile()).setCloneAllBranches(true);
+        var clone = Git.cloneRepository().setURI(ref.location()).setDirectory(workDir.toFile())
+                .setCloneAllBranches(true)
+                // Transport-Timeout je Operation: ein stockender Clone bricht ab statt ewig zu hängen.
+                .setTimeout(CLONE_TIMEOUT_SECONDS);
         Optional<String> token = credentials.resolve(ref.tokenRef());
         token.ifPresent(t -> clone.setCredentialsProvider(credentialsFor(t)));
+        long start = System.currentTimeMillis();
+        LOG.infof("cloning %s …", ref.id());
         try {
-            return clone.call();
+            Git result = clone.call();
+            LOG.infof("cloned %s in %d ms", ref.id(), System.currentTimeMillis() - start);
+            return result;
         } catch (Exception e) {
             deleteRecursively(workDir);
             String msg = e.getMessage() == null ? "" : e.getMessage();

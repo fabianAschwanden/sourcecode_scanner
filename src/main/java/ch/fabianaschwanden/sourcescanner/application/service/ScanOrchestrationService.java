@@ -115,6 +115,7 @@ public class ScanOrchestrationService implements StartScanUseCase {
 
     private ScanResult scanRepository(RepositoryRef repo, ScanConfig config, Baseline baseline) {
         Instant startedAt = Instant.now();
+        LOG.infof("scanning repository %s (mode %s)", repo.id(), config.mode());
         List<Finding> rawFindings = Collections.synchronizedList(new ArrayList<>());
         List<String> degradations = Collections.synchronizedList(new ArrayList<>());
         Map<String, Instant> seenAt = Collections.synchronizedMap(new HashMap<>());
