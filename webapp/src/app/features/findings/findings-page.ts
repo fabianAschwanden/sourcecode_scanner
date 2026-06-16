@@ -2,8 +2,9 @@ import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@a
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ScannerApi } from '../../core/services/scanner-api';
-import { Finding, Severity, TriageStatus } from '../../core/models/scanner';
+import { Finding, RepositorySource, Severity, TriageStatus } from '../../core/models/scanner';
 import { severityColor } from '../../core/severity-color';
+import { sourceLink } from '../../core/source-link';
 import { I18nService } from '../../core/i18n/i18n.service';
 import { PageTitle } from '../../shared/page-title';
 
@@ -199,7 +200,18 @@ const SEVERITY_ORDER: Severity[] = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW', 'INFO']
                 <p class="mt-1 text-xs text-muted">
                   {{ statusLabel(f.triageStatus) }} ·
                   {{ t('findings.row.detectedBy', { detector: f.detectorId }) }}
-                  <span class="font-mono">{{ f.file }}:{{ f.line }}</span>
+                  @if (sourceUrl(f); as url) {
+                    <a
+                      [href]="url"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      [title]="t('findings.row.openSource.tooltip')"
+                      class="font-mono text-accent hover:underline"
+                      >{{ f.file }}:{{ f.line }} ↗</a
+                    >
+                  } @else {
+                    <span class="font-mono">{{ f.file }}:{{ f.line }}</span>
+                  }
                   · <span class="font-mono">{{ f.redactedMatch }}</span>
                 </p>
                 <div class="mt-1 space-x-3 text-xs">
@@ -247,6 +259,9 @@ export class FindingsPage {
   protected readonly findings = signal<Finding[]>([]);
   protected readonly message = signal<string>('');
   protected readonly toolCount = signal<number>(0);
+
+  // Repo-Name → Quelle (für den Deep-Link zur Quelle, WR-66). Findings tragen den Repo-Namen als repoId.
+  protected readonly sources = signal<RepositorySource[]>([]);
 
   /** Mehrfachauswahl für Sammelaktionen (WR-67). */
   protected readonly selected = signal<Set<string>>(new Set());
@@ -300,6 +315,7 @@ export class FindingsPage {
   constructor() {
     this.reload();
     this.api.detectors().subscribe((d) => this.toolCount.set(d.length));
+    this.api.sources().subscribe((s) => this.sources.set(s));
     this.onQueryChange();
     // Repo-Vorfilter aus dem Query-Param übernehmen (Navigation von der Repo-Übersicht).
     const repo = new URLSearchParams(window.location.search).get('repo');
@@ -448,6 +464,20 @@ export class FindingsPage {
 
   protected severityColor(severity: Severity): string {
     return severityColor(severity);
+  }
+
+  /**
+   * Deep-Link zur Fundstelle in der Quelle (WR-66): Repo-Location + Pfad + Zeile zu einem
+   * Web-Permalink (GitHub/GitLab/Bitbucket). Branch = erster konfigurierter Branch, sonst HEAD.
+   * Liefert {@code null}, wenn das Repo nicht (mehr) bekannt oder kein Web-Host erkennbar ist —
+   * dann zeigt die Zeile nur den Pfad ohne Link.
+   */
+  protected sourceUrl(finding: Finding): string | null {
+    const repo = this.sources().find((s) => s.name === finding.repoId);
+    if (!repo) {
+      return null;
+    }
+    return sourceLink(repo.location, finding.file, finding.line, repo.branches?.[0]);
   }
 
   // --- Helfer -----------------------------------------------------------------------------------

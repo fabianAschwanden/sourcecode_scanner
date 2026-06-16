@@ -65,6 +65,15 @@ class PiiPatternsDetectorTest {
     }
 
     @Test
+    void nummer_mit_fuehrenden_nullen_ist_keine_kreditkarte() {
+        // Demo-/Test-ID aus einer Liquibase-Migration: beginnt mit 0000 -> kein Emittenten-Schema
+        // beginnt mit 0, also kein Kartenfund (DR-22a), auch wenn die Luhn-Summe zufällig stimmt.
+        List<Finding> f = scan(" refnr = 0000 1234 5678 1099", allPatterns());
+        assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("creditcard")),
+                "eine Nummer mit führenden Nullen hat kein gültiges Kartenpräfix und ist kein Fund");
+    }
+
+    @Test
     void luhn_gueltige_zahl_ohne_kartenpraefix_ist_keine_kreditkarte() {
         // 16-stellige Luhn-gültige Zahl mit Präfix 1234 (kein bekanntes IIN/BIN-Schema) ->
         // typischer FP (ID/Timestamp/Tracking-Nr.); der Emittenten-Quercheck verwirft sie (DR-22a).
