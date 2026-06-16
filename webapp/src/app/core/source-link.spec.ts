@@ -3,9 +3,9 @@ import { sourceLink } from './source-link';
 
 describe('sourceLink', () => {
   it('baut einen GitHub-Permalink mit Branch und Zeilenanker', () => {
-    expect(
-      sourceLink('https://github.com/org/repo', 'src/Main.java', 42, 'main'),
-    ).toBe('https://github.com/org/repo/blob/main/src/Main.java#L42');
+    expect(sourceLink('https://github.com/org/repo', 'src/Main.java', 42, 'main')).toBe(
+      'https://github.com/org/repo/blob/main/src/Main.java#L42',
+    );
   });
 
   it('entfernt das .git-Suffix', () => {
