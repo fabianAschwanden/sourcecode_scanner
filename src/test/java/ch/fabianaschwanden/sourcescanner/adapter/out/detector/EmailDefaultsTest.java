@@ -45,7 +45,7 @@ class EmailDefaultsTest {
         Defaults d = Defaults.fromFile(Path.of("config/pii-test-emails.yaml"));
         assertTrue(d.localParts().contains("tester"));
         assertTrue(d.localParts().contains("musterfrau"));
-        assertTrue(d.localParts().contains("healthcheck"));
         assertTrue(d.addresses().contains("mail@mail.com"));
+        assertTrue(d.tlds().contains("example"));
     }
 }

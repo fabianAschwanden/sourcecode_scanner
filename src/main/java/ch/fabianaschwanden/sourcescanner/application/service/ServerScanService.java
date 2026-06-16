@@ -102,16 +102,27 @@ public class ServerScanService implements ManageScansUseCase {
 
     void runClaimed(ScanRecord claimed) {
         HistoryMode mode = parseMode(claimed.mode());
-        Optional<RepositorySource> source = sources.byName(claimed.repoId());
-        if (source.isEmpty()) {
-            persistence.saveRecord(claimed.failed("repository source no longer exists: " + claimed.repoId()));
+        RepositorySource source;
+        Policy policy;
+        ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.Resolved resolvedRules;
+        // Config-Rekonstruktion aus der DB: schlägt sie fehl, MUSS der Lauf als FAILED enden — sonst
+        // bliebe der Datensatz RUNNING und der Reaper würde ihn endlos neu einreihen (Fehler-Schleife).
+        try {
+            Optional<RepositorySource> found = sources.byName(claimed.repoId());
+            if (found.isEmpty()) {
+                persistence.saveRecord(claimed.failed("repository source no longer exists: " + claimed.repoId()));
+                return;
+            }
+            source = found.get();
+            policy = policies.resolveFor(claimed.repoId());
+            resolvedRules = ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.resolve(
+                    rulesets.all(), claimed.repoId());
+        } catch (RuntimeException e) {
+            LOG.errorf(e, "scan %s: could not resolve config", claimed.id());
+            persistence.saveRecord(claimed.failed(shortReason(e)));
             return;
         }
-        Policy policy = policies.resolveFor(claimed.repoId());
-        ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.Resolved resolvedRules =
-                ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.resolve(
-                        rulesets.all(), claimed.repoId());
-        runScanInternal(claimed, source.get(), mode, policy, resolvedRules);
+        runScanInternal(claimed, source, mode, policy, resolvedRules);
     }
 
     private void runScanInternal(ScanRecord starting, RepositorySource source, HistoryMode mode, Policy policy,

@@ -36,12 +36,16 @@ public class PolicyRepository implements PanacheRepositoryBase<PolicyEntity, UUI
     }
 
     @Override
+    @Transactional
     public Optional<Policy> byId(UUID id) {
         return Optional.ofNullable(findById(id)).map(PolicyRepository::toDomain);
     }
 
     @Override
+    @Transactional
     public List<Policy> all() {
+        // @Transactional: liefert auch aus dem async Scan-Worker-Thread eine lebende Session
+        // (sonst "statement has been closed", weil dort kein Request-/Tx-Kontext aktiv ist).
         return listAll().stream().map(PolicyRepository::toDomain).toList();
     }
 

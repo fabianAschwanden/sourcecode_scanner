@@ -45,12 +45,16 @@ public class RulesetRepository
     }
 
     @Override
+    @Transactional
     public Optional<Ruleset> byId(UUID id) {
         return Optional.ofNullable(findById(id)).map(RulesetRepository::toDomain);
     }
 
     @Override
+    @Transactional
     public List<Ruleset> all() {
+        // @Transactional: lebende Session auch aus dem async Scan-Worker (Config-Rekonstruktion beim
+        // Claim) — sonst "statement has been closed", weil dort kein Request-/Tx-Kontext aktiv ist.
         return listAll().stream().map(RulesetRepository::toDomain).toList();
     }
 

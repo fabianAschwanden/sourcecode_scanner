@@ -15,7 +15,7 @@
 
 version: 1
 
-# Reservierte/Test-TLDs und interne Namensräume (RFC 2606/6761).
+# Reservierte/Test-TLDs und interne Namensräume (RFC 2606/6761/7686/9476 + verbreitete interne Namen).
 tlds:
   - test
   - invalid
@@ -23,32 +23,131 @@ tlds:
   - example
   - internal
   - local
+  - localdomain
+  - intranet
+  - corp
+  - lan
+  - home
+  - private
+  - onion          # RFC 7686 (Tor)
+  - alt            # RFC 9476 (alternative Namespaces)
 
-# Reservierte Second-Level-Beispiel-Domains.
+# Reservierte/typische Second-Level-Beispiel-Domains (greift über alle TLDs, z. B. example.*).
 slds:
+  # RFC-2606-Beispiel + lokalisierte Varianten
   - example
   - beispiel
+  - exemple        # FR
+  - ejemplo        # ES
+  - esempio        # IT
+  - exemplo        # PT
+  - voorbeeld      # NL
+  - eksempel       # DA/NO
+  - przyklad       # PL
+  # generische Doku-Platzhalter
+  - domain
+  - yourdomain
+  - mydomain
+  - company
+  - mycompany
+  - yourcompany
+  - acme
+  # bekannte fiktive Beispiel-Firmen (Microsoft-Doku u. a.)
+  - contoso
+  - fabrikam
+  - adventure-works
+  - northwindtraders
+  - tailspintoys
+  - wingtiptoys
+  - litware
+  - proseware
 
-# Bekannte Fixture-/Docs-/Wegwerf-Domains.
+# Bekannte Fixture-/Docs-/Wegwerf-Domains (vollständige Domain).
 domains:
   - googletest.com
   - resend.dev
-  - mailinator.com
   - test.com
+  # E-Mail-Test-/Capture-Dienste
+  - mailinator.com
+  - mailtrap.io
+  - ethereal.email
+  - mailsac.com
+  - maildrop.cc
+  - inboxkitten.com
+  # Wegwerf-/Temporär-Adressen
+  - yopmail.com
+  - guerrillamail.com
+  - 10minutemail.com
+  - temp-mail.org
+  - tempmail.com
+  - trashmail.com
+  - throwawaymail.com
+  - getnada.com
+  - sharklasers.com
+  - dispostable.com
+  - fakeinbox.com
+  - mailnesia.com
+  - mintemail.com
+  - mailcatch.com
+  - emailondeck.com
+  - mohmal.com
+  - spam4.me
 
 # Test-Namen im Local-Part (vor dem @) — markieren ein Dummy-Konto auch bei echten Domains.
+# Bewusst KEINE generischen Funktionspostfächer (info/admin/support/sales/contact), um echte
+# Adressen nicht versehentlich zu unterdrücken.
 localParts:
+  # generische Test-Marker
   - test
   - tester
   - testuser
   - testaccount
   - testperson
+  - testing
+  - test123
   - dummy
+  - dummyuser
+  - fixture
   - example
+  - sample
+  - demo
+  - placeholder
+  - fake
+  - changeme
+  - donotuse
+  - nobody
+  # Doku-Platzhalter / Lorem
+  - foo
+  - bar
+  - baz
+  - qux
+  - lorem
+  - ipsum
+  - asdf
+  - qwerty
+  # fiktive Personen
   - mustermann
   - musterfrau
   - musterkunde
-  - healthcheck
+  - maxmustermann
+  - erika
+  - erikamustermann
+  - johndoe
+  - janedoe
+  - jdoe
+  - jsmith
+  - joebloggs
+  # Automatisierung / CI / Test-Frameworks
+  - qa
+  - e2e
+  - staging
+  - robot
+  - bot
+  - automation
+  - selenium
+  - cypress
+  - playwright
+  # No-Reply-Absender
   - noreply
   - no-reply
   - donotreply
@@ -57,3 +156,12 @@ localParts:
 # Bekannte vollständige Platzhalter-Adressen (Domain echt -> nur die exakte Adresse filtern).
 addresses:
   - mail@mail.com
+  - email@email.com
+  - name@email.com
+  - user@email.com
+  - youremail@gmail.com
+  - your.email@gmail.com
+  - example@gmail.com
+  - a@a.com
+  - x@x.com
+  - foo@bar.com

@@ -56,6 +56,8 @@ scan:
       patterns: [iban, creditcard, email, phone]
       luhnCheck: true                    # Kreditkarten gegen FP per Luhn validieren (DR-22)
       allowlistFile: config/pii-allowlist.yaml   # bekannte Beispiel-/Test-PII ignorieren (DR-23)
+      testEmailFilter: true              # Test-/Dummy-E-Mails herausfiltern (DR-57/58)
+      testEmailsFile: config/pii-test-emails.yaml
       customRegex:
         - name: customer-id
           pattern: 'CUST-\d{8}'
@@ -114,6 +116,8 @@ scan:
 | `scan.detectors.secrets.verify` | bool | Aktive Validierung gefundener Secrets |
 | `scan.detectors.pii.luhnCheck` | bool | Kreditkartentreffer per Luhn-Prüfung gegen False Positives validieren |
 | `scan.detectors.pii.allowlistFile` | path | Datei mit bekannten Beispiel-/Test-PII (IBAN/Kreditkarte), die ignoriert werden |
+| `scan.detectors.pii.testEmailFilter` | bool | Test-/Dummy-/Platzhalter-E-Mails herausfiltern (DR-57) |
+| `scan.detectors.pii.testEmailsFile` | path | Datei mit Test-E-Mail-Listen (TLDs/SLDs/Domains/Local-Parts/Adressen) |
 | `scan.baseline` | path | Datei mit akzeptierten Altfunden |
 | `scan.gate.failOn` | enum | Mindest-Severity, die CI rot macht |
 | `scan.gate.failOnNewOnly` | bool | Nur Delta gegen Baseline bewerten |

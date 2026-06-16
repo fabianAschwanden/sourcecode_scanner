@@ -43,3 +43,10 @@
 | DR-40 | M | Detektoren MÜSSEN Inline-Suppression-Direktiven respektieren. |
 | DR-41 | S | Detektoren SOLLEN deterministische Fingerprints für Deduplizierung/Baseline erzeugen. |
 | DR-42 | S | Die False-Positive-Rate SOLL durch Kontext (Pfad, Dateityp, Verifikation) reduziert werden. |
+
+## Test-/Dummy-Filter
+
+| ID | Prio | Anforderung |
+|----|------|-------------|
+| DR-57 | S | Der PII-Detektor SOLL bekannte Test-/Dummy-/Platzhalter-E-Mail-Adressen über konfigurierbare Default-Listen herausfiltern: reservierte TLDs/SLDs und interne Namensräume (RFC 2606/6761/7686/9476), Wegwerf-/Test-Domains, Test-Marker im Local-Part sowie exakte Platzhalter-Adressen. Treffer werden nicht als Finding gemeldet. |
+| DR-58 | C | Die Test-E-Mail-Listen KÖNNEN über Detektor-Parameter additiv erweitert (`testDomains`/`testTlds`/`testSlds`/`testLocalParts`/`testAddresses`) und per `testEmailFilter: false` deaktiviert werden. |

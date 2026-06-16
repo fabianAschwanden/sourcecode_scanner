@@ -38,12 +38,16 @@ public class RepositorySourceRepository
     }
 
     @Override
+    @Transactional
     public Optional<RepositorySource> byId(UUID id) {
         return Optional.ofNullable(findById(id)).map(RepositorySourceRepository::toDomain);
     }
 
     @Override
+    @Transactional
     public Optional<RepositorySource> byName(String name) {
+        // @Transactional: wird beim Claim aus dem async Scan-Worker-Thread aufgerufen (Config-
+        // Rekonstruktion); ohne lebende Session sonst "statement has been closed".
         if (name == null || name.isBlank()) {
             return Optional.empty();
         }
@@ -51,6 +55,7 @@ public class RepositorySourceRepository
     }
 
     @Override
+    @Transactional
     public List<RepositorySource> all() {
         return listAll().stream().map(RepositorySourceRepository::toDomain).toList();
     }
