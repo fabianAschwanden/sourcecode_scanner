@@ -1,0 +1,24 @@
+#!/bin/sh
+# Pre-Commit-Gate: spiegelt die CI-Checks (.github/workflows/ci.yml) lokal, damit rote
+# CI-Läufe (z. B. fehlendes Prettier-Format) gar nicht erst entstehen.
+#
+# Aktivieren (einmalig, pro Klon):  git config core.hooksPath .githooks
+# Umgehen im Notfall:               git commit --no-verify
+#
+# Läuft nur, wenn passende Dateien gestaged sind — kein Overhead bei reinen Doc-/Backend-Commits.
+
+set -e
+ROOT="$(git rev-parse --show-toplevel)"
+staged() { git diff --cached --name-only --diff-filter=ACMR; }
+
+# --- Frontend (webapp/): format:check + lint + test, exakt wie CI -----------------------------
+if staged | grep -q '^webapp/'; then
+  echo "[pre-commit] Frontend-Checks (format:check, lint, test) …"
+  cd "$ROOT/webapp"
+  npm run format:check
+  npm run lint
+  npm test -- --watch=false
+  cd "$ROOT"
+fi
+
+echo "[pre-commit] OK"

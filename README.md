@@ -79,10 +79,15 @@ umgesetzt:
 
 ```bash
 ./mvnw verify                  # Backend-Tests, ArchUnit, Coverage-Gate, Frontend-Build
-cd webapp && npm test          # Frontend-Unit-Tests (Vitest)
+cd webapp && npm run format:check  # Prettier-Gate (CI bricht sonst — vor dem Push prüfen!)
 cd webapp && npm run lint      # ESLint (Frontend-Konventionen als Lint-Baseline)
+cd webapp && npm test          # Frontend-Unit-Tests (Vitest)
 cd webapp && npm run e2e       # Playwright gegen laufende Instanz (E2E_BASE_URL)
 ```
+
+> Das Frontend-CI-Gate (`.github/workflows/ci.yml`) läuft `format:check` → `lint` → `test`.
+> Einmalig pro Klon `git config core.hooksPath .githooks` setzen — dann prüft der Pre-Commit-Hook
+> diese drei Schritte automatisch, sobald `webapp/`-Dateien gestaged sind (Umgehen: `--no-verify`).
 
 ## Struktur
 
