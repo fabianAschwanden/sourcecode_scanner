@@ -49,11 +49,14 @@ public class ScanRecordRepository implements PanacheRepositoryBase<ScanRecordEnt
     }
 
     @Override
+    @Transactional
     public Optional<ScanRecord> byId(UUID id) {
+        // @Transactional: u. a. vom SSE-Polling (Worker-Thread) und Scan-Worker genutzt.
         return Optional.ofNullable(findById(id)).map(ScanRecordRepository::toDomain);
     }
 
     @Override
+    @Transactional
     public Optional<ScanRecord> byCiRunRef(String runRef) {
         if (runRef == null || runRef.isBlank()) {
             return Optional.empty();
@@ -62,6 +65,7 @@ public class ScanRecordRepository implements PanacheRepositoryBase<ScanRecordEnt
     }
 
     @Override
+    @Transactional
     public List<ScanRecord> recent(int limit) {
         return findAll(Sort.by("startedAt").descending())
                 .page(Page.ofSize(limit)).list().stream()
@@ -114,7 +118,10 @@ public class ScanRecordRepository implements PanacheRepositoryBase<ScanRecordEnt
     }
 
     @Override
+    @Transactional
     public boolean isCancelRequested(UUID id) {
+        // @Transactional: wird aus dem async Scan-Worker-Thread aufgerufen (Abbruch-Check) — ohne
+        // lebende Session sonst ContextNotActiveException.
         ScanRecordEntity e = findById(id);
         return e != null && e.cancelRequested;
     }

@@ -9,6 +9,8 @@ import ch.fabianaschwanden.sourcescanner.domain.port.in.ManageScansUseCase;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.ScanRecordPort;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Multi;
+import io.smallrye.mutiny.Uni;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.Consumes;
@@ -22,7 +24,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import java.time.Duration;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
@@ -104,15 +105,16 @@ public class ScanResource {
     @RolesAllowed({"viewer", "operator", "admin"})
     @RestStreamElementType(MediaType.APPLICATION_JSON)
     public Multi<ScanEvent> events(@PathParam("id") UUID id) {
-        // Ein Element pro Tick (oder keins, wenn der Lauf verschwand). Der Stream läuft bis
-        // einschliesslich des ersten terminalen Events: ein Flag lässt genau dieses noch durch und
-        // beendet danach (select().first(p) liefert Elemente, solange p true ist, terminales inkl.).
+        // Ein Element pro Tick (oder keins, wenn der Lauf verschwand). Der DB-Read (blockierendes JPA)
+        // MUSS auf einem Worker-Thread laufen — der Tick feuert auf dem Vert.x-Event-Loop, dort ist
+        // Blockieren verboten (BlockingOperationNotAllowedException). Daher pro Tick ein Uni, das die
+        // Abfrage auf den Default-Worker-Pool auslagert.
         java.util.concurrent.atomic.AtomicBoolean done = new java.util.concurrent.atomic.AtomicBoolean();
         return Multi.createFrom().ticks().every(Duration.ofMillis(1500))
-                .onItem().transformToIterable(tick -> {
-                    Optional<ScanRecord> r = scanRecords.byId(id);
-                    return r.map(this::toEvent).map(List::of).orElseGet(List::of);
-                })
+                .onItem().transformToUniAndConcatenate(tick ->
+                        Uni.createFrom().item(() -> scanRecords.byId(id).map(this::toEvent).orElse(null))
+                                .runSubscriptionOn(Infrastructure.getDefaultWorkerPool()))
+                .select().where(java.util.Objects::nonNull)
                 .select().first(event -> {
                     if (done.get()) {
                         return false; // nach dem terminalen Event nichts mehr
