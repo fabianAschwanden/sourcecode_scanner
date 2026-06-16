@@ -917,7 +917,7 @@ export class RepositoriesPage {
   protected bulkScan(): void {
     const ids = [...this.selected()];
     if (ids.length === 0) return;
-    this.api.bulkScanRepos(ids, 'full').subscribe((r) => this.afterBulk(r));
+    this.api.bulkScanRepos(ids, 'head').subscribe((r) => this.afterBulk(r));
   }
 
   protected bulkRemediation(enabled: boolean): void {
@@ -965,7 +965,7 @@ export class RepositoriesPage {
   /** Startet einen Full-Scan für das Repo und wechselt zur Scans-Ansicht mit Live-Fortschritt. */
   protected scanCard(card: RepositoryCard): void {
     this.scanning.set(card.id);
-    this.api.startScan(card.id, 'full').subscribe({
+    this.api.startScan(card.id, 'head').subscribe({
       next: () => {
         this.scanning.set(null);
         this.message.set(this.t('repos.card.scanStarted', { name: card.name }));

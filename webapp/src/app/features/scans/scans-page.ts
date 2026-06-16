@@ -38,8 +38,9 @@ import { PageTitle } from '../../shared/page-title';
             [title]="t('scans.mode.tooltip')"
             class="ml-2 rounded border border-default px-2 py-1"
           >
-            <option value="full">full</option>
-            <option value="incremental">incremental</option>
+            <option value="head">{{ t('scans.mode.head') }}</option>
+            <option value="full">{{ t('scans.mode.full') }}</option>
+            <option value="incremental">{{ t('scans.mode.incremental') }}</option>
           </select>
         </label>
         <button
@@ -194,7 +195,8 @@ export class ScansPage {
   protected readonly sources = signal<RepositorySource[]>([]);
   protected readonly scans = signal<Scan[]>([]);
   protected selectedSource: string | null = null;
-  protected mode = 'full';
+  // Default: nur Default-Branch ohne History (schnell, wenig RAM); volle History optional wählbar.
+  protected mode = 'head';
 
   /** Live-Events je laufendem Scan (überschreiben die persistierten Werte, WR-04a). */
   protected readonly live = signal<Record<string, ScanEvent>>({});

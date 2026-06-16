@@ -40,6 +40,35 @@ class LocalGitConnectorTest {
     }
 
     @Test
+    void head_modus_scannt_nur_den_aktuellen_stand_nicht_die_history(@TempDir Path repoDir) throws Exception {
+        try (Git git = Git.init().setDirectory(repoDir.toFile()).call()) {
+            // Commit 1: alte Datei (nur in der History).
+            Files.writeString(repoDir.resolve("Old.java"), "// old\n");
+            git.add().addFilepattern("Old.java").call();
+            git.commit().setMessage("c1").setAuthor("T", "t@example.ch").call();
+            // Commit 2: alte Datei entfernt, neue hinzu (= aktueller Stand).
+            Files.delete(repoDir.resolve("Old.java"));
+            Files.writeString(repoDir.resolve("New.java"), "// new\n");
+            git.add().addFilepattern(".").setUpdate(true).call();
+            git.add().addFilepattern("New.java").call();
+            git.commit().setMessage("c2").setAuthor("T", "t@example.ch").call();
+        }
+        RepositoryRef ref = new RepositoryRef("self", "localGit", repoDir.toString(), List.of());
+
+        try (var head = connector.walkHistory(ref, HistoryMode.HEAD)) {
+            List<String> paths = head.map(ScanUnit::path).toList();
+            // HEAD: nur der aktuelle Stand -> New.java, KEIN Old.java aus der History.
+            assertTrue(paths.contains("New.java"));
+            assertTrue(!paths.contains("Old.java"));
+        }
+        try (var full = connector.walkHistory(ref, HistoryMode.FULL)) {
+            List<String> paths = full.map(ScanUnit::path).toList();
+            // FULL: walkt die History -> auch die in c1 hinzugefügte Old.java taucht auf.
+            assertTrue(paths.contains("Old.java"));
+        }
+    }
+
+    @Test
     void supports_nur_localGit() {
         assertTrue(connector.supports(new RepositoryRef("a", "localGit", ".", List.of())));
         assertTrue(connector.supports(new RepositoryRef("a", null, ".", List.of())));

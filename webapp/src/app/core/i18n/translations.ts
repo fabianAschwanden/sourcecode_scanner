@@ -95,6 +95,9 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'scans.source': 'Source',
     'scans.source.tooltip': 'Repository source to scan (create it under Repositories first)',
     'scans.mode': 'Mode',
+    'scans.mode.head': 'Default branch only (no history)',
+    'scans.mode.full': 'Full history (all branches)',
+    'scans.mode.incremental': 'Incremental (new commits)',
     'scans.mode.tooltip':
       'full = entire history of all branches; incremental = only new, not-yet-scanned commits',
     'scans.start': 'Start scan',
@@ -476,6 +479,9 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'scans.source': 'Quelle',
     'scans.source.tooltip': 'Zu scannende Repository-Quelle (zuvor unter Repositories anlegen)',
     'scans.mode': 'Modus',
+    'scans.mode.head': 'Nur Default-Branch (ohne History)',
+    'scans.mode.full': 'Volle History (alle Branches)',
+    'scans.mode.incremental': 'Inkrementell (neue Commits)',
     'scans.mode.tooltip':
       'full = gesamte Historie aller Branches; incremental = nur neue, noch nicht gescannte Commits',
     'scans.start': 'Scan starten',

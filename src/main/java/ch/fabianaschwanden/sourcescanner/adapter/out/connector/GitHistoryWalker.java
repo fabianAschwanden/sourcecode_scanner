@@ -3,12 +3,14 @@ package ch.fabianaschwanden.sourcescanner.adapter.out.connector;
 import ch.fabianaschwanden.sourcescanner.domain.model.RepositoryRef;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanUnit;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectLoader;
@@ -31,26 +33,64 @@ final class GitHistoryWalker {
     private GitHistoryWalker() {
     }
 
+    /** Eager-Variante (alle Einheiten als Liste) — für Tests/kleine Repos. */
     static List<ScanUnit> walk(RepositoryRef ref, Repository repository, Set<String> skipCommits)
             throws IOException {
         List<ScanUnit> units = new ArrayList<>();
+        for (RevCommit commit : commitsToScan(ref, repository, skipCommits, false)) {
+            collectCommit(ref, repository, commit, units);
+        }
+        return units;
+    }
+
+    /**
+     * Lazy/gestreamt: liefert die ScanUnits commit-für-commit (History-Slicing). Die Dateien eines
+     * Commits werden erst beim Konsumieren materialisiert und danach freigegeben — Peak-RAM ist ein
+     * Commit, nicht das ganze Repo. {@code headOnly} = nur der HEAD-Commit (Default-Branch, keine History).
+     */
+    static Stream<ScanUnit> stream(RepositoryRef ref, Repository repository, Set<String> skipCommits,
+                                   boolean headOnly) {
+        List<RevCommit> commits;
+        try {
+            commits = commitsToScan(ref, repository, skipCommits, headOnly);
+        } catch (IOException e) {
+            throw new UncheckedIOException("failed to read commits of " + ref.id(), e);
+        }
+        return commits.stream().flatMap(commit -> {
+            List<ScanUnit> units = new ArrayList<>();
+            try {
+                collectCommit(ref, repository, commit, units);
+            } catch (IOException e) {
+                throw new UncheckedIOException("failed to read commit " + commit.getName(), e);
+            }
+            return units.stream();
+        });
+    }
+
+    /** Zu scannende Commits: nur HEAD ({@code headOnly}) oder alle Branches, ohne {@code skipCommits}. */
+    private static List<RevCommit> commitsToScan(RepositoryRef ref, Repository repository,
+                                                 Set<String> skipCommits, boolean headOnly) throws IOException {
+        List<RevCommit> commits = new ArrayList<>();
         Set<ObjectId> visited = new HashSet<>();
         try (RevWalk revWalk = new RevWalk(repository)) {
+            if (headOnly) {
+                ObjectId head = repository.resolve(Constants.HEAD);
+                if (head != null) {
+                    commits.add(revWalk.parseCommit(head));
+                }
+                return commits;
+            }
             for (Ref branch : repository.getRefDatabase().getRefsByPrefix(Constants.R_HEADS)) {
                 revWalk.reset();
                 revWalk.markStart(revWalk.parseCommit(branch.getObjectId()));
                 for (RevCommit commit : revWalk) {
-                    if (!visited.add(commit.getId())) {
-                        continue;
+                    if (visited.add(commit.getId()) && !skipCommits.contains(commit.getName())) {
+                        commits.add(commit);
                     }
-                    if (skipCommits.contains(commit.getName())) {
-                        continue;
-                    }
-                    collectCommit(ref, repository, commit, units);
                 }
             }
         }
-        return units;
+        return commits;
     }
 
     private static void collectCommit(RepositoryRef ref, Repository repository, RevCommit commit,

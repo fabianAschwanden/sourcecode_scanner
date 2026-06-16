@@ -7,7 +7,6 @@ import ch.fabianaschwanden.sourcescanner.domain.port.out.RepositoryConnectorPort
 import jakarta.enterprise.context.ApplicationScoped;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.eclipse.jgit.lib.Repository;
@@ -34,11 +33,9 @@ public class LocalGitConnector implements RepositoryConnectorPort {
         }
         Repository repository = open(ref);
         try {
-            List<ScanUnit> units = GitHistoryWalker.walk(ref, repository, Set.of());
-            return units.stream().onClose(repository::close);
-        } catch (IOException e) {
-            repository.close();
-            throw new UncheckedIOException("failed to walk repository " + ref.location(), e);
+            // Lazy/gestreamt (History-Slicing); HEAD-Modus walkt nur den aktuellen Stand (keine History).
+            return GitHistoryWalker.stream(ref, repository, Set.of(), mode == HistoryMode.HEAD)
+                    .onClose(repository::close);
         } catch (RuntimeException e) {
             repository.close();
             throw e;

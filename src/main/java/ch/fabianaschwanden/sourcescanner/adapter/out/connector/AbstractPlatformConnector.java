@@ -9,7 +9,6 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -40,31 +39,34 @@ abstract class AbstractPlatformConnector implements RepositoryConnectorPort {
         if (mode == HistoryMode.SINCE_COMMIT || mode == HistoryMode.DIFF) {
             throw new UnsupportedOperationException("mode not yet supported: " + mode);
         }
+        boolean headOnly = mode == HistoryMode.HEAD;
         Path workDir = createWorkDir(ref);
-        Git git = cloneRepo(ref, workDir);
+        Git git = cloneRepo(ref, workDir, headOnly);
         Repository repository = git.getRepository();
+        Runnable cleanup = () -> {
+            git.close();
+            deleteRecursively(workDir);
+        };
         try {
-            List<ScanUnit> units = GitHistoryWalker.walk(ref, repository, Set.of());
-            return units.stream().onClose(() -> {
-                git.close();
-                deleteRecursively(workDir);
-            });
-        } catch (IOException e) {
-            git.close();
-            deleteRecursively(workDir);
-            throw new UncheckedIOException("failed to walk cloned repository " + ref.id(), e);
+            // Lazy/gestreamt: der Walker liefert die ScanUnits commit-für-commit (History-Slicing),
+            // statt alle Einheiten eines grossen Repos auf einmal im Speicher zu halten.
+            return GitHistoryWalker.stream(ref, repository, Set.of(), headOnly).onClose(cleanup);
         } catch (RuntimeException e) {
-            git.close();
-            deleteRecursively(workDir);
+            cleanup.run();
             throw e;
         }
     }
 
-    private Git cloneRepo(RepositoryRef ref, Path workDir) {
+    private Git cloneRepo(RepositoryRef ref, Path workDir, boolean headOnly) {
         var clone = Git.cloneRepository().setURI(ref.location()).setDirectory(workDir.toFile())
-                .setCloneAllBranches(true)
                 // Transport-Timeout je Operation: ein stockender Clone bricht ab statt ewig zu hängen.
                 .setTimeout(CLONE_TIMEOUT_SECONDS);
+        if (headOnly) {
+            // Nur Default-Branch, flach (ein Commit) -> schnell, wenig RAM (keine History/anderen Branches).
+            clone.setCloneAllBranches(false).setDepth(1);
+        } else {
+            clone.setCloneAllBranches(true);
+        }
         Optional<String> token = credentials.resolve(ref.tokenRef());
         token.ifPresent(t -> clone.setCredentialsProvider(credentialsFor(t)));
         long start = System.currentTimeMillis();
