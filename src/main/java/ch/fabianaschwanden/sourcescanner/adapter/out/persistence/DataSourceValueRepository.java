@@ -3,6 +3,7 @@ package ch.fabianaschwanden.sourcescanner.adapter.out.persistence;
 import ch.fabianaschwanden.sourcescanner.domain.port.out.DataSourceValuePort;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.transaction.Transactional;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -34,7 +35,11 @@ public class DataSourceValueRepository
         }
     }
 
+    // Lesen aus dem async Scan-Thread (Detektor pii.customer-data-api): eigener Transaktions-/Request-
+    // Kontext, sonst ContextNotActiveException (kein ambienter Kontext ausserhalb des Request-Threads).
     @Override
+    @ActivateRequestContext
+    @Transactional
     public Map<String, Set<String>> hashesByAttribute(UUID dataSourceId) {
         Map<String, Set<String>> result = new LinkedHashMap<>();
         for (DataSourceValueEntity e : list("dataSourceId", dataSourceId)) {
@@ -44,6 +49,8 @@ public class DataSourceValueRepository
     }
 
     @Override
+    @ActivateRequestContext
+    @Transactional
     public Map<String, Integer> countByAttribute(UUID dataSourceId) {
         Map<String, Integer> counts = new LinkedHashMap<>();
         for (DataSourceValueEntity e : list("dataSourceId", dataSourceId)) {

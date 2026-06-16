@@ -9,6 +9,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
 import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.control.ActivateRequestContext;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Locale;
@@ -51,17 +52,25 @@ public class DataSourceRepository
         return toDomain(entity);
     }
 
+    // Lesen ggf. aus dem async Scan-Thread (Detektor pii.customer-data-api): eigener Transaktions-/
+    // Request-Kontext, sonst ContextNotActiveException ausserhalb des Request-Threads.
     @Override
+    @ActivateRequestContext
+    @Transactional
     public Optional<DataSourceDefinition> byId(UUID id) {
         return Optional.ofNullable(findById(id)).map(DataSourceRepository::toDomain);
     }
 
     @Override
+    @ActivateRequestContext
+    @Transactional
     public Optional<DataSourceDefinition> byName(String name) {
         return find("name", name).firstResultOptional().map(DataSourceRepository::toDomain);
     }
 
     @Override
+    @ActivateRequestContext
+    @Transactional
     public List<DataSourceDefinition> all() {
         return listAll().stream().map(DataSourceRepository::toDomain).toList();
     }
