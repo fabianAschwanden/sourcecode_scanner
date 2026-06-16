@@ -310,6 +310,12 @@ import { BrandLogo } from '../../shared/brand-logo';
                     <input type="radio" [(ngModel)]="keyMode" name="keyMode" value="store" />
                     {{ t('repos.wizard.key.mode.store') }}
                   </label>
+                  @if (secrets().length > 0) {
+                    <label class="flex items-center gap-2 text-sm">
+                      <input type="radio" [(ngModel)]="keyMode" name="keyMode" value="existing" />
+                      {{ t('repos.wizard.key.mode.existing') }}
+                    </label>
+                  }
                   <label class="flex items-center gap-2 text-sm">
                     <input type="radio" [(ngModel)]="keyMode" name="keyMode" value="reference" />
                     {{ t('repos.wizard.key.mode.reference') }}
@@ -334,6 +340,26 @@ import { BrandLogo } from '../../shared/brand-logo';
                       class="w-full rounded border border-default bg-canvas px-3 py-2 font-mono text-sm"
                     />
                     <span class="text-xs text-muted">{{ t('repos.wizard.key.value.help') }}</span>
+                  </div>
+                } @else if (keyMode === 'existing') {
+                  <div class="grid gap-1">
+                    <label class="text-sm font-medium" for="wzSecret">{{
+                      t('repos.wizard.key.existing.label')
+                    }}</label>
+                    <select
+                      id="wzSecret"
+                      [(ngModel)]="selectedSecret"
+                      name="selectedSecret"
+                      class="w-full rounded border border-default bg-canvas px-3 py-2 text-sm"
+                    >
+                      <option value="">{{ t('repos.wizard.key.existing.placeholder') }}</option>
+                      @for (s of secrets(); track s.name) {
+                        <option [value]="s.name">{{ s.name }} ({{ s.mode }})</option>
+                      }
+                    </select>
+                    <span class="text-xs text-muted">{{
+                      t('repos.wizard.key.existing.help')
+                    }}</span>
                   </div>
                 } @else {
                   <div class="grid gap-1">
@@ -702,13 +728,21 @@ export class RepositoriesPage {
   protected readonly wizardStep = signal<1 | 2 | 3>(1);
   protected readonly wizardProvider = signal<string>('github');
   protected readonly wizardBusy = signal(false);
-  /** 'none' = ohne Key (öffentlich/anonym); 'store' = Key DB-verschlüsselt; 'reference' = env:-Referenz. */
-  protected keyMode: 'none' | 'store' | 'reference' = 'store';
+  /**
+   * 'none' = ohne Key (öffentlich/anonym); 'store' = Key DB-verschlüsselt; 'existing' = ein
+   * bestehendes verwaltetes Secret aus den Settings wählen; 'reference' = env:-Referenz eintippen.
+   */
+  protected keyMode: 'none' | 'store' | 'existing' | 'reference' = 'store';
   protected keyValue = '';
+  /** Name des im 'existing'-Modus gewählten verwalteten Secrets. */
+  protected selectedSecret = '';
+  /** Verwaltete Secrets aus den Settings (für die Auswahl im Wizard). */
+  protected readonly secrets = signal<ManagedSecret[]>([]);
 
   constructor() {
     this.reloadCards();
     this.reload();
+    this.api.secrets().subscribe((list) => this.secrets.set(list));
     // Nav-Link erneut anklicken ⇒ zurück in die Karten-/Listenansicht (onSameUrlNavigation: 'reload').
     inject(Router)
       .events.pipe(
@@ -741,6 +775,7 @@ export class RepositoriesPage {
     this.message.set('');
     this.keyMode = 'store';
     this.keyValue = '';
+    this.selectedSecret = '';
     this.wizardProvider.set('github');
     this.type = 'github';
     this.wizardStep.set(1);
@@ -785,7 +820,13 @@ export class RepositoriesPage {
       if (this.wizardProvider() === 'localGit' || this.keyMode === 'none') {
         return true;
       }
-      return this.keyMode === 'store' ? !!this.keyValue.trim() : !!this.tokenRef.trim();
+      if (this.keyMode === 'store') {
+        return !!this.keyValue.trim();
+      }
+      if (this.keyMode === 'existing') {
+        return !!this.selectedSecret;
+      }
+      return !!this.tokenRef.trim();
     }
     return true;
   }
@@ -811,7 +852,13 @@ export class RepositoriesPage {
     if (this.wizardProvider() === 'localGit' || this.keyMode === 'none') {
       return this.t('common.none');
     }
-    return this.keyMode === 'store' ? `secret:${this.secretName()}` : this.tokenRef.trim();
+    if (this.keyMode === 'store') {
+      return `secret:${this.secretName()}`;
+    }
+    if (this.keyMode === 'existing') {
+      return this.selectedSecret ? `secret:${this.selectedSecret}` : this.t('common.none');
+    }
+    return this.tokenRef.trim();
   }
 
   /** Eindeutiger Secret-Name aus dem Repo-Namen (für den DB-verschlüsselten Schlüssel). */
@@ -835,6 +882,11 @@ export class RepositoriesPage {
     }
     if (this.keyMode === 'reference') {
       this.createFromWizard(this.tokenRef.trim());
+      return;
+    }
+    // Bestehendes verwaltetes Secret: nichts anlegen, direkt als secret:<name> referenzieren.
+    if (this.keyMode === 'existing') {
+      this.createFromWizard(`secret:${this.selectedSecret}`);
       return;
     }
     // Key DB-verschlüsselt als verwaltetes Secret ablegen, dann als secret:<name> referenzieren.

@@ -340,7 +340,11 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'repos.wizard.key.none.help':
       'For public repositories no token is needed. Private repositories will fail to clone without one.',
     'repos.wizard.key.mode.store': 'Store key (AES-encrypted in DB), referenced automatically',
+    'repos.wizard.key.mode.existing': 'Use an existing managed secret from settings',
     'repos.wizard.key.mode.reference': 'Only reference an environment variable (env:NAME)',
+    'repos.wizard.key.existing.label': 'Managed secret',
+    'repos.wizard.key.existing.placeholder': 'Select a secret…',
+    'repos.wizard.key.existing.help': 'Referenced as secret:<name>; manage secrets under Settings.',
     'repos.wizard.key.value': 'Access key',
     'repos.wizard.key.value.help':
       'Pasted once, stored encrypted at rest; never shown again (WR-32).',
@@ -724,7 +728,13 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
       'Für öffentliche Repositories ist kein Token nötig. Private Repositories lassen sich ohne Token nicht klonen.',
     'repos.wizard.key.mode.store':
       'Key speichern (AES-verschlüsselt in DB), automatisch referenziert',
+    'repos.wizard.key.mode.existing':
+      'Ein bestehendes verwaltetes Secret aus den Settings verwenden',
     'repos.wizard.key.mode.reference': 'Nur eine Umgebungsvariable referenzieren (env:NAME)',
+    'repos.wizard.key.existing.label': 'Verwaltetes Secret',
+    'repos.wizard.key.existing.placeholder': 'Secret auswählen…',
+    'repos.wizard.key.existing.help':
+      'Wird als secret:<name> referenziert; Secrets unter Einstellungen verwalten.',
     'repos.wizard.key.value': 'Zugriffs-Key',
     'repos.wizard.key.value.help':
       'Einmal eingefügt, verschlüsselt gespeichert; wird nie wieder angezeigt (WR-32).',
