@@ -201,17 +201,67 @@ public class PiiPatternsDetector implements DetectorPort {
     }
 
     /**
-     * Kreditkarten-Plausibilität: Luhn-gültig (DR-22) und keine triviale Ziffernfolge. Verwirft
-     * lauter gleiche Ziffern (z. B. {@code 0000…0000} aus einer Null-UUID/Default-ID, die Luhn rein
-     * zufällig besteht) — solche Werte sind nie echte Kartennummern. Echte Testnummern wie
-     * {@code 4111111111111111} (zwei verschiedene Ziffern) bleiben erkannt (FP-Reduktion).
+     * Kreditkarten-Plausibilität (DR-22a, FP-Reduktion). Eine Kartennummer muss <b>alle</b> Kriterien
+     * erfüllen, sonst ist sie ein Falsch-Positiv (lange IDs/Timestamps/Tracking-Nr. bestehen oft Luhn):
+     * <ol>
+     *   <li>ISO-7812 Luhn-Prüfziffer gültig,</li>
+     *   <li>keine triviale Folge (lauter gleiche Ziffern),</li>
+     *   <li>gültiges Emittenten-Präfix (IIN/BIN) <b>mit</b> passender Länge der jeweiligen Schemata
+     *       (Visa, Mastercard inkl. 2-Series, Amex, Discover, Diners, JCB, UnionPay, Maestro).</li>
+     * </ol>
      */
     private static boolean looksLikeCreditCard(String match) {
         if (!Luhn.isValid(match)) {
             return false;
         }
-        String digits = match.replaceAll("[\\s-]", "");
-        return digits.chars().distinct().count() > 1;
+        String d = match.replaceAll("[\\s-]", "");
+        if (d.chars().distinct().count() <= 1) {
+            return false;
+        }
+        return matchesIssuerScheme(d);
+    }
+
+    /** {@code true}, wenn Präfix + Länge zu einem bekannten Kartenschema passen (IIN/BIN-Quercheck). */
+    private static boolean matchesIssuerScheme(String d) {
+        int len = d.length();
+        int p2 = Integer.parseInt(d.substring(0, 2));
+        int p4 = len >= 4 ? Integer.parseInt(d.substring(0, 4)) : -1;
+        int p6 = len >= 6 ? Integer.parseInt(d.substring(0, 6)) : -1;
+        // Visa: beginnt mit 4, Länge 13/16/19.
+        if (d.charAt(0) == '4') {
+            return len == 13 || len == 16 || len == 19;
+        }
+        // American Express: 34/37, Länge 15.
+        if ((p2 == 34 || p2 == 37) && len == 15) {
+            return true;
+        }
+        // Mastercard: 51–55 oder 2221–2720, Länge 16.
+        if (((p2 >= 51 && p2 <= 55) || (p4 >= 2221 && p4 <= 2720)) && len == 16) {
+            return true;
+        }
+        // Discover: 6011, 65, 644–649, 622126–622925, Länge 16/19.
+        if ((p4 == 6011 || p2 == 65 || (p4 >= 6440 && p4 <= 6499)
+                || (p6 >= 622126 && p6 <= 622925)) && (len == 16 || len == 19)) {
+            return true;
+        }
+        // Diners Club: 300–305, 3095, 36, 38–39, Länge 14–19.
+        if (((p4 >= 3000 && p4 <= 3059) || p4 == 3095 || p2 == 36 || p2 == 38 || p2 == 39)
+                && len >= 14 && len <= 19) {
+            return true;
+        }
+        // JCB: 3528–3589, Länge 16–19.
+        if (p4 >= 3528 && p4 <= 3589 && len >= 16 && len <= 19) {
+            return true;
+        }
+        // UnionPay: 62, Länge 16–19.
+        if (p2 == 62 && len >= 16 && len <= 19) {
+            return true;
+        }
+        // Maestro: 50, 56–69, Länge 12–19 (breite Range -> nur mit gültiger Luhn, bewusst zuletzt).
+        if ((p2 == 50 || (p2 >= 56 && p2 <= 69)) && len >= 12 && len <= 19) {
+            return true;
+        }
+        return false;
     }
 
     /**

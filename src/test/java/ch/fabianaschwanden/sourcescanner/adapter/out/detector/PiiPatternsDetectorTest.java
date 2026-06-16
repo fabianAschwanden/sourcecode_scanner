@@ -1,5 +1,6 @@
 package ch.fabianaschwanden.sourcescanner.adapter.out.detector;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -53,6 +54,23 @@ class PiiPatternsDetectorTest {
         List<Finding> f = scan(content, allPatterns());
         assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("creditcard")),
                 "lauter gleiche Ziffern dürfen keinen Kreditkarten-Fund erzeugen");
+    }
+
+    @Test
+    void amex_und_mastercard_2series_werden_ueber_emittenten_schema_erkannt() {
+        // Amex (37, Länge 15) und Mastercard 2-Series (2221–2720, Länge 16) — beide Luhn-gültig.
+        List<Finding> f = scan("amex = 3782 822463 10005\nmc2 = 2223 0000 0000 0007", allPatterns());
+        assertEquals(2, f.stream().filter(x -> x.ruleId().equals("creditcard")).count(),
+                "Amex und Mastercard 2-Series passen zum Emittenten-Schema und werden gemeldet");
+    }
+
+    @Test
+    void luhn_gueltige_zahl_ohne_kartenpraefix_ist_keine_kreditkarte() {
+        // 16-stellige Luhn-gültige Zahl mit Präfix 1234 (kein bekanntes IIN/BIN-Schema) ->
+        // typischer FP (ID/Timestamp/Tracking-Nr.); der Emittenten-Quercheck verwirft sie (DR-22a).
+        List<Finding> f = scan("ref = 1234 5678 9012 3452", allPatterns());
+        assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("creditcard")),
+                "Luhn-gültig allein genügt nicht — ohne gültiges Kartenpräfix kein Fund");
     }
 
     @Test
