@@ -346,10 +346,13 @@ import { BrandLogo } from '../../shared/brand-logo';
                     <label class="text-sm font-medium" for="wzSecret">{{
                       t('repos.wizard.key.existing.label')
                     }}</label>
+                    <!-- Als sichtbare Listbox: zeigt max. 10 Secrets (+ Platzhalter) und scrollt ab da
+                         (size-Attribut). Bei wenigen Secrets bleibt die Liste kompakt. -->
                     <select
                       id="wzSecret"
                       [(ngModel)]="selectedSecret"
                       name="selectedSecret"
+                      [size]="secretListSize()"
                       class="w-full rounded border border-default bg-canvas px-3 py-2 text-sm"
                     >
                       <option value="">{{ t('repos.wizard.key.existing.placeholder') }}</option>
@@ -738,6 +741,14 @@ export class RepositoriesPage {
   protected selectedSecret = '';
   /** Verwaltete Secrets aus den Settings (für die Auswahl im Wizard). */
   protected readonly secrets = signal<ManagedSecret[]>([]);
+
+  /**
+   * Sichtbare Zeilen der Secret-Listbox: Platzhalter + Secrets, gedeckelt auf max. 10 Secrets
+   * (= 11 Zeilen). Bei mehr Secrets bleibt die Höhe konstant und die Liste scrollt.
+   */
+  protected secretListSize(): number {
+    return Math.min(this.secrets().length + 1, 11);
+  }
 
   constructor() {
     this.reloadCards();
