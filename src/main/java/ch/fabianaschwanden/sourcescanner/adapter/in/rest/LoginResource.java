@@ -6,10 +6,13 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Cookie;
+import jakarta.ws.rs.core.HttpHeaders;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.NewCookie;
 import jakarta.ws.rs.core.Response;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -38,45 +41,45 @@ public class LoginResource {
 
     /**
      * Lokaler Logout: GitHub bietet kein OIDC-RP-Logout (kein end_session_endpoint), daher löschen wir
-     * das Quarkus-OIDC-Session-Cookie selbst (max-age 0) und leiten zur Login-Seite. Nicht
-     * authentifiziert, damit auch ein abgelaufenes/teilweises Cookie sauber entfernt werden kann.
+     * die Quarkus-OIDC-Session-Cookies selbst und leiten auf die öffentliche Landing-Seite. Quarkus
+     * teilt die Session bei grossen Tokens in mehrere Cookies ({@code q_session}, {@code q_session_1},
+     * {@code q_session_github} …) — daher werden ALLE Cookies mit Präfix {@code q_session} entfernt
+     * (max-age 0), sonst bleibt man eingeloggt. Nicht authentifiziert, damit auch ein abgelaufenes
+     * Cookie sauber entfernt werden kann.
      */
     @GET
     @Path("/logout")
-    public Response logout() {
-        NewCookie expired = new NewCookie.Builder("q_session")
-                .path("/")
-                .maxAge(0)
-                .expiry(new java.util.Date(0))
-                .httpOnly(true)
-                .secure(true)
-                .build();
-        return Response.seeOther(URI.create("/login")).cookie(expired).build();
+    public Response logout(@jakarta.ws.rs.core.Context HttpHeaders headers) {
+        Response.ResponseBuilder res = Response.seeOther(URI.create("/"));
+        List<NewCookie> expired = new ArrayList<>();
+        for (Cookie c : headers.getCookies().values()) {
+            if (c.getName().startsWith("q_session")) {
+                expired.add(new NewCookie.Builder(c.getName())
+                        .path("/")
+                        .maxAge(0)
+                        .expiry(new java.util.Date(0))
+                        .httpOnly(true)
+                        .secure(true)
+                        .build());
+            }
+        }
+        // Fallback, falls (noch) kein q_session-Cookie mitgeschickt wurde.
+        if (expired.isEmpty()) {
+            expired.add(new NewCookie.Builder("q_session").path("/").maxAge(0)
+                    .expiry(new java.util.Date(0)).httpOnly(true).secure(true).build());
+        }
+        return res.cookie(expired.toArray(new NewCookie[0])).build();
     }
 
-    /**
-     * Aktueller Nutzer (Login + Rollen) — nur authentifiziert; nie ein Secret/Token. {@code attributes}
-     * listet die nicht-sensiblen Identitäts-Attribute des IdP (z. B. GitHub {@code login}, {@code name})
-     * zur Nachvollziehbarkeit des Rollen-Mappings (WR-31a).
-     */
+    /** Aktueller Nutzer (Login + Rollen) für Header/Guard — nur authentifiziert; nie ein Secret/Token. */
     @GET
     @Path("/api/me")
     @Authenticated
     @Produces(MediaType.APPLICATION_JSON)
     public CurrentUser me() {
         String login = identity.getPrincipal() == null ? "unknown" : identity.getPrincipal().getName();
-        java.util.Map<String, String> attrs = new java.util.TreeMap<>();
-        identity.getAttributes().forEach((key, v) -> {
-            // Nur kurze, unsensible Skalare anzeigen (kein Token/UserInfo-Blob).
-            if (v instanceof String || v instanceof Number || v instanceof Boolean) {
-                String s = String.valueOf(v);
-                if (s.length() <= 64) {
-                    attrs.put(key, s);
-                }
-            }
-        });
-        return new CurrentUser(login, List.copyOf(identity.getRoles()), attrs);
+        return new CurrentUser(login, List.copyOf(identity.getRoles()));
     }
 
-    public record CurrentUser(String login, List<String> roles, java.util.Map<String, String> attributes) {}
+    public record CurrentUser(String login, List<String> roles) {}
 }
