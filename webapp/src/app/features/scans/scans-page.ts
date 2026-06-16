@@ -89,8 +89,14 @@ import { PageTitle } from '../../shared/page-title';
                   >
                     {{ s.repoId }}
                   </button>
-                  <span class="rounded-full border border-default px-2 text-xs text-muted">
-                    {{ liveStatus(s) }}
+                  <span
+                    class="rounded-full border px-2 text-xs"
+                    [class.border-default]="liveStatus(s) !== 'QUEUED'"
+                    [class.text-muted]="liveStatus(s) !== 'QUEUED'"
+                    [class.border-accent]="liveStatus(s) === 'QUEUED'"
+                    [class.text-accent]="liveStatus(s) === 'QUEUED'"
+                  >
+                    {{ statusLabel(liveStatus(s)) }}
                   </span>
                   <span
                     class="rounded-full border border-default px-2 text-xs text-muted"
@@ -120,7 +126,7 @@ import { PageTitle } from '../../shared/page-title';
               >
                 {{ t('scans.viewFindings') }}
               </button>
-              @if (liveStatus(s) === 'RUNNING') {
+              @if (liveStatus(s) === 'RUNNING' || liveStatus(s) === 'QUEUED') {
                 <button
                   (click)="cancel(s)"
                   class="rounded border border-default px-3 py-1.5 text-sm text-sev-high hover:underline"
@@ -227,6 +233,13 @@ export class ScansPage {
 
   protected liveStatus(scan: Scan): string {
     return this.live()[scan.id]?.status ?? scan.status;
+  }
+
+  /** Lokalisiertes Status-Label (QUEUED/RUNNING/…); Fallback = roher Status. */
+  protected statusLabel(status: string): string {
+    const key = 'scans.status.' + status;
+    const label = this.t(key);
+    return label === key ? status : label;
   }
 
   protected liveFindings(scan: Scan): number {

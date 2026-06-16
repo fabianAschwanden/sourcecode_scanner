@@ -42,7 +42,9 @@ public class OrphanScanReaper {
         }
         int reaped = 0;
         for (ScanRecord r : scans.recent(1000)) {
-            if (r.status() == ScanStatus.RUNNING) {
+            // RUNNING (im Speicher abgebrochen) und QUEUED (Queue ist nur im Speicher) sind nach einem
+            // Neustart verwaist -> als FAILED markieren, sonst hängen sie ewig.
+            if (r.status() == ScanStatus.RUNNING || r.status() == ScanStatus.QUEUED) {
                 scans.save(r.failed("interrupted by a restart/redeploy"));
                 reaped++;
             }

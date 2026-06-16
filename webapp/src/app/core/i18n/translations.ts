@@ -109,6 +109,11 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'scans.col.actions': 'Actions',
     'scans.cancel': 'Cancel',
     'scans.empty': 'No scans yet.',
+    'scans.status.QUEUED': 'Queued',
+    'scans.status.RUNNING': 'Running',
+    'scans.status.COMPLETED': 'Completed',
+    'scans.status.FAILED': 'Failed',
+    'scans.status.CANCELLED': 'Cancelled',
     'scans.row.meta': '{mode} · {findings} findings',
     'scans.viewFindings': 'View findings',
 
@@ -485,6 +490,11 @@ export const TRANSLATIONS: Record<Lang, Dictionary> = {
     'scans.col.actions': 'Aktionen',
     'scans.cancel': 'Abbrechen',
     'scans.empty': 'Noch keine Scans.',
+    'scans.status.QUEUED': 'Eingereiht',
+    'scans.status.RUNNING': 'Läuft',
+    'scans.status.COMPLETED': 'Abgeschlossen',
+    'scans.status.FAILED': 'Fehlgeschlagen',
+    'scans.status.CANCELLED': 'Abgebrochen',
     'scans.row.meta': '{mode} · {findings} Funde',
     'scans.viewFindings': 'Funde anzeigen',
 

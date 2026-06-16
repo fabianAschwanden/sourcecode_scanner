@@ -55,6 +55,20 @@ public class ServerScanService implements ManageScansUseCase {
     /** Laufende Scans für die Abbruch-Anforderung (best effort). */
     private final ConcurrentHashMap<UUID, Boolean> cancelRequested = new ConcurrentHashMap<>();
 
+    /** Vollständig vorab aufgelöster, ausführbarer Scan-Auftrag (keine DB-Reads mehr im async Lauf). */
+    private record PendingScan(ScanRecord record, RepositorySource source, HistoryMode mode, Policy policy,
+            ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.Resolved rules) {}
+
+    /** Warteschlange eingereihter Scans (FIFO) + aktuell laufende Anzahl — Parallelitäts-Limit (OOM-Schutz). */
+    private final java.util.concurrent.ConcurrentLinkedQueue<PendingScan> queue =
+            new java.util.concurrent.ConcurrentLinkedQueue<>();
+    private int running;
+
+    /** Max. gleichzeitige Scans (OOM-Schutz auf kleinen Instanzen); konfigurierbar. */
+    @org.eclipse.microprofile.config.inject.ConfigProperty(
+            name = "scanner.scan.max-concurrent", defaultValue = "2")
+    int maxConcurrentScans;
+
     @Inject
     public ServerScanService(RepositorySourcePort sources, StartScanUseCase orchestrator,
                              ScanRecordPort scanRecords, FindingPort findings, AuditPort audit,
@@ -84,21 +98,65 @@ public class ServerScanService implements ManageScansUseCase {
                 .orElseThrow(() -> new IllegalArgumentException("unknown repository source: " + sourceId));
         UUID scanId = UUID.randomUUID();
         HistoryMode historyMode = parseMode(mode);
-        ScanRecord starting = ScanRecord.starting(scanId, source.name(), historyMode.name().toLowerCase(Locale.ROOT));
-        persistence.saveRecord(starting);
-        audit.record(AuditEvent.of(actor, "scan.start", source.name(), "mode=" + historyMode));
 
-        // Policy + Rulesets im Request-Kontext auflösen (DB-Zugriff); der async Lauf macht keine
-        // Config-DB-Reads. Die effektiven Regel-Overrides werden in die Detektor-Konfig eingespeist.
+        // Policy + Rulesets JETZT (im Request-Kontext) auflösen — auch für eingereihte Scans, damit der
+        // async Lauf keine Config-DB-Reads braucht (gilt auch beim späteren Dispatch aus der Queue).
         Policy policy = policies.resolveFor(source.name());
         ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.Resolved resolvedRules =
                 ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.resolve(
                         rulesets.all(), source.name());
-        executor.runAsync(() -> runScan(starting, source, historyMode, policy, resolvedRules));
-        return starting;
+
+        // Bei freiem Slot sofort RUNNING, sonst QUEUED (in der UI als „eingereiht" sichtbar). Das
+        // Parallelitäts-Limit schützt kleine Instanzen vor OOM (mehrere Clone/Scans gleichzeitig).
+        boolean slotFree;
+        synchronized (this) {
+            slotFree = running < maxConcurrentScans;
+            if (slotFree) {
+                running++;
+            }
+        }
+        ScanStatus initial = slotFree ? ScanStatus.RUNNING : ScanStatus.QUEUED;
+        ScanRecord record = slotFree
+                ? ScanRecord.starting(scanId, source.name(), historyMode.name().toLowerCase(Locale.ROOT))
+                : ScanRecord.queued(scanId, source.name(), historyMode.name().toLowerCase(Locale.ROOT));
+        persistence.saveRecord(record);
+        audit.record(AuditEvent.of(actor, "scan.start", source.name(), "mode=" + historyMode + "; " + initial));
+
+        PendingScan pending = new PendingScan(record, source, historyMode, policy, resolvedRules);
+        if (slotFree) {
+            executor.runAsync(() -> runScan(pending));
+        } else {
+            queue.add(pending);
+        }
+        return record;
     }
 
-    private void runScan(ScanRecord starting, RepositorySource source, HistoryMode mode, Policy policy,
+    /** Gibt einen Slot frei und startet den nächsten eingereihten Scan (falls vorhanden). */
+    private void releaseSlotAndDispatchNext() {
+        PendingScan next;
+        synchronized (this) {
+            next = queue.poll();
+            if (next == null) {
+                running--; // kein Wartender → Slot freigeben
+                return;
+            }
+            // Slot bleibt belegt, wird vom nächsten Lauf übernommen.
+        }
+        ScanRecord started = next.record().running();
+        persistence.saveRecord(started);
+        PendingScan dispatched = new PendingScan(started, next.source(), next.mode(), next.policy(), next.rules());
+        executor.runAsync(() -> runScan(dispatched));
+    }
+
+    private void runScan(PendingScan pending) {
+        try {
+            runScanInternal(pending.record(), pending.source(), pending.mode(), pending.policy(), pending.rules());
+        } finally {
+            releaseSlotAndDispatchNext();
+        }
+    }
+
+    private void runScanInternal(ScanRecord starting, RepositorySource source, HistoryMode mode, Policy policy,
                          ch.fabianaschwanden.sourcescanner.domain.service.RulesetResolution.Resolved resolvedRules) {
         UUID scanId = starting.id();
         broadcaster.publish(new ScanEvent(scanId, ScanStatus.RUNNING.name(), 10, 0));
@@ -190,7 +248,25 @@ public class ServerScanService implements ManageScansUseCase {
 
     @Override
     public void cancelScan(UUID scanId, String actor) {
-        cancelRequested.put(scanId, Boolean.TRUE);
+        // Eingereihten (noch nicht laufenden) Scan direkt aus der Queue entfernen + als CANCELLED markieren.
+        PendingScan queued = null;
+        synchronized (this) {
+            for (PendingScan p : queue) {
+                if (p.record().id().equals(scanId)) {
+                    queued = p;
+                    break;
+                }
+            }
+            if (queued != null) {
+                queue.remove(queued);
+            }
+        }
+        if (queued != null) {
+            persistence.saveRecord(queued.record().cancelled());
+        } else {
+            // Laufender Scan: best-effort-Abbruch über das Flag (wird im Lauf geprüft).
+            cancelRequested.put(scanId, Boolean.TRUE);
+        }
         audit.record(AuditEvent.of(actor, "scan.cancel", scanId.toString(), null));
     }
 

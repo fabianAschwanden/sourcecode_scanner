@@ -56,6 +56,17 @@ public record ScanRecord(
         return new ScanRecord(id, repoId, mode, ScanStatus.RUNNING, 0, 0, Instant.now(), null);
     }
 
+    /** Eingereihter Lauf (wartet auf freien Slot); noch keine Startzeit der Ausführung. */
+    public static ScanRecord queued(UUID id, String repoId, String mode) {
+        return new ScanRecord(id, repoId, mode, ScanStatus.QUEUED, 0, 0, Instant.now(), null);
+    }
+
+    /** Übergang QUEUED → RUNNING beim Start der Ausführung (setzt die Startzeit neu). */
+    public ScanRecord running() {
+        return new ScanRecord(id, repoId, mode, ScanStatus.RUNNING, 0, findingCount, Instant.now(),
+                null, trigger, ci, errorMessage);
+    }
+
     /** Abgeschlossener, aus CI/CD eingelieferter Lauf (IR-22/25). */
     public static ScanRecord ingested(UUID id, String repoId, String mode, ScanStatus status,
                                       int findingCount, CiMetadata ci) {
