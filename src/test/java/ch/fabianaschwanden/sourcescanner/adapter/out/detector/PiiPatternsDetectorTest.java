@@ -15,7 +15,9 @@ import org.junit.jupiter.api.Test;
 /** Framework-frei (TR-24). */
 class PiiPatternsDetectorTest {
 
-    private final PiiPatternsDetector detector = new PiiPatternsDetector();
+    // Standard-Detektor mit LEERER Allowlist: prüft die reine Muster-/Validierungslogik, unabhängig
+    // von der konfigurierten Datei (DR-23 wird separat mit einer expliziten Allowlist getestet).
+    private final PiiPatternsDetector detector = new PiiPatternsDetector(PiiAllowlist.empty());
 
     private ScanUnit unit(String content) {
         return new ScanUnit("repo", "src/Data.java", "c1", "a@b.ch", Instant.now(), content, null);
@@ -229,5 +231,38 @@ class PiiPatternsDetectorTest {
                 "ruleOverrides", Map.of("phone", Map.of("enabled", true, "matchMode", "ALWAYS"))));
         List<Finding> f = scan("phone: +41 44 123 45 67", cfg);
         assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("phone")));
+    }
+
+    // --- PII-Allowlist (DR-23) -------------------------------------------------------------------
+
+    /** Detektor mit einer expliziten Allowlist (normalisierte Form: ohne Whitespace/Bindestriche). */
+    private PiiPatternsDetector withAllowlist(java.util.Set<String> ibans, java.util.Set<String> cards) {
+        return new PiiPatternsDetector(new PiiAllowlist(ibans, cards));
+    }
+
+    @Test
+    void allowlist_unterdrueckt_bekannte_test_kreditkarte() {
+        PiiPatternsDetector d = withAllowlist(java.util.Set.of(), java.util.Set.of("4111111111111111"));
+        List<Finding> f = d.scan(unit("card = 4111 1111 1111 1111"), allPatterns());
+        assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("creditcard")),
+                "auf der Allowlist gelistete Test-Karte darf keinen Fund erzeugen");
+    }
+
+    @Test
+    void allowlist_unterdrueckt_bekannte_test_iban_normalisiert() {
+        // Allowlist trägt die IBAN ohne Leerzeichen/gross; Treffer im Text mit Leerzeichen -> Match.
+        PiiPatternsDetector d = withAllowlist(java.util.Set.of("CH9300762011623852957"), java.util.Set.of());
+        List<Finding> f = d.scan(unit("iban: CH93 0076 2011 6238 5295 7"), allPatterns());
+        assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("iban")),
+                "auf der Allowlist gelistete Beispiel-IBAN (normalisiert) darf keinen Fund erzeugen");
+    }
+
+    @Test
+    void echte_iban_neben_allowlist_eintrag_wird_weiterhin_gemeldet() {
+        PiiPatternsDetector d = withAllowlist(java.util.Set.of("CH9300762011623852957"), java.util.Set.of());
+        List<Finding> f = d.scan(unit("test: CH93 0076 2011 6238 5295 7\nreal: DE89 3704 0044 0532 0130 00"),
+                allPatterns());
+        long ibans = f.stream().filter(x -> x.ruleId().equals("iban")).count();
+        assertTrue(ibans == 1, "nur die nicht-allowlistete echte IBAN wird gemeldet");
     }
 }

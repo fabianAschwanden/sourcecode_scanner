@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+            http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!-- Verteilte Scan-Ausführung über mehrere Pods (horizontale Skalierung). Ein QUEUED-Lauf
+         wird von genau einem Pod atomar geclaimt (FOR UPDATE SKIP LOCKED). claimed_by/claimed_at
+         erlauben Heartbeat-Reaping verwaister RUNNING-Läufe; cancel_requested trägt den Abbruch
+         pod-übergreifend. Additiv. -->
+    <changeSet id="0014-scan-claim" author="scanner">
+        <addColumn tableName="scan_record">
+            <column name="claimed_by" type="VARCHAR(64)"/>
+            <column name="claimed_at" type="TIMESTAMP"/>
+            <column name="cancel_requested" type="BOOLEAN" defaultValueBoolean="false"/>
+        </addColumn>
+        <!-- Bestandsdaten: Flag nicht null. -->
+        <addNotNullConstraint tableName="scan_record" columnName="cancel_requested"
+                              defaultNullValue="false" columnDataType="BOOLEAN"/>
+        <!-- Schneller Claim-Scan auf wartende Läufe. -->
+        <createIndex tableName="scan_record" indexName="idx_scan_record_status_started">
+            <column name="status"/>
+            <column name="started_at"/>
+        </createIndex>
+    </changeSet>
+
+</databaseChangeLog>

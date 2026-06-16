@@ -21,8 +21,6 @@ scan:
       repo: payment-service
       branches: [main, develop]
       auth: { tokenRef: env:BITBUCKET_TOKEN }
-      notify:
-        email: [team-lead@company.com, secops@company.com]  # Report je Scan dieses Repos (IR-53)
 
     - type: github
       org: my-org
@@ -34,23 +32,6 @@ scan:
       baseUrl: https://gitlab.company.com
       group: platform
       auth: { tokenRef: env:GITLAB_TOKEN }
-
-  # ---- Externe Datenquellen (vertrauliche Kundendaten) -----------
-  # REST-API, deren Werte im Code gesucht werden (FR-21, IR-60..66). Auth nur als
-  # Secret-Referenz; Antwortdaten nie persistiert/geloggt (NFR-23).
-  dataSources:
-    - name: crm-partners
-      kind: rest                     # rest | upload (upload: Key-Value-Liste, nur Hashes, IR-67)
-      baseUrl: https://crm.intern/api/v1
-      method: GET
-      path: /partners
-      query: { pageSize: 500 }
-      auth:
-        type: bearer                 # bearer | basic | header
-        tokenRef: env:CRM_API_TOKEN  # nur Referenz, nie Klartext (IR-61)
-      recordsPath: '$.data[*]'       # JSONPath auf die Datensätze (IR-62)
-      timeoutSeconds: 10
-      retries: 2
 
   # ---- Scan-Verhalten --------------------------------------------
   history:
@@ -73,41 +54,12 @@ scan:
     pii:
       enabled: true
       patterns: [iban, creditcard, email, phone]
-      # Test-/Dummy-/Platzhalter-E-Mails werden nie gemeldet (DR-57). Die eingebauten Listen
-      # (example.*, .test/.invalid/.localhost, .internal/.local, beispiel.*, googletest.com,
-      # resend.dev, …) sind hier additiv erweiterbar; testEmailFilter: false schaltet sie ab.
-      testEmailFilter: true
-      testDomains: [acme-test.io]   # zusätzliche, ganze Test-Domains
-      testTlds: [demo]              # zusätzliche Test-TLDs (letztes Label)
-      testSlds: [sandbox]           # zusätzliche Platzhalter-SLDs (z. B. sandbox.*)
+      luhnCheck: true                    # Kreditkarten gegen FP per Luhn validieren (DR-22)
+      allowlistFile: config/pii-allowlist.yaml   # bekannte Beispiel-/Test-PII ignorieren (DR-23)
       customRegex:
         - name: customer-id
           pattern: 'CUST-\d{8}'
           severity: HIGH
-    # Kundendaten-Detektor, gespeist aus einer externen REST-API (FR-21/22, DR-23..28).
-    # Sucht konkrete Werte (z. B. Partnernummern, Namen) im Code; Werte nur im Speicher,
-    # nie geloggt/persistiert (NFR-23). Auth nur als Secret-Referenz (NFR-08/IR-61).
-    customerData:
-      enabled: true
-      dataSource: crm-partners        # referenziert dataSources[].name
-      cacheTtlSeconds: 600
-      minValueLength: 4               # zu kurze Werte ignorieren (DR-25)
-      # Attribut-Mapping: i. d. R. über die UI gepflegt (WR-50..54); hier optional als Default.
-      attributes:
-        - field: partnernummer        # Attribut/Feld in der API-Antwort
-          check: true
-          severity: HIGH
-          category: PII
-        - field: name
-          check: true
-          severity: MEDIUM
-          category: PII
-        - field: vorname
-          check: true
-          severity: MEDIUM
-          category: PII
-        - field: interneNotiz
-          check: false                # nicht prüfen
     license:
       enabled: false
     iac:
@@ -157,21 +109,11 @@ scan:
 |------|-----|--------------|
 | `scan.repositories[].type` | enum | `bitbucket` \| `github` \| `gitlab` \| `localGit` |
 | `scan.repositories[].auth.tokenRef` | string | Referenz auf Secret: `env:NAME`, `vault:path#key` |
-| `scan.repositories[].notify.email` | list | Report-Empfänger je Scan dieses Repos (IR-53; opt-in) |
 | `scan.history.mode` | enum | Scan-Tiefe (siehe Architektur §6) |
 | `scan.detectors.*.enabled` | bool | Detektor-Gruppe aktivieren |
 | `scan.detectors.secrets.verify` | bool | Aktive Validierung gefundener Secrets |
-| `scan.dataSources[].kind` | enum | `rest` (API) \| `upload` (Key-Value-Liste, nur Hashes, IR-67) |
-| `scan.dataSources[].baseUrl` | string | Basis-URL der externen REST-Datenquelle (IR-60; nur `rest`) |
-| `scan.dataSources[].auth.tokenRef` | string | Secret-Referenz für die Datenquelle, nie Klartext (IR-61) |
-| `scan.dataSources[].recordsPath` | string | JSONPath auf die Datensätze in der Antwort (IR-62) |
-| `scan.detectors.customerData.dataSource` | string | Name der genutzten Datenquelle (`dataSources[].name`) |
-| `scan.detectors.customerData.cacheTtlSeconds` | int | TTL des In-Memory-Wertcaches (DR-27); nie auf Platte |
-| `scan.detectors.customerData.minValueLength` | int | Mindestlänge geladener Werte; kürzere werden ignoriert (DR-25) |
-| `scan.detectors.customerData.attributes[].field` | string | Attribut/Feld in der API-Antwort (z. B. `partnernummer`) |
-| `scan.detectors.customerData.attributes[].check` | bool | Attribut prüfen (Mapping, WR-52) |
-| `scan.detectors.customerData.attributes[].severity` | enum | Severity der Treffer dieses Attributs |
-| `scan.detectors.customerData.attributes[].category` | enum | `PII` \| `CUSTOM` |
+| `scan.detectors.pii.luhnCheck` | bool | Kreditkartentreffer per Luhn-Prüfung gegen False Positives validieren |
+| `scan.detectors.pii.allowlistFile` | path | Datei mit bekannten Beispiel-/Test-PII (IBAN/Kreditkarte), die ignoriert werden |
 | `scan.baseline` | path | Datei mit akzeptierten Altfunden |
 | `scan.gate.failOn` | enum | Mindest-Severity, die CI rot macht |
 | `scan.gate.failOnNewOnly` | bool | Nur Delta gegen Baseline bewerten |
@@ -209,6 +151,27 @@ kann erzwungen werden (`gate.requireSuppressionReason: true`).
 Die Baseline wird beim Erstscan generiert und versioniert eingecheckt. Nur Funde,
 deren Fingerprint **nicht** in der Baseline steht, lösen bei `failOnNewOnly: true`
 das Gate aus.
+
+## 5a. PII-Allowlist (bekannte Test-Werte)
+
+Beispiel-/Test-IBANs und -Kreditkarten sind absichtlich strukturell gültig
+(Mod-97 bzw. Luhn) und damit hartnäckige False Positives. Die unter
+`detectors.pii.allowlistFile` referenzierte Datei listet solche Werte; ein Treffer
+darauf wird als **False Positive (Allowlist)** markiert statt als Finding gemeldet.
+
+```yaml
+# config/pii-allowlist.yaml
+version: 1
+iban:
+  - value: "CH93 0076 2011 6238 5295 7"
+    note: "Schweiz – kanonisches Beispiel"
+creditCard:
+  - value: "4111 1111 1111 1111"
+    note: "Visa – Test-PAN"
+```
+
+Der Abgleich erfolgt auf **normalisierter Form** (Whitespace/Bindestriche entfernt,
+IBAN-Buchstaben groß), damit unterschiedliche Formatierungen denselben Wert treffen.
 
 ## 6. Konfigurations-Auflösungsreihenfolge
 
@@ -256,18 +219,6 @@ server:
     sessionTimeoutMinutes: 30
     embedGrafana: true
 
-  # ---- Benachrichtigungen (E-Mail/SMTP, IR-52/54) ----------------
-  notifications:
-    email:
-      enabled: true
-      from: scanner@company.com
-      generalRecipient: security-team@company.com   # systemweite Meldungen (IR-54)
-      smtp:
-        host: smtp.company.com
-        port: 587
-        usernameRef: env:SMTP_USER                  # nur Referenz, nie Klartext
-        passwordRef: vault:secret/scanner-smtp#password
-
   # ---- Observability --------------------------------------------
   observability:
     metrics:
@@ -293,9 +244,6 @@ server:
 | `server.auth.provider` | enum | `oidc` (Blueprint-Default, `quarkus-oidc`/BFF). `saml` nur, falls der Blueprint später SAML aufnimmt — bei Konflikt gewinnt der Blueprint (docs/09, TR-13). |
 | `server.auth.roleMapping` | map | IdP-Gruppen → Rollen (`admin`/`operator`/`viewer`) |
 | `server.ui.embedGrafana` | bool | Grafana-Panels im UI-Dashboard einbetten |
-| `server.notifications.email.enabled` | bool | E-Mail-Versand aktivieren (SMTP, IR-52) |
-| `server.notifications.email.generalRecipient` | string | Allgemeine Benachrichtigungs-Adresse für systemweite Meldungen (IR-54, WR-16) |
-| `server.notifications.email.smtp.passwordRef` | string | SMTP-Credential nur als Secret-Referenz (`env:`/`vault:`, NFR-08) |
 | `server.observability.metrics.endpoint` | path | Prometheus-Scrape-Endpoint |
 | `server.observability.grafana.embed.mode` | enum | `signed` (Token) \| `proxy` |
 | `server.observability.alerts.staleRepoDays` | int | Alarm, wenn Repo länger nicht gescannt |

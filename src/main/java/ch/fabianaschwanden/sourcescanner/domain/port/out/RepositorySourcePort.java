@@ -12,6 +12,9 @@ public interface RepositorySourcePort {
 
     Optional<RepositorySource> byId(UUID id);
 
+    /** Quelle anhand ihres (eindeutigen) Namens — Scans referenzieren das Repo über den Namen. */
+    Optional<RepositorySource> byName(String name);
+
     List<RepositorySource> all();
 
     /** Serverseitige Suche/Filter/Sortierung für die Repo-Übersicht (WR-81); alle Kriterien optional. */

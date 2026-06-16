@@ -22,6 +22,7 @@ RUN ./mvnw -B -q dependency:go-offline || true
 # Quelle + Frontend kopieren und bauen. Quinoa baut webapp/ als Teil von package.
 COPY src/ src/
 COPY webapp/ webapp/
+COPY config/ config/
 RUN ./mvnw -B -DskipTests package
 
 # --- Runtime -------------------------------------------------------------------------------------
@@ -38,6 +39,8 @@ COPY --from=build /build/target/quarkus-app/lib/ /app/lib/
 COPY --from=build /build/target/quarkus-app/*.jar /app/
 COPY --from=build /build/target/quarkus-app/app/ /app/app/
 COPY --from=build /build/target/quarkus-app/quarkus/ /app/quarkus/
+# PII-Allowlist (DR-23): relativ zum Arbeitsverzeichnis /app referenziert (scan.detectors.pii.allowlistFile).
+COPY --from=build /build/config/ /app/config/
 
 EXPOSE 8080
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS_APPEND -jar /app/quarkus-run.jar"]

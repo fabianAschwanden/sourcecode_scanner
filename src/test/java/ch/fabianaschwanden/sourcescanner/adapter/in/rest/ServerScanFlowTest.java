@@ -39,9 +39,11 @@ class ServerScanFlowTest {
                 .then().statusCode(201).body("id", notNullValue())
                 .extract().path("id");
 
+        // Verteilte Ausführung: der Lauf wird als QUEUED eingereiht und von einem Pod-Worker
+        // (ScanWorker) atomar geclaimt und ausgeführt — nicht mehr synchron beim Start.
         given().contentType(ContentType.JSON).body("{\"sourceId\":\"" + sourceId + "\",\"mode\":\"full\"}")
                 .when().post("/api/scans")
-                .then().statusCode(202).body("status", equalTo("RUNNING"));
+                .then().statusCode(202).body("status", equalTo("QUEUED"));
 
         // Verbindungstest der Quelle (localGit wird unterstützt)
         given().when().post("/api/sources/" + sourceId + "/test")

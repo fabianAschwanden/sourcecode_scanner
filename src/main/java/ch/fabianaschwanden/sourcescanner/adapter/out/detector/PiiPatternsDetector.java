@@ -30,6 +30,17 @@ public class PiiPatternsDetector implements DetectorPort {
 
     public static final String ID = "pii.patterns";
 
+    /** Bekannte Beispiel-/Test-PII (normalisiert), die unterdrückt werden (DR-23). */
+    private final PiiAllowlist allowlist;
+
+    public PiiPatternsDetector() {
+        this(PiiAllowlist.fromConfiguredFile());
+    }
+
+    PiiPatternsDetector(PiiAllowlist allowlist) {
+        this.allowlist = allowlist;
+    }
+
     private enum Rule {
         IBAN("iban", Pattern.compile("\\b[A-Z]{2}\\d{2}(?:[ ]?[A-Z0-9]{4}){3,7}(?:[ ]?[A-Z0-9]{1,3})?\\b"),
                 Severity.HIGH, PiiPatternsDetector::isValidIban, true),
@@ -114,6 +125,11 @@ public class PiiPatternsDetector implements DetectorPort {
                         continue;
                     }
                     if (!rule.validator.test(match)) {
+                        continue;
+                    }
+                    // Bekannte Beispiel-/Test-PII (IBAN/Kreditkarte) unterdrücken (DR-23): strukturell
+                    // gültige Doku-/SDK-Werte sind hartnäckige False Positives. Abgleich normalisiert.
+                    if ((rule == Rule.IBAN || rule == Rule.CREDITCARD) && allowlist.contains(rule.key, match)) {
                         continue;
                     }
                     // Datums-/Zeitstempel-Treffer sind nie PII (z. B. 2024-01-15, 15.01.2024,

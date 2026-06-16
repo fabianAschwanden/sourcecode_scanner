@@ -70,6 +70,7 @@ Alle aus dem `%server`-Profil referenzierten Variablen (siehe `application.prope
 | `OIDC_CLIENT_SECRET` | nur server | OIDC-Client-Secret |
 | `SCANNER_SECRETS_KEY` | empfohlen | AES-Schlüssel für DB-verschlüsselte Secrets (NFR-30). Ohne ihn ist der Modus „Key speichern" inaktiv; `secret:`-Referenzen lassen sich nicht auflösen. 32 Byte, Base64. |
 | `DATASOURCE_HASH_PEPPER` | empfohlen | Pepper für Datenquellen-Hashes (NFR-23) |
+| `OIDC_STATE_ENCRYPTION_SECRET` | **bei >1 Maschine Pflicht** | Gemeinsamer Schlüssel für den verschlüsselten OIDC-Session-/Login-State. Alle Pods MÜSSEN denselben Wert nutzen, sonst scheitert der Login, sobald der Callback auf einer anderen Maschine landet. ≥ 32 Zeichen. |
 
 Für den ersten Deploy im **staging**-Profil reichen die DB-Variablen + die empfohlenen Keys:
 
@@ -147,13 +148,40 @@ fly deploy --config deploy/fly/fly.toml --dockerfile deploy/fly/Dockerfile
 
 Health-Check läuft gegen `/q/health/ready` (ohne Auth erlaubt).
 
+## 6. Horizontale Skalierung (mehrere Maschinen)
+
+Mehrere Pods werden unterstützt. Voraussetzungen:
+
+1. **OIDC-State teilen** — einmalig setzen, vor dem Hochskalieren:
+   ```bash
+   fly secrets set --app <deine-app> \
+     OIDC_STATE_ENCRYPTION_SECRET="$(openssl rand -base64 32)"
+   ```
+   Ohne dieses Secret nutzen die Pods einen Dev-Fallback-Schlüssel; der Login funktioniert dann zwar
+   maschinenübergreifend, aber mit einem bekannten, schwachen Schlüssel — produktiv unbedingt setzen.
+2. **Skalieren:**
+   ```bash
+   fly scale count 2 --app <deine-app>     # oder mehr; fly.toml hält min=2/max=4 vor
+   ```
+
+Wie die Verteilung funktioniert:
+- **Scans:** Ein gestarteter Scan wird als `QUEUED` in PostgreSQL geschrieben. Jeder Pod pollt die DB
+  (`scanner.scan.poll-interval`, Default 3s) und claimt den ältesten wartenden Lauf atomar
+  (`FOR UPDATE SKIP LOCKED`) — so führt **genau ein** Pod jeden Lauf aus, nie doppelt. Pro Pod gilt
+  `scanner.scan.max-concurrent` (Default 2) als Parallelitäts-Limit.
+- **Fortschritt:** Die SSE-Verbindung pollt den Lauf-Datensatz in der DB — funktioniert also, egal auf
+  welchem Pod der Scan läuft.
+- **Redeploy/Crash:** Ein ausführender Pod hält per Heartbeat (`claimed_at`) seinen Lauf am Leben.
+  Stirbt er, setzt der Reaper (`scanner.scan.stale-after`, Default 2min) den Lauf zurück auf `QUEUED`
+  und ein anderer Pod übernimmt — laufende Scans überleben so ein Deploy.
+
 ## Hinweise / Grenzen
 
 - **Speicher:** JVM + `git clone` grosser Repos brauchen RAM; bei Bedarf `memory` in `fly.toml` auf
   2gb erhöhen.
 - **Persistenz:** Klon-Arbeitsverzeichnisse liegen im ephemeren Container-FS und werden nach dem Scan
   aufgeräumt — kein Volume nötig. Der Zustand liegt in PostgreSQL.
-- **Always-on:** Für zuverlässig laufende Hintergrund-Scans `min_machines_running = 1` setzen, sonst
-  kann Fly die Maschine bei Inaktivität stoppen.
+- **Always-on:** `min_machines_running` steht auf 2 (HA). Für reinen Sparbetrieb auf 1 reduzieren —
+  Hintergrund-Scans laufen dann nur, solange die eine Maschine aktiv ist.
 - **git-filter-repo:** History-Scrub bleibt Dry-Run-only, solange das Tool nicht im Image installiert
   ist (bewusst, RMR-28).

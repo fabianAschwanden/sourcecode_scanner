@@ -65,4 +65,16 @@ public class ScanRecordEntity {
     /** Kurze Fehlerursache bei fehlgeschlagenem Lauf (für die Repo-Karte, WR-82). */
     @Column(name = "error_message", length = 512)
     public String errorMessage;
+
+    /** Pod, der diesen Lauf geclaimt hat (verteilte Ausführung); null solange QUEUED. */
+    @Column(name = "claimed_by", length = 64)
+    public String claimedBy;
+
+    /** Zeitpunkt des Claims/letzten Heartbeats — Grundlage fürs Reaping verwaister Läufe. */
+    @Column(name = "claimed_at")
+    public Instant claimedAt;
+
+    /** Pod-übergreifendes Abbruch-Flag; der ausführende Pod prüft es während des Laufs. */
+    @Column(name = "cancel_requested", nullable = false)
+    public boolean cancelRequested;
 }

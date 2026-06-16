@@ -43,6 +43,14 @@ public class RepositorySourceRepository
     }
 
     @Override
+    public Optional<RepositorySource> byName(String name) {
+        if (name == null || name.isBlank()) {
+            return Optional.empty();
+        }
+        return find("name", name).firstResultOptional().map(RepositorySourceRepository::toDomain);
+    }
+
+    @Override
     public List<RepositorySource> all() {
         return listAll().stream().map(RepositorySourceRepository::toDomain).toList();
     }

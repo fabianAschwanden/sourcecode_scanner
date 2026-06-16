@@ -3,9 +3,10 @@ package ch.fabianaschwanden.sourcescanner.adapter.in.rest;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.BulkResultDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.ScanDto;
 import ch.fabianaschwanden.sourcescanner.adapter.in.rest.dto.StartScanRequest;
-import ch.fabianaschwanden.sourcescanner.application.service.ScanProgressBroadcaster;
 import ch.fabianaschwanden.sourcescanner.domain.model.ScanRecord;
+import ch.fabianaschwanden.sourcescanner.domain.model.ScanStatus;
 import ch.fabianaschwanden.sourcescanner.domain.port.in.ManageScansUseCase;
+import ch.fabianaschwanden.sourcescanner.domain.port.out.ScanRecordPort;
 import io.quarkus.security.identity.SecurityIdentity;
 import io.smallrye.mutiny.Multi;
 import jakarta.annotation.security.RolesAllowed;
@@ -19,7 +20,9 @@ import jakarta.ws.rs.Produces;
 import jakarta.ws.rs.QueryParam;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.jboss.resteasy.reactive.RestStreamElementType;
 
@@ -29,15 +32,19 @@ import org.jboss.resteasy.reactive.RestStreamElementType;
 public class ScanResource {
 
     private final ManageScansUseCase scans;
-    private final ScanProgressBroadcaster broadcaster;
+    private final ScanRecordPort scanRecords;
     private final SecurityIdentity identity;
 
     @Inject
-    public ScanResource(ManageScansUseCase scans, ScanProgressBroadcaster broadcaster,
+    public ScanResource(ManageScansUseCase scans, ScanRecordPort scanRecords,
                         SecurityIdentity identity) {
         this.scans = scans;
-        this.broadcaster = broadcaster;
+        this.scanRecords = scanRecords;
         this.identity = identity;
+    }
+
+    /** SSE-Nutzlast eines Fortschritts-Ticks (Frontend-Vertrag: scanId/status/progress/findingCount). */
+    public record ScanEvent(UUID scanId, String status, int progress, int findingCount) {
     }
 
     @GET
@@ -87,13 +94,42 @@ public class ScanResource {
         }
     }
 
-    /** Live-Fortschritt eines Laufs als Server-Sent Events (WR-04). */
+    /**
+     * Live-Fortschritt eines Laufs als Server-Sent Events (WR-04). Pollt den Scan-Datensatz in der
+     * DB — so funktioniert der Stream pod-übergreifend (der Lauf kann auf einem anderen Pod laufen
+     * als der, der diese SSE-Verbindung hält). Der Stream endet nach dem ersten terminalen Zustand.
+     */
     @GET
     @Path("/{id}/events")
     @RolesAllowed({"viewer", "operator", "admin"})
     @RestStreamElementType(MediaType.APPLICATION_JSON)
-    public Multi<ScanProgressBroadcaster.ScanEvent> events(@PathParam("id") UUID id) {
-        return broadcaster.stream(id);
+    public Multi<ScanEvent> events(@PathParam("id") UUID id) {
+        // Ein Element pro Tick (oder keins, wenn der Lauf verschwand). Der Stream läuft bis
+        // einschliesslich des ersten terminalen Events: ein Flag lässt genau dieses noch durch und
+        // beendet danach (select().first(p) liefert Elemente, solange p true ist, terminales inkl.).
+        java.util.concurrent.atomic.AtomicBoolean done = new java.util.concurrent.atomic.AtomicBoolean();
+        return Multi.createFrom().ticks().every(Duration.ofMillis(1500))
+                .onItem().transformToIterable(tick -> {
+                    Optional<ScanRecord> r = scanRecords.byId(id);
+                    return r.map(this::toEvent).map(List::of).orElseGet(List::of);
+                })
+                .select().first(event -> {
+                    if (done.get()) {
+                        return false; // nach dem terminalen Event nichts mehr
+                    }
+                    if (isTerminal(event.status())) {
+                        done.set(true); // dieses terminale Event noch ausliefern, dann Schluss
+                    }
+                    return true;
+                });
+    }
+
+    private static boolean isTerminal(String status) {
+        return !ScanStatus.RUNNING.name().equals(status) && !ScanStatus.QUEUED.name().equals(status);
+    }
+
+    private ScanEvent toEvent(ScanRecord r) {
+        return new ScanEvent(r.id(), r.status().name(), r.progress(), r.findingCount());
     }
 
     private String actor() {

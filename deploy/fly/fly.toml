@@ -19,11 +19,14 @@ primary_region = "fra"   # Frankfurt; an Bedarf anpassen (z. B. zur DB-Region)
   force_https = true
   auto_stop_machines = "stop"
   auto_start_machines = true
-  min_machines_running = 1   # 1 Maschine: der OIDC-Login-State (Cookie) ist nicht über mehrere
-                             # Maschinen geteilt — bei 2+ landet der Callback evtl. auf einer anderen
-                             # Maschine und der Login schlägt fehl. Für HA bräuchte es geteilten State.
-  # Verhindert, dass Fly bei Deploys automatisch eine zweite Maschine für HA anlegt.
-  max_machines_running = 1
+  # Horizontale Skalierung: mehrere Maschinen werden jetzt unterstützt. Voraussetzungen sind erfüllt —
+  # (1) geteilter OIDC-Session-State über alle Pods (Fly-Secret OIDC_STATE_ENCRYPTION_SECRET, in
+  # application.properties referenziert), damit der Login-Callback auf jeder Maschine entschlüsselt
+  # werden kann; (2) DB-basierte Scan-Queue: jeder QUEUED-Lauf wird von genau einem Pod atomar
+  # geclaimt (FOR UPDATE SKIP LOCKED), Fortschritt/Cancel über die DB, verwaiste Läufe werden nach
+  # Heartbeat-Timeout requeued. Skalieren via `fly scale count N`.
+  min_machines_running = 2
+  max_machines_running = 4
 
   [[http_service.checks]]
     method = "GET"
