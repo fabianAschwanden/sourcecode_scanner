@@ -108,6 +108,9 @@ interface RuleRow {
       } @else {
         <!-- Editor -->
         <div class="max-w-2xl space-y-5">
+          <h3 class="text-lg font-semibold">
+            {{ editingId ? t('rulesets.edit.title') : t('rulesets.new.title') }}
+          </h3>
           <div class="grid gap-1">
             <label class="text-sm font-medium" for="rsName">{{ t('rulesets.name') }} *</label>
             <input
@@ -223,7 +226,7 @@ interface RuleRow {
               [disabled]="!name.trim()"
               class="rounded bg-accent px-4 py-2 text-sm text-white hover:bg-accent-emphasis disabled:opacity-50"
             >
-              {{ t('rulesets.save') }}
+              {{ editingId ? t('rulesets.update') : t('rulesets.save') }}
             </button>
           </div>
         </div>
