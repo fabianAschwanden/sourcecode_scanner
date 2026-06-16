@@ -69,6 +69,26 @@ class PiiPatternsDetectorTest {
     }
 
     @Test
+    void gueltige_schweizer_iban_wird_erkannt() {
+        List<Finding> f = scan("iban: CH93 0076 2011 6238 5295 7", allPatterns());
+        assertTrue(f.stream().anyMatch(x -> x.ruleId().equals("iban")));
+    }
+
+    @Test
+    void iban_mit_falscher_laenderlaenge_wird_nicht_gemeldet() {
+        // DE-IBAN MUSS 22 Zeichen haben; hier 23 (eine Ziffer zu viel) -> keine gültige IBAN.
+        List<Finding> f = scan("iban: DE89 3704 0044 0532 0130 000", allPatterns());
+        assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("iban")));
+    }
+
+    @Test
+    void iban_mit_unbekanntem_laendercode_wird_nicht_gemeldet() {
+        // ZZ ist kein gültiger ISO-Ländercode -> keine IBAN, auch wenn das Muster passt.
+        List<Finding> f = scan("iban: ZZ89 3704 0044 0532 0130 00", allPatterns());
+        assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("iban")));
+    }
+
+    @Test
     void patterns_filter_begrenzt_auf_email() {
         DetectorConfig onlyEmail = new DetectorConfig(true, Map.of("patterns", List.of("email")));
         List<Finding> f = scan("mail a@b.com card 4111 1111 1111 1111", onlyEmail);
