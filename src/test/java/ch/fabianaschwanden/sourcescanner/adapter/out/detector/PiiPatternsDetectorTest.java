@@ -65,6 +65,27 @@ class PiiPatternsDetectorTest {
     }
 
     @Test
+    void uuid_wird_nicht_als_kreditkarte_erkannt() {
+        // Liquibase-Demo-UUID: die CC-Regex matcht eine 16er-Zifferngruppe über Bindestriche hinweg
+        // (z. B. 0000-000000002105); der Treffer steckt aber in einem UUID-Token und ist kein Fund.
+        String content =
+                "<column name=\"partner_id\" value=\"00000000-0000-0000-0000-000000002105\"/>";
+        List<Finding> f = scan(content, allPatterns());
+        assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("creditcard")),
+                "eine UUID darf keinen Kreditkarten-Fund erzeugen");
+    }
+
+    @Test
+    void creditcard_per_ruleset_deaktiviert_meldet_nichts() {
+        // Spiegelt den Server-Pfad: Ruleset deaktiviert creditcard -> ruleOverrides.enabled=false.
+        DetectorConfig cfg = new DetectorConfig(true, Map.of(
+                "ruleOverrides", Map.of("creditcard", Map.of("enabled", false, "matchMode", "ALWAYS"))));
+        List<Finding> f = scan("card = 4111 1111 1111 1111", cfg);
+        assertFalse(f.stream().anyMatch(x -> x.ruleId().equals("creditcard")),
+                "deaktivierte creditcard-Regel darf trotz gültiger Kartennummer keinen Fund erzeugen");
+    }
+
+    @Test
     void nummer_mit_fuehrenden_nullen_ist_keine_kreditkarte() {
         // Demo-/Test-ID aus einer Liquibase-Migration: beginnt mit 0000 -> kein Emittenten-Schema
         // beginnt mit 0, also kein Kartenfund (DR-22a), auch wenn die Luhn-Summe zufällig stimmt.

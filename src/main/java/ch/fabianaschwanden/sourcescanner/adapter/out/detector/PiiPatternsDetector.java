@@ -107,6 +107,12 @@ public class PiiPatternsDetector implements DetectorPort {
                 Matcher m = rule.pattern.matcher(safe);
                 while (m.find()) {
                     String match = m.group();
+                    // Kreditkarten-Kandidat, der in einem längeren Hex-/UUID-Token steckt
+                    // (z. B. eine 16er-Zifferngruppe aus 00000000-0000-…-000000002105), ist nie
+                    // eine Kartennummer — verwerfen, bevor die Luhn-/Schema-Prüfung greift.
+                    if (rule == Rule.CREDITCARD && embeddedInHexToken(line, m.start(), m.end())) {
+                        continue;
+                    }
                     if (!rule.validator.test(match)) {
                         continue;
                     }
@@ -210,6 +216,33 @@ public class PiiPatternsDetector implements DetectorPort {
      *       (Visa, Mastercard inkl. 2-Series, Amex, Discover, Diners, JCB, UnionPay, Maestro).</li>
      * </ol>
      */
+    /**
+     * {@code true}, wenn der Treffer an {@code [start,end)} Teil eines längeren Hex-/UUID-Tokens ist.
+     * Die Kreditkarten-Regex matcht Ziffern über Bindestriche hinweg und greift so versehentlich in
+     * UUIDs (z. B. {@code 00000000-0000-0000-0000-000000002105}). Steht direkt vor dem Treffer oder
+     * direkt danach ein Hex-Buchstabe ([a-fA-F]) oder ein weiterer Bindestrich, der das Token
+     * fortsetzt, handelt es sich um eine ID, nicht um eine Kartennummer.
+     */
+    private static boolean embeddedInHexToken(String line, int start, int end) {
+        if (start > 0) {
+            char before = line.charAt(start - 1);
+            if (isHexLetter(before) || before == '-') {
+                return true;
+            }
+        }
+        if (end < line.length()) {
+            char after = line.charAt(end);
+            if (isHexLetter(after) || after == '-') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean isHexLetter(char c) {
+        return (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F');
+    }
+
     private static boolean looksLikeCreditCard(String match) {
         if (!Luhn.isValid(match)) {
             return false;
