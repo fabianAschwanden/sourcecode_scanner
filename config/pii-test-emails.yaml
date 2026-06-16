@@ -1,0 +1,59 @@
+# Test-/Dummy-/Platzhalter-E-Mails — Default-Listen für den pii.patterns-Detektor (DR-57).
+#
+# Adressen, die auf eine dieser Listen passen, sind keine echten Nutzerdaten und werden NICHT als
+# Finding gemeldet. Die Listen sind additiv über die Detektor-/Ruleset-params erweiterbar
+# (testDomains/testTlds/testSlds/testLocalParts/testAddresses) bzw. via testEmailFilter:false abschaltbar.
+#
+# Matching (fall-insensitiv):
+#   - addresses:   vollständige Adresse exakt (für echte Domains wie mail.com, die nicht pauschal
+#                  geblockt werden dürfen).
+#   - localParts:  Token vor dem @ (an . _ - + getrennt) — greift auch bei echten Domains,
+#                  z. B. "tester" in thorsten.tester@css.ch.
+#   - domains:     vollständige Domain (z. B. googletest.com).
+#   - slds:        Second-Level-Domain (z. B. example.* / beispiel.*).
+#   - tlds:        Top-Level-Domain bzw. reservierter Namensraum (RFC 2606/6761 + interne Namen).
+
+version: 1
+
+# Reservierte/Test-TLDs und interne Namensräume (RFC 2606/6761).
+tlds:
+  - test
+  - invalid
+  - localhost
+  - example
+  - internal
+  - local
+
+# Reservierte Second-Level-Beispiel-Domains.
+slds:
+  - example
+  - beispiel
+
+# Bekannte Fixture-/Docs-/Wegwerf-Domains.
+domains:
+  - googletest.com
+  - resend.dev
+  - mailinator.com
+  - test.com
+
+# Test-Namen im Local-Part (vor dem @) — markieren ein Dummy-Konto auch bei echten Domains.
+localParts:
+  - test
+  - tester
+  - testuser
+  - testaccount
+  - testperson
+  - dummy
+  - example
+  - mustermann
+  - musterfrau
+  - musterkunde
+  - healthcheck
+  - noreply
+  - no-reply
+  - donotreply
+  - do-not-reply
+
+# Bekannte vollständige Platzhalter-Adressen (Domain echt -> nur die exakte Adresse filtern).
+addresses:
+  - mail@mail.com
