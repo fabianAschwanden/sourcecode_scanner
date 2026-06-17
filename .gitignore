@@ -18,6 +18,10 @@ webapp/playwright-report/
 .project
 .classpath
 
+# Scanner-Laufzeitartefakte (CLI/CI)
+.scanner-cache/
+scan-reports/
+
 # OS / sonstiges
 .DS_Store
 .env

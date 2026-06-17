@@ -1,0 +1,46 @@
+# Vollscan-Konfiguration für den nächtlichen Tiefenscan des psp-Repos (docs/08 §2).
+# Identisch zur .scanner.yaml, aber mode=full (gesamte History aller Branches). Gehört in die
+# Wurzel des psp-Repos als `.scanner-full.yaml`.
+version: 1
+
+scan:
+  repositories:
+    - type: localGit
+      id: psp
+      path: .
+      branches: [main]
+
+  history:
+    mode: full
+
+  concurrency:
+    workers: 4
+    detectorTimeoutSeconds: 30
+
+  detectors:
+    secrets:
+      enabled: true
+      ruleset: gitleaks-default
+      entropy:
+        enabled: true
+        threshold: 4.5
+        minLength: 20
+        severity: MEDIUM
+    pii:
+      enabled: false
+      patterns: [iban, creditcard, email]
+    iac:
+      enabled: false
+
+  baseline: .scanner-baseline.json
+
+  gate:
+    failOn: HIGH
+    failOnNewOnly: true
+    softFail: false
+    requireSuppressionReason: false
+
+  output:
+    formats: [sarif]
+    directory: ./scan-reports
+    redact: true

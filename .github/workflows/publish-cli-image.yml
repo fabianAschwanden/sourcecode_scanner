@@ -1,0 +1,49 @@
+name: Publish CLI Image
+
+# Veröffentlicht das CLI-/CI-Image des Scanners nach GHCR, damit fremde Pipelines (z. B. psp) den
+# Scanner als Build-Gate nutzen können (docs/08). Tags:
+#   - latest        (bei Push auf main)
+#   - <git-sha>     (immer, unveränderlich referenzierbar)
+#   - <version>     (bei v*-Tags, z. B. 1.2.3)
+# Manuell auslösbar via "Run workflow".
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image-Metadaten (Tags/Labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/sourcecode-scanner-cli
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,format=long
+            type=semver,pattern={{version}}
+
+      - name: Build & Push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: deploy/cli/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

@@ -1,0 +1,52 @@
+# Scanner-Konfiguration für das psp-Repo (Build-Gate in der CI, docs/08).
+# Diese Datei gehört in die Wurzel des psp-Repos als `.scanner.yaml`.
+# Aufruf im CI: scan --config .scanner.yaml --output sarif   (mode kommt per --history-… bzw. hier fix)
+version: 1
+
+scan:
+  repositories:
+    - type: localGit
+      id: psp
+      path: .
+      branches: [main]
+
+  history:
+    # HEAD = aktueller Stand des Checkouts ohne History -> schnelles, blockierendes PR-Feedback.
+    # Der nächtliche Deep-Scan überschreibt das per CLI auf FULL (siehe Workflow).
+    # (Hinweis: ein echter DIFF-Modus ist im Scanner noch nicht implementiert; HEAD ist der schnelle Pfad.)
+    mode: head
+
+  concurrency:
+    workers: 4
+    detectorTimeoutSeconds: 30
+
+  detectors:
+    secrets:
+      enabled: true
+      ruleset: gitleaks-default
+      entropy:
+        enabled: true
+        threshold: 4.5
+        minLength: 20
+        severity: MEDIUM
+    pii:
+      # PII standardmäßig aus — für ein Code-Repo meist Rauschen. Bei Bedarf einschalten.
+      enabled: false
+      patterns: [iban, creditcard, email]
+    iac:
+      enabled: false
+
+  # Akzeptierte Altfunde: einmalig mit `scan --config .scanner.yaml --write-baseline` erzeugen
+  # und einchecken, damit Bestandsfunde das Gate nicht dauerhaft rot färben.
+  baseline: .scanner-baseline.json
+
+  gate:
+    failOn: HIGH            # ab HIGH bricht der Build
+    failOnNewOnly: true     # nur neue (nicht in der Baseline stehende) Funde blocken
+    softFail: false         # Einführungsphase: auf true setzen -> nie brechen, nur reporten
+    requireSuppressionReason: false
+
+  output:
+    formats: [sarif]
+    directory: ./scan-reports
+    redact: true

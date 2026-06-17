@@ -119,16 +119,24 @@ Service-Message-Beispiele, die der Scanner schreibt:
 
 ### 4.3 GitHub Actions
 
+Der Scanner wird als CLI-Container-Image aus GHCR gezogen
+(`ghcr.io/<owner>/sourcecode-scanner-cli`, veröffentlicht vom Workflow
+„Publish CLI Image"); das gescannte Repo wird im Job-Container gescannt:
+
 ```yaml
 # .github/workflows/secret-scan.yml (Auszug)
 jobs:
-  secret-scan:
+  scan:
     runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/<owner>/sourcecode-scanner-cli:latest
+    permissions: { contents: read, security-events: write }
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }     # volle Historie für Diff/Full
-      - name: Secret scan
-        run: scanner scan --mode diff --config .scanner.yaml --output sarif
+        with: { fetch-depth: 0 }     # volle Historie für Full-Scans
+      - name: Secret scan (Gate)
+        # Kein führendes "scan": das Jar ist der scan-Command, die Argumente sind dessen Optionen.
+        run: java -jar /app/quarkus-run.jar --config .scanner.yaml --output sarif
       - name: Upload SARIF
         if: always()
         uses: github/codeql-action/upload-sarif@v3
@@ -136,7 +144,11 @@ jobs:
 ```
 
 Ein Exit-Code ≠ 0 lässt den Job — und damit den erforderlichen Status-Check —
-fehlschlagen; über Branch-Protection wird der Merge blockiert.
+fehlschlagen; über Branch-Protection wird der Merge blockiert. **Modus:** Für PR/Push
+ist `mode: head` (aktueller Checkout, kein History-Walk) der schnelle, blockierende
+Pfad; ein Vollscan (`mode: full`) läuft zeitgesteuert über eine zweite Config. Ein
+echter `diff`-Modus ist im Core noch nicht umgesetzt. Eine fertige, kopierbare
+Vorlage (Workflow + zwei Configs) liegt unter `deploy/psp/`.
 
 ### 4.4 Bitbucket Pipelines & Jenkins
 
