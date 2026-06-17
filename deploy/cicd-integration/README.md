@@ -4,7 +4,13 @@ Wiederverwendbare Vorlage, um den Source Code Scanner als Build-Gate in **ein be
 GitHub-Repo** einzubinden (Konzept: docs/08). Self-contained — **kein** zentraler Server nötig;
 das Gate hängt allein am Exit-Code.
 
-**Funde-Sichtbarkeit:** Der SARIF-Report wird **immer** als Build-Artefakt (`scan-report-sarif`)
+**Funde-Anzahl auf einen Blick:** Der Workflow schreibt eine **Step Summary** (oben auf der
+Run-Seite, kein Log-Aufklappen nötig): z. B. „✅ Secret-Scan: keine Funde (Gate PASS)" oder
+„❌ Secret-Scan: 3 Fund(e) (Gate FAIL)", plus eine kleine Tabelle (berichtete Funde nach
+Suppression/Baseline · blockierend · Gate). Dieselbe Info erscheint zusätzlich als `::notice`
+in den Annotationen.
+
+**Vollständiger Report:** Das SARIF wird **immer** als Build-Artefakt (`scan-report-sarif`)
 abgelegt — im jeweiligen Workflow-Lauf unter „Artifacts" herunterladbar (z. B. mit der VS-Code-
 Extension „SARIF Viewer" ansehen).
 
