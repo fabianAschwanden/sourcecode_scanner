@@ -34,6 +34,17 @@ scan:
 
   baseline: .scanner-baseline.json
 
+  # Pfad-Suppression (FR-10): rauschanfällige Dateien ausnehmen (Lockfiles/Minified/Maps/Build-Output).
+  suppress:
+    - { path: '**/package-lock.json', reason: 'npm-Lockfile: Integrity-Hashes, keine Secrets' }
+    - { path: '**/yarn.lock',         reason: 'yarn-Lockfile: Hashes, keine Secrets' }
+    - { path: '**/pnpm-lock.yaml',    reason: 'pnpm-Lockfile: Hashes, keine Secrets' }
+    - { path: '**/*.min.js',          reason: 'Minified-Asset: hochentropisch, kein Klartext-Secret' }
+    - { path: '**/*.min.css',         reason: 'Minified-Asset' }
+    - { path: '**/*.map',             reason: 'Source-Map: generiert' }
+    - { path: '**/dist/**',           reason: 'Build-Output' }
+    - { path: '**/build/**',          reason: 'Build-Output' }
+
   gate:
     failOn: HIGH
     failOnNewOnly: true

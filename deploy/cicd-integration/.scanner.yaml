@@ -40,6 +40,19 @@ scan:
   # einchecken, damit Bestandsfunde das Gate nicht dauerhaft rot färben.
   baseline: .scanner-baseline.json
 
+  # Pfad-Suppression (FR-10): rauschanfällige Dateien ausnehmen. Lockfiles, Minified-/Map-Assets und
+  # Build-Output enthalten hochentropische Hashes (npm-integrity etc.) -> massenhaft Entropie-False-
+  # Positives, aber keine echten Secrets. Glob; `**/` matcht in jedem Verzeichnis.
+  suppress:
+    - { path: '**/package-lock.json', reason: 'npm-Lockfile: Integrity-Hashes, keine Secrets' }
+    - { path: '**/yarn.lock',         reason: 'yarn-Lockfile: Hashes, keine Secrets' }
+    - { path: '**/pnpm-lock.yaml',    reason: 'pnpm-Lockfile: Hashes, keine Secrets' }
+    - { path: '**/*.min.js',          reason: 'Minified-Asset: hochentropisch, kein Klartext-Secret' }
+    - { path: '**/*.min.css',         reason: 'Minified-Asset' }
+    - { path: '**/*.map',             reason: 'Source-Map: generiert' }
+    - { path: '**/dist/**',           reason: 'Build-Output' }
+    - { path: '**/build/**',          reason: 'Build-Output' }
+
   gate:
     failOn: HIGH            # ab HIGH bricht der Build
     failOnNewOnly: true     # nur neue (nicht in der Baseline stehende) Funde blocken
