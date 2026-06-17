@@ -1,32 +1,51 @@
 # Scanner als CI-Build-Gate einbinden (projektunabhängig)
 
-Diese Vorlage bindet den Source Code Scanner als Build-Gate in **ein beliebiges
-GitHub-Repo** ein (Konzept: docs/08). Self-contained — **kein** zentraler Server nötig;
-das Gate hängt allein am Exit-Code, Funde erscheinen zusätzlich im GitHub-„Code
-scanning"-Tab.
+Wiederverwendbare Vorlage, um den Source Code Scanner als Build-Gate in **ein beliebiges
+GitHub-Repo** einzubinden (Konzept: docs/08). Self-contained — **kein** zentraler Server nötig;
+das Gate hängt allein am Exit-Code, Funde erscheinen zusätzlich im GitHub-„Code scanning"-Tab.
 
-## Dateien ins Ziel-Repo kopieren
+## TL;DR — in 4 Schritten ins nächste Repo
 
-| Datei hier | Ziel im Repo |
-|---|---|
-| `secret-scan.yml` | `.github/workflows/secret-scan.yml` |
-| `.scanner.yaml` | `.scanner.yaml` (Repo-Wurzel) — schneller HEAD-Scan für PR/Push |
-| `.scanner-full.yaml` | `.scanner-full.yaml` (Repo-Wurzel) — nächtlicher Vollscan |
+1. **Drei Dateien** ins Ziel-Repo kopieren (siehe Tabelle unten).
+2. **CLI-Image lesbar machen** für das Ziel-Repo (Package public ODER GHCR-Login, unten).
+3. **Baseline** einmalig erzeugen + einchecken (sonst färben Altfunde jeden Build rot).
+4. **Branch-Protection**: Status-Check `scan` als *required* setzen.
 
-Optional in den Configs `scan.repositories[].id` auf den Repo-Namen setzen (nur ein
-Anzeige-Label im Report). Sonst ist nichts projektspezifisch anzupassen.
+Vom Scanner-Repo aus kopieren (Pfade ggf. anpassen):
 
-## Voraussetzung: CLI-Image ist veröffentlicht
+```bash
+TARGET=../mein-repo        # Pfad zum Ziel-Repo
+mkdir -p "$TARGET/.github/workflows"
+cp deploy/cicd-integration/secret-scan.yml      "$TARGET/.github/workflows/secret-scan.yml"
+cp deploy/cicd-integration/.scanner.yaml        "$TARGET/.scanner.yaml"
+cp deploy/cicd-integration/.scanner-full.yaml   "$TARGET/.scanner-full.yaml"
+```
+
+## Dateien & Zielorte
+
+| Datei hier | Ziel im Repo | Zweck |
+|---|---|---|
+| `secret-scan.yml` | `.github/workflows/secret-scan.yml` | Der CI-Workflow (Gate + SARIF-Upload) |
+| `.scanner.yaml` | `.scanner.yaml` (Repo-Wurzel) | Schneller HEAD-Scan für PR/Push |
+| `.scanner-full.yaml` | `.scanner-full.yaml` (Repo-Wurzel) | Nächtlicher Vollscan der History |
+
+**Projektspezifisch anzupassen:** nichts zwingend. Optional `scan.repositories[].id` in den
+Configs auf den Repo-Namen setzen (nur ein Anzeige-Label im Report). Die Detektor-/Gate-
+Einstellungen je Repo nach Bedarf justieren (z. B. `pii.enabled`, `gate.failOn`).
+
+## Voraussetzung: CLI-Image ist erreichbar
 
 Der Workflow zieht `ghcr.io/fabianaschwanden/sourcecode-scanner-cli:latest`. Dieses Image
-baut/pusht der Workflow **„Publish CLI Image"** im Scanner-Repo (auf Push nach `main`,
-auf `v*`-Tags oder manuell). Einmalig sicherstellen, dass das Paket für das Ziel-Repo
-lesbar ist:
-- Package in GHCR auf **public** stellen (einfachster Weg), **oder**
-- dem Ziel-Repo Lesezugriff auf das Package geben (GHCR → Package → Settings → Manage Actions access).
+baut/pusht der Workflow **„Publish CLI Image"** im Scanner-Repo (Push auf `main`, `v*`-Tags
+oder manuell). Damit das Ziel-Repo es ziehen kann, **eine** der beiden Varianten:
 
-Empfehlung: statt `:latest` einen unveränderlichen Tag (`:sha-…` oder `:<version>`) pinnen,
-sobald die erste Version veröffentlicht ist — reproduzierbare Gates.
+- **Image public** (einfachster Weg): GHCR → Package `sourcecode-scanner-cli` →
+  Package settings → Danger Zone → *Change visibility* → **Public**. Workflow läuft ohne Login.
+- **Image privat** (z. B. interne Repos): den `credentials:`-Block im Workflow einkommentieren
+  und im Ziel-Repo ein Secret **`GHCR_PAT`** (Personal Access Token mit `read:packages`) hinterlegen.
+
+Empfehlung: statt `:latest` einen unveränderlichen Tag (`:sha-…` oder `:<version>`) pinnen —
+reproduzierbare Gates. Die Image-Referenz steht an genau einer Stelle (`container.image`).
 
 ## Einmalig: Baseline für Bestandsfunde
 
@@ -42,19 +61,26 @@ docker run --rm -v "$PWD:/work" -w /work \
 git add .scanner-baseline.json && git commit -m "scanner: Baseline der Bestandsfunde"
 ```
 
+Alternativ für eine sanfte Einführungsphase in beiden Configs `gate.softFail: true` setzen:
+Funde werden dann nur gemeldet (Exit 3, Build bleibt grün), bis ihr auf `false` umstellt.
+
 ## Merge blockieren
 
-In den Branch-Protection-Regeln den Status-Check **`scan`** (Job-Name) als *required*
-markieren — dann blockiert ein Gate-Fail (Exit 1) den Merge.
-
-## Einführungsphase (optional)
-
-Wenn das Gate anfangs nicht hart brechen soll: in beiden Configs `gate.softFail: true` setzen.
-Dann werden Funde nur gemeldet (Exit 3, Build bleibt grün), bis ihr auf `false` umstellt.
+Branch-Protection-Regel: Status-Check **`scan`** (Job-Name) als *required* markieren — ein
+Gate-Fail (Exit 1) blockiert dann den Merge.
 
 ## Modi — Stand heute
 
 - **HEAD** (PR/Push): scannt den aktuellen Checkout ohne History → schnelles, blockierendes Feedback.
-- **FULL** (nächtlich): gesamte History aller Branches.
+- **FULL** (nächtlich, `schedule`): gesamte History aller Branches.
 - Ein echter **DIFF**-Modus (nur geänderte Hunks) ist im Scanner-Core noch nicht implementiert;
   sobald vorhanden, kann der PR-Job darauf umgestellt werden.
+
+## Exit-Code-Vertrag (docs/08 §7)
+
+| Exit | Bedeutung | Build |
+|---|---|---|
+| 0 | keine Funde ≥ `failOn` (bzw. nur Baseline) | grün |
+| 1 | Gate verletzt — blockierende Funde | rot |
+| 2 | Konfig-/Laufzeitfehler | rot |
+| 3 | `softFail` aktiv: Funde, aber nicht blockierend | grün/Warnung |
