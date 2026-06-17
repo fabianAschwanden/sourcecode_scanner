@@ -26,6 +26,11 @@ RUN ./mvnw -B -DskipTests package
 # --- Runtime -----------------------------------------------------------------------------------
 FROM eclipse-temurin:25-jre AS runtime
 ENV LANG=C.UTF-8
+# git im Runtime-Image: In einem GitHub-Actions-Container-Job erkennt actions/checkout sonst kein
+# git und lädt das Repo als Tarball OHNE .git -> der localGit-Scan findet kein Repository
+# ("no git repository found"). Mit git macht checkout einen echten Klon inkl. .git.
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY --from=build /build/target/quarkus-app/lib/ /app/lib/
 COPY --from=build /build/target/quarkus-app/*.jar /app/
