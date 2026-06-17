@@ -39,4 +39,8 @@ WORKDIR /work
 # CLI-Modus: alle Container-Argumente gehen an den Scan-Command (Exit-Code-Vertrag, docs/08 §7).
 # Default-Profil prod (kein OIDC/DB) — der CLI-Lauf braucht weder IdP noch Datenbank.
 ENV QUARKUS_PROFILE=prod
+# PII-Konfigdateien liegen im Image unter /app/config; absolut referenzieren, da das CWD beim CLI-Lauf
+# das gescannte Repo (/work) ist — sonst „file not found"-Warnungen und nur die eingebauten Defaults.
+ENV PII_ALLOWLIST_FILE=/app/config/pii-allowlist.yaml \
+    PII_TEST_EMAILS_FILE=/app/config/pii-test-emails.yaml
 ENTRYPOINT ["java", "-jar", "/app/quarkus-run.jar"]

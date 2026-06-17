@@ -83,6 +83,20 @@ class YamlScanConfigLoaderTest {
     }
 
     @Test
+    void history_mode_head_wird_unterstuetzt(@TempDir Path dir) throws IOException {
+        // HEAD ist der schnelle CI-Modus (aktueller Checkout, keine History) — muss aus der YAML-
+        // Config wählbar sein (sonst "unknown value 'head'", wie im CI-Gate aufgetreten).
+        Path cfg = write(dir, """
+                scan:
+                  repositories:
+                    - { type: localGit, path: . }
+                  history:
+                    mode: head
+                """);
+        assertEquals(HistoryMode.HEAD, loader.load(cfg).mode());
+    }
+
+    @Test
     void fehlende_datei_bricht() {
         assertThrows(ScanConfigPort.ConfigException.class, () -> loader.load(Path.of("/nope/scanner.yaml")));
     }

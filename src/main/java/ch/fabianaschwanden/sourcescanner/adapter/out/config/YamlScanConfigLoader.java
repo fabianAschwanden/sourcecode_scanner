@@ -158,6 +158,7 @@ public class YamlScanConfigLoader implements ScanConfigPort {
             JsonNode history = scan.get("history");
             String mode = history == null ? "full" : text(history, "mode", "full");
             return switch (mode.toLowerCase(Locale.ROOT)) {
+                case "head" -> HistoryMode.HEAD;
                 case "full" -> HistoryMode.FULL;
                 case "incremental" -> HistoryMode.INCREMENTAL;
                 case "sincecommit" -> HistoryMode.SINCE_COMMIT;
