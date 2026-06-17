@@ -4,11 +4,15 @@ Wiederverwendbare Vorlage, um den Source Code Scanner als Build-Gate in **ein be
 GitHub-Repo** einzubinden (Konzept: docs/08). Self-contained — **kein** zentraler Server nötig;
 das Gate hängt allein am Exit-Code.
 
-**Funde-Sichtbarkeit:** Der SARIF-Upload in den „Code scanning"-Tab braucht **GitHub Advanced
-Security** — bei öffentlichen Repos gratis, bei **privaten** nur mit GHAS-Lizenz. Ohne GHAS
-schlägt der Upload-Schritt fehl (`Resource not accessible by integration`); er ist daher
-`continue-on-error` und **kippt das Gate nicht**. Zusätzlich wird der SARIF-Report immer als
-Build-Artefakt (`scan-report-sarif`) abgelegt und ist so auch ohne GHAS einsehbar.
+**Funde-Sichtbarkeit:** Der SARIF-Report wird **immer** als Build-Artefakt (`scan-report-sarif`)
+abgelegt — im jeweiligen Workflow-Lauf unter „Artifacts" herunterladbar (z. B. mit der VS-Code-
+Extension „SARIF Viewer" ansehen).
+
+Der zusätzliche Upload in den **„Code scanning"-Tab** braucht **GitHub Advanced Security**
+(öffentliche Repos: gratis; private: nur mit GHAS-Lizenz). Er ist daher **standardmässig aus** —
+sonst erzeugt er bei Repos ohne GHAS die Annotation `Resource not accessible by integration`.
+Einschalten, wenn GHAS verfügbar ist: Repo-Variable **`SCANNER_UPLOAD_SARIF` = `true`** setzen
+(Settings → Secrets and variables → Actions → Variables).
 
 ## TL;DR — in 4 Schritten ins nächste Repo
 
