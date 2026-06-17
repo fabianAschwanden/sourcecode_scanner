@@ -148,7 +148,7 @@ fehlschlagen; über Branch-Protection wird der Merge blockiert. **Modus:** Für 
 ist `mode: head` (aktueller Checkout, kein History-Walk) der schnelle, blockierende
 Pfad; ein Vollscan (`mode: full`) läuft zeitgesteuert über eine zweite Config. Ein
 echter `diff`-Modus ist im Core noch nicht umgesetzt. Eine fertige, kopierbare
-Vorlage (Workflow + zwei Configs) liegt projektunabhängig unter `deploy/integration/`.
+Vorlage (Workflow + zwei Configs) liegt projektunabhängig unter `deploy/cicd-integration/`.
 
 ### 4.4 Bitbucket Pipelines & Jenkins
 
