@@ -1,12 +1,12 @@
-# Vollscan-Konfiguration für den nächtlichen Tiefenscan des psp-Repos (docs/08 §2).
-# Identisch zur .scanner.yaml, aber mode=full (gesamte History aller Branches). Gehört in die
-# Wurzel des psp-Repos als `.scanner-full.yaml`.
+# Vollscan-Konfiguration für den nächtlichen Tiefenscan (docs/08 §2) — projektunabhängig.
+# Identisch zur .scanner.yaml, aber mode=full (gesamte History aller Branches).
+# In die Wurzel des zu scannenden Repos als `.scanner-full.yaml` kopieren.
 version: 1
 
 scan:
   repositories:
     - type: localGit
-      id: psp
+      id: repo
       path: .
       branches: [main]
 

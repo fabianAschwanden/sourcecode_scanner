@@ -1,18 +1,18 @@
-# Scanner-Konfiguration für das psp-Repo (Build-Gate in der CI, docs/08).
-# Diese Datei gehört in die Wurzel des psp-Repos als `.scanner.yaml`.
-# Aufruf im CI: scan --config .scanner.yaml --output sarif   (mode kommt per --history-… bzw. hier fix)
+# Scanner-Konfiguration für ein Build-Gate in der CI (docs/08) — projektunabhängig.
+# In die Wurzel des zu scannenden Repos als `.scanner.yaml` kopieren.
+# Aufruf im CI: --config .scanner.yaml --output sarif  (das CLI-Image IST der scan-Command).
 version: 1
 
 scan:
   repositories:
     - type: localGit
-      id: psp
+      id: repo            # Anzeige-Label des Repos im Report — frei wählbar, z. B. den Repo-Namen eintragen.
       path: .
       branches: [main]
 
   history:
     # HEAD = aktueller Stand des Checkouts ohne History -> schnelles, blockierendes PR-Feedback.
-    # Der nächtliche Deep-Scan überschreibt das per CLI auf FULL (siehe Workflow).
+    # Der nächtliche Deep-Scan nutzt eine zweite Config (.scanner-full.yaml, mode: full).
     # (Hinweis: ein echter DIFF-Modus ist im Scanner noch nicht implementiert; HEAD ist der schnelle Pfad.)
     mode: head
 
@@ -36,8 +36,8 @@ scan:
     iac:
       enabled: false
 
-  # Akzeptierte Altfunde: einmalig mit `scan --config .scanner.yaml --write-baseline` erzeugen
-  # und einchecken, damit Bestandsfunde das Gate nicht dauerhaft rot färben.
+  # Akzeptierte Altfunde: einmalig mit `--config .scanner.yaml --write-baseline` erzeugen und
+  # einchecken, damit Bestandsfunde das Gate nicht dauerhaft rot färben.
   baseline: .scanner-baseline.json
 
   gate:
