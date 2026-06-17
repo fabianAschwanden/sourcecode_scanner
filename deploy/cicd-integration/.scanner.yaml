@@ -1,6 +1,7 @@
 # Scanner-Konfiguration für ein Build-Gate in der CI (docs/08) — projektunabhängig.
-# In die Wurzel des zu scannenden Repos als `.scanner.yaml` kopieren.
-# Aufruf im CI: --config .scanner.yaml --output sarif  (das CLI-Image IST der scan-Command).
+# Ablageort im Ziel-Repo: .github/scanner/.scanner.yaml
+# Aufruf im CI: --config .github/scanner/.scanner.yaml --output sarif (das CLI-Image IST der Command).
+# path: . bleibt das Repo-Root (Scan-Ziel = Arbeitsverzeichnis), nicht der Config-Ordner.
 version: 1
 
 scan:
@@ -36,9 +37,10 @@ scan:
     iac:
       enabled: false
 
-  # Akzeptierte Altfunde: einmalig mit `--config .scanner.yaml --write-baseline` erzeugen und
-  # einchecken, damit Bestandsfunde das Gate nicht dauerhaft rot färben.
-  baseline: .scanner-baseline.json
+  # Akzeptierte Altfunde: einmalig mit `--config .github/scanner/.scanner.yaml --write-baseline`
+  # erzeugen und einchecken, damit Bestandsfunde das Gate nicht dauerhaft rot färben. Pfad relativ
+  # zum Repo-Root (= Arbeitsverzeichnis des Scans), nicht zur Config-Datei.
+  baseline: .github/scanner/.scanner-baseline.json
 
   # Pfad-Suppression (FR-10): rauschanfällige Dateien ausnehmen. Lockfiles, Minified-/Map-Assets und
   # Build-Output enthalten hochentropische Hashes (npm-integrity etc.) -> massenhaft Entropie-False-

@@ -1,6 +1,6 @@
 # Vollscan-Konfiguration für den nächtlichen Tiefenscan (docs/08 §2) — projektunabhängig.
 # Identisch zur .scanner.yaml, aber mode=full (gesamte History aller Branches).
-# In die Wurzel des zu scannenden Repos als `.scanner-full.yaml` kopieren.
+# Ablageort im Ziel-Repo: .github/scanner/.scanner-full.yaml
 version: 1
 
 scan:
@@ -32,7 +32,7 @@ scan:
     iac:
       enabled: false
 
-  baseline: .scanner-baseline.json
+  baseline: .github/scanner/.scanner-baseline.json
 
   # Pfad-Suppression (FR-10): rauschanfällige Dateien ausnehmen (Lockfiles/Minified/Maps/Build-Output).
   suppress:

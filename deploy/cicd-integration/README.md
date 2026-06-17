@@ -25,22 +25,25 @@ Vom Scanner-Repo aus kopieren (Pfade ggf. anpassen):
 
 ```bash
 TARGET=../mein-repo        # Pfad zum Ziel-Repo
-mkdir -p "$TARGET/.github/workflows"
+mkdir -p "$TARGET/.github/workflows" "$TARGET/.github/scanner"
 cp deploy/cicd-integration/secret-scan.yml      "$TARGET/.github/workflows/secret-scan.yml"
-cp deploy/cicd-integration/.scanner.yaml        "$TARGET/.scanner.yaml"
-cp deploy/cicd-integration/.scanner-full.yaml   "$TARGET/.scanner-full.yaml"
+cp deploy/cicd-integration/.scanner.yaml        "$TARGET/.github/scanner/.scanner.yaml"
+cp deploy/cicd-integration/.scanner-full.yaml   "$TARGET/.github/scanner/.scanner-full.yaml"
 ```
 
 ## Dateien & Zielorte
 
 | Datei hier | Ziel im Repo | Zweck |
 |---|---|---|
-| `secret-scan.yml` | `.github/workflows/secret-scan.yml` | Der CI-Workflow (Gate + SARIF-Upload) |
-| `.scanner.yaml` | `.scanner.yaml` (Repo-Wurzel) | Schneller HEAD-Scan für PR/Push |
-| `.scanner-full.yaml` | `.scanner-full.yaml` (Repo-Wurzel) | Nächtlicher Vollscan der History |
+| `secret-scan.yml` | `.github/workflows/secret-scan.yml` | Der CI-Workflow (Gate + SARIF) |
+| `.scanner.yaml` | `.github/scanner/.scanner.yaml` | Schneller HEAD-Scan für PR/Push |
+| `.scanner-full.yaml` | `.github/scanner/.scanner-full.yaml` | Nächtlicher Vollscan der History |
 
-**Projektspezifisch anzupassen:** nichts zwingend. Optional `scan.repositories[].id` in den
-Configs auf den Repo-Namen setzen (nur ein Anzeige-Label im Report). Die Detektor-/Gate-
+Die Baseline (`.scanner-baseline.json`, s. u.) liegt ebenfalls unter `.github/scanner/`.
+
+**Projektspezifisch anzupassen:** nichts zwingend. `scan.repositories[].path: .` bleibt das
+Repo-Root (Scan-Ziel = Arbeitsverzeichnis), unabhängig davon, wo die Config-Datei liegt.
+Optional `scan.repositories[].id` auf den Repo-Namen setzen (Anzeige-Label). Detektor-/Gate-
 Einstellungen je Repo nach Bedarf justieren (z. B. `pii.enabled`, `gate.failOn`).
 
 ## Voraussetzung: CLI-Image ist erreichbar
@@ -67,8 +70,8 @@ Baseline erzeugen und einchecken (lokal im Ziel-Repo, Docker vorausgesetzt):
 # die Argumente sind dessen Optionen (--config / --write-baseline / --output …).
 docker run --rm -v "$PWD:/work" -w /work \
   ghcr.io/fabianaschwanden/sourcecode-scanner-cli:latest \
-  --config .scanner.yaml --write-baseline
-git add .scanner-baseline.json && git commit -m "scanner: Baseline der Bestandsfunde"
+  --config .github/scanner/.scanner.yaml --write-baseline
+git add .github/scanner/.scanner-baseline.json && git commit -m "scanner: Baseline der Bestandsfunde"
 ```
 
 Alternativ für eine sanfte Einführungsphase in beiden Configs `gate.softFail: true` setzen:
