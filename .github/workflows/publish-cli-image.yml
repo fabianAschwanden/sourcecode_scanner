@@ -40,7 +40,7 @@ jobs:
             type=semver,pattern={{version}}
 
       - name: Build & Push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: deploy/cli/Dockerfile
