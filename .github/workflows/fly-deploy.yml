@@ -26,7 +26,7 @@ jobs:
     name: Deploy to Fly.io
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: flyctl deploy
         run: flyctl deploy --remote-only --config deploy/fly/fly.toml --dockerfile deploy/fly/Dockerfile
